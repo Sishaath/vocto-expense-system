@@ -71,15 +71,15 @@ export class AccountsComponent implements OnInit {
     await this.ngOnInit();
   }
 
-  openViewer(claim: any) {
+  async openViewer(claim: any) {
     if (!claim.file_url) return;
-    const publicUrl = this.supabase.getFileUrl(claim.file_url);
+    const url = await this.supabase.getSignedFileUrl(claim.file_url);
     const ext = claim.file_name?.split('.').pop()?.toLowerCase() || '';
     this.viewerIsPdf = ext === 'pdf';
     this.viewerName = claim.file_name || 'Attachment';
     this.viewerUrl = this.viewerIsPdf
-      ? this.sanitizer.bypassSecurityTrustResourceUrl(publicUrl)
-      : publicUrl;
+      ? this.sanitizer.bypassSecurityTrustResourceUrl(url)
+      : url;
     this.viewerOpen = true;
   }
 

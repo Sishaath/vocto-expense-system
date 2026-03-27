@@ -61,15 +61,24 @@ export class SupabaseService {
   }
 
   async uploadFile(claimId: string, file: File) {
-    const path = `${claimId}/${file.name}`;
+    const ext = file.name.split('.').pop();
+    const uniqueName = `${Date.now()}.${ext}`;
+    const path = `${claimId}/${uniqueName}`;
     return this.supabase.storage
       .from('claim-documents')
-      .upload(path, file);
+      .upload(path, file, { upsert: true });
   }
 
   getFileUrl(path: string): string {
     return this.supabase.storage
       .from('claim-documents')
       .getPublicUrl(path).data.publicUrl;
+  }
+
+  async getSignedFileUrl(path: string): Promise<string> {
+    const { data } = await this.supabase.storage
+      .from('claim-documents')
+      .createSignedUrl(path, 60 * 60); // 1 hour
+    return data?.signedUrl ?? '';
   }
 }

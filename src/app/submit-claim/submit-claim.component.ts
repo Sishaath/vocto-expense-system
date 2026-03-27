@@ -66,9 +66,14 @@ export class SubmitClaimComponent implements OnDestroy {
       let fileName = '';
       if (this.selectedFile) {
         const claimId = 'VCT-' + Date.now();
-        const { data } = await this.supabase.uploadFile(
+        const { data, error: uploadError } = await this.supabase.uploadFile(
           claimId, this.selectedFile
         );
+        if (uploadError) {
+          this.errorMsg = 'File upload failed: ' + uploadError.message;
+          this.loading = false;
+          return;
+        }
         if (data) {
           fileUrl = data.path;
           fileName = this.selectedFile.name;
