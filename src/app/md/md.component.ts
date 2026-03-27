@@ -3,16 +3,18 @@ import { Router, RouterLink } from '@angular/router';
 import { CommonModule, DatePipe } from '@angular/common';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { SupabaseService } from '../supabase.service';
+import { ClaimDetailComponent } from '../claim-detail/claim-detail.component';
 
 @Component({
   selector: 'app-md',
   standalone: true,
-  imports: [CommonModule, RouterLink, DatePipe],
+  imports: [CommonModule, RouterLink, DatePipe, ClaimDetailComponent],
   templateUrl: './md.component.html',
   styleUrls: ['./md.component.scss']
 })
 export class MdComponent implements OnInit {
   allClaims: any[] = [];
+  selectedClaim: any = null;
   viewerOpen = false;
   viewerUrl: SafeResourceUrl | string = '';
   viewerName = '';
@@ -74,6 +76,14 @@ export class MdComponent implements OnInit {
       .update({ status: 'REJECTED' })
       .eq('id', id);
     await this.ngOnInit();
+  }
+
+  openDetail(claim: any) {
+    this.selectedClaim = claim;
+  }
+
+  closeDetail() {
+    this.selectedClaim = null;
   }
 
   async openViewer(claim: any) {

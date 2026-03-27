@@ -70,7 +70,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let claim of claims">
+            <tr *ngFor="let claim of claims" class="clickable-row" (click)="openDetail(claim)">
               <td class="mono">{{ claim.claim_number }}</td>
               <td><strong>{{ claim.title }}</strong></td>
               <td class="muted">{{ claim.category }}</td>
@@ -78,7 +78,7 @@
               <td><span class="badge" [ngClass]="claim.status.toLowerCase()">{{ claim.status }}</span></td>
               <td class="mono">{{ claim.created_at | date:'dd MMM' }}</td>
               <td>
-                <button class="btn-view" *ngIf="claim.file_url" (click)="openViewer(claim)">View</button>
+                <button class="btn-view" *ngIf="claim.file_url" (click)="$event.stopPropagation(); openViewer(claim)">View</button>
                 <span class="muted" *ngIf="!claim.file_url">—</span>
               </td>
             </tr>
@@ -91,6 +91,13 @@
     </div>
   </div>
 </div>
+
+<!-- Claim Detail Modal -->
+<app-claim-detail
+  *ngIf="selectedClaim"
+  [claim]="selectedClaim"
+  (closed)="closeDetail()">
+</app-claim-detail>
 
 <!-- File Viewer Modal -->
 <div class="file-modal-overlay" *ngIf="viewerOpen" (click)="closeViewer()">

@@ -3,16 +3,18 @@ import { Router, RouterLink } from '@angular/router';
 import { CommonModule, DatePipe } from '@angular/common';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { SupabaseService } from '../supabase.service';
+import { ClaimDetailComponent } from '../claim-detail/claim-detail.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink, DatePipe],
+  imports: [CommonModule, RouterLink, DatePipe, ClaimDetailComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss']
 })
 export class DashboardComponent implements OnInit {
   claims: any[] = [];
+  selectedClaim: any = null;
   viewerOpen = false;
   viewerUrl: SafeResourceUrl | string = '';
   viewerName = '';
@@ -41,6 +43,14 @@ export class DashboardComponent implements OnInit {
   async ngOnInit() {
     const { data, error } = await this.supabase.getClaims();
     if (data) this.claims = data;
+  }
+
+  openDetail(claim: any) {
+    this.selectedClaim = claim;
+  }
+
+  closeDetail() {
+    this.selectedClaim = null;
   }
 
   async openViewer(claim: any) {

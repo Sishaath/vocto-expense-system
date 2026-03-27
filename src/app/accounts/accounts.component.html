@@ -63,20 +63,18 @@
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let claim of pendingClaims">
+            <tr *ngFor="let claim of pendingClaims" class="clickable-row" (click)="openDetail(claim)">
               <td class="mono">{{ claim.claim_number }}</td>
               <td>{{ claim.submitted_by }}</td>
               <td><strong>{{ claim.title }}</strong></td>
               <td class="amount">₹{{ claim.amount.toLocaleString('en-IN') }}</td>
               <td class="mono">{{ claim.created_at | date:'dd MMM' }}</td>
               <td>
-                <button class="btn-view" *ngIf="claim.file_url" (click)="openViewer(claim)">View</button>
+                <button class="btn-view" *ngIf="claim.file_url" (click)="$event.stopPropagation(); openViewer(claim)">View</button>
                 <span class="muted" *ngIf="!claim.file_url">—</span>
               </td>
               <td>
-                <button class="btn-verify" (click)="verifyClaim(claim.id)">
-                  ✓ Verify
-                </button>
+                <button class="btn-verify" (click)="$event.stopPropagation(); verifyClaim(claim.id)">✓ Verify</button>
               </td>
             </tr>
             <tr *ngIf="pendingClaims.length === 0">
@@ -99,13 +97,13 @@
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let claim of verifiedClaims">
+            <tr *ngFor="let claim of verifiedClaims" class="clickable-row" (click)="openDetail(claim)">
               <td class="mono">{{ claim.claim_number }}</td>
               <td>{{ claim.submitted_by }}</td>
               <td><strong>{{ claim.title }}</strong></td>
               <td class="amount">₹{{ claim.amount.toLocaleString('en-IN') }}</td>
               <td>
-                <button class="btn-view" *ngIf="claim.file_url" (click)="openViewer(claim)">View</button>
+                <button class="btn-view" *ngIf="claim.file_url" (click)="$event.stopPropagation(); openViewer(claim)">View</button>
                 <span class="muted" *ngIf="!claim.file_url">—</span>
               </td>
               <td><span class="badge verified">VERIFIED</span></td>
@@ -130,19 +128,17 @@
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let claim of approvedClaims">
+            <tr *ngFor="let claim of approvedClaims" class="clickable-row" (click)="openDetail(claim)">
               <td class="mono">{{ claim.claim_number }}</td>
               <td>{{ claim.submitted_by }}</td>
               <td><strong>{{ claim.title }}</strong></td>
               <td class="amount">₹{{ claim.amount.toLocaleString('en-IN') }}</td>
               <td>
-                <button class="btn-view" *ngIf="claim.file_url" (click)="openViewer(claim)">View</button>
+                <button class="btn-view" *ngIf="claim.file_url" (click)="$event.stopPropagation(); openViewer(claim)">View</button>
                 <span class="muted" *ngIf="!claim.file_url">—</span>
               </td>
               <td>
-                <button class="btn-pay" (click)="releasePay(claim.id)">
-                  💳 Release Payment
-                </button>
+                <button class="btn-pay" (click)="$event.stopPropagation(); releasePay(claim.id)">💳 Release Payment</button>
               </td>
             </tr>
             <tr *ngIf="approvedClaims.length === 0">
@@ -155,6 +151,13 @@
     </div>
   </div>
 </div>
+
+<!-- Claim Detail Modal -->
+<app-claim-detail
+  *ngIf="selectedClaim"
+  [claim]="selectedClaim"
+  (closed)="closeDetail()">
+</app-claim-detail>
 
 <!-- File Viewer Modal -->
 <div class="file-modal-overlay" *ngIf="viewerOpen" (click)="closeViewer()">

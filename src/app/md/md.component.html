@@ -68,20 +68,20 @@
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let claim of verifiedClaims">
+            <tr *ngFor="let claim of verifiedClaims" class="clickable-row" (click)="openDetail(claim)">
               <td class="mono">{{ claim.claim_number }}</td>
               <td><strong>{{ claim.title }}</strong></td>
               <td class="muted">{{ claim.category }}</td>
               <td class="amount">₹{{ claim.amount.toLocaleString('en-IN') }}</td>
               <td class="mono">{{ claim.created_at | date:'dd MMM' }}</td>
               <td>
-                <button class="btn-view" *ngIf="claim.file_url" (click)="openViewer(claim)">View</button>
+                <button class="btn-view" *ngIf="claim.file_url" (click)="$event.stopPropagation(); openViewer(claim)">View</button>
                 <span class="muted" *ngIf="!claim.file_url">—</span>
               </td>
               <td>
                 <div class="action-btns">
-                  <button class="btn-approve" (click)="approveClaim(claim.id)">✓ Approve</button>
-                  <button class="btn-reject" (click)="rejectClaim(claim.id)">✕ Reject</button>
+                  <button class="btn-approve" (click)="$event.stopPropagation(); approveClaim(claim.id)">✓ Approve</button>
+                  <button class="btn-reject" (click)="$event.stopPropagation(); rejectClaim(claim.id)">✕ Reject</button>
                 </div>
               </td>
             </tr>
@@ -108,7 +108,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let claim of processedClaims">
+            <tr *ngFor="let claim of processedClaims" class="clickable-row" (click)="openDetail(claim)">
               <td class="mono">{{ claim.claim_number }}</td>
               <td><strong>{{ claim.title }}</strong></td>
               <td class="amount">₹{{ claim.amount.toLocaleString('en-IN') }}</td>
@@ -129,6 +129,13 @@
     </div>
   </div>
 </div>
+
+<!-- Claim Detail Modal -->
+<app-claim-detail
+  *ngIf="selectedClaim"
+  [claim]="selectedClaim"
+  (closed)="closeDetail()">
+</app-claim-detail>
 
 <!-- File Viewer Modal -->
 <div class="file-modal-overlay" *ngIf="viewerOpen" (click)="closeViewer()">

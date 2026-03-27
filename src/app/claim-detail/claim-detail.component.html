@@ -1,0 +1,134 @@
+<div class="detail-overlay" (click)="close()">
+  <div class="detail-panel" (click)="$event.stopPropagation()">
+
+    <!-- Header -->
+    <div class="dp-header">
+      <div class="dp-header-left">
+        <div class="dp-title">{{ claim.title }}</div>
+        <div class="dp-header-meta">
+          <span class="dp-number">{{ claim.claim_number }}</span>
+          <span class="badge" [ngClass]="claim.status.toLowerCase()">{{ claim.status }}</span>
+        </div>
+      </div>
+      <button class="btn-close" (click)="close()">✕</button>
+    </div>
+
+    <div class="dp-body">
+
+      <!-- Left column: claim details -->
+      <div class="dp-left">
+        <div class="dp-section-label">Details</div>
+
+        <div class="detail-row">
+          <div class="detail-label">Employee</div>
+          <div class="detail-value">Employee</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">Amount</div>
+          <div class="detail-value amount">₹{{ claim.amount.toLocaleString('en-IN') }}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">Category</div>
+          <div class="detail-value">{{ claim.category }}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">Vendor</div>
+          <div class="detail-value">{{ claim.vendor || '—' }}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">Payment Mode</div>
+          <div class="detail-value">{{ claim.pay_mode }}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">Date</div>
+          <div class="detail-value">{{ claim.expense_date || (claim.created_at | date:'yyyy-MM-dd') }}</div>
+        </div>
+        <div class="detail-row" *ngIf="claim.description">
+          <div class="detail-label">Description</div>
+          <div class="detail-value desc">{{ claim.description }}</div>
+        </div>
+        <div class="detail-row" *ngIf="claim.file_url">
+          <div class="detail-label">Document</div>
+          <div class="detail-value">
+            <button class="btn-doc" (click)="openFile()">
+              📎 {{ claim.file_name || 'View attachment' }}
+            </button>
+          </div>
+        </div>
+        <div class="detail-row" *ngIf="!claim.file_url">
+          <div class="detail-label">Document</div>
+          <div class="detail-value muted">No attachment</div>
+        </div>
+      </div>
+
+      <!-- Right column: timeline + comments -->
+      <div class="dp-right">
+
+        <!-- Approval timeline -->
+        <div class="dp-section-label">Approval timeline</div>
+        <div class="timeline">
+          <div class="tl-step" *ngFor="let step of timelineSteps; let last = last">
+            <div class="tl-icon-col">
+              <div class="tl-icon done" *ngIf="step.done">✓</div>
+              <div class="tl-icon current" *ngIf="!step.done && step.current && !step.rejected">●</div>
+              <div class="tl-icon rejected" *ngIf="step.rejected">✕</div>
+              <div class="tl-icon pending" *ngIf="!step.done && !step.current && !step.rejected">○</div>
+              <div class="tl-line" *ngIf="!last"></div>
+            </div>
+            <div class="tl-content">
+              <div class="tl-label" [class.tl-done]="step.done" [class.tl-current]="step.current" [class.tl-rejected]="step.rejected">
+                {{ step.label }}
+              </div>
+              <div class="tl-sub">
+                {{ step.sub }}
+                <span *ngIf="step.date"> · {{ step.date | date:'MMM d' }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Comments -->
+        <div class="dp-section-label" style="margin-top: 20px;">Comments & activity</div>
+        <div class="comments-list">
+          <div class="comment" *ngFor="let c of comments">
+            <div class="comment-av">{{ avatarInitials(c.user_id) }}</div>
+            <div class="comment-body">
+              <div class="comment-meta">
+                <span class="comment-name">{{ c.user_id | slice:0:8 }}...</span>
+                <span class="comment-date">{{ c.created_at | date:'MMM d, h:mm a' }}</span>
+              </div>
+              <div class="comment-text">{{ c.message }}</div>
+            </div>
+          </div>
+          <div class="no-comments" *ngIf="comments.length === 0">No comments yet.</div>
+        </div>
+
+        <div class="comment-input-row">
+          <textarea
+            [(ngModel)]="newComment"
+            placeholder="Add a comment or query..."
+            rows="2"
+          ></textarea>
+          <button class="btn-send" (click)="sendComment()" [disabled]="sending || !newComment.trim()">
+            {{ sending ? '...' : 'Send' }}
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Nested file viewer -->
+<div class="file-modal-overlay" *ngIf="fileViewerOpen" (click)="closeFileViewer()">
+  <div class="file-modal" (click)="$event.stopPropagation()">
+    <div class="file-modal-header">
+      <div class="file-modal-title">{{ claim.file_name }}</div>
+      <button class="btn-close" (click)="closeFileViewer()">✕</button>
+    </div>
+    <div class="file-modal-body">
+      <iframe *ngIf="fileViewerIsPdf" [src]="fileViewerUrl"></iframe>
+      <img *ngIf="!fileViewerIsPdf" [src]="fileViewerUrl" [alt]="claim.file_name" />
+    </div>
+  </div>
+</div>
