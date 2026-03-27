@@ -55,7 +55,7 @@ export class DashboardComponent implements OnInit {
 
   async openViewer(claim: any) {
     if (!claim.file_url) return;
-    const url = await this.supabase.getSignedFileUrl(claim.file_url);
+    const url = this.supabase.getFileUrl(claim.file_url);
     const ext = claim.file_name?.split('.').pop()?.toLowerCase() || '';
     this.viewerIsPdf = ext === 'pdf';
     this.viewerName = claim.file_name || 'Attachment';

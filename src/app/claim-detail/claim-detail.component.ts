@@ -57,7 +57,7 @@ export class ClaimDetailComponent implements OnChanges {
 
   async openFile() {
     if (!this.claim.file_url) return;
-    const url = await this.supabase.getSignedFileUrl(this.claim.file_url);
+    const url = this.supabase.getFileUrl(this.claim.file_url);
     const ext = this.claim.file_name?.split('.').pop()?.toLowerCase() || '';
     this.fileViewerIsPdf = ext === 'pdf';
     this.fileViewerUrl = this.fileViewerIsPdf
