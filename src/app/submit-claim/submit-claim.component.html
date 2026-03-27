@@ -1,14 +1,9 @@
 <div class="app-wrap">
   <div class="topbar">
-    <div class="logo">
-      <div class="logo-mark">V</div>
-      <div class="logo-text">Voc<span>to</span></div>
-    </div>
+    <div class="logo"><div class="logo-mark">V</div><div class="logo-text">Voc<span>to</span></div></div>
     <div class="tb-divider"></div>
     <div class="tb-section">{{ editMode ? 'EDIT CLAIM' : 'NEW CLAIM' }}</div>
-    <div class="tb-right">
-      <button class="btn-back" routerLink="/dashboard">← Back</button>
-    </div>
+    <div class="tb-right"><button class="btn-back" routerLink="/dashboard">← Back</button></div>
   </div>
 
   <div class="shell">
@@ -20,7 +15,7 @@
 
     <div class="main">
       <div class="page-title">{{ editMode ? 'Edit' : 'Submit' }} <span>{{ editMode ? 'Claim' : 'New Claim' }}</span></div>
-      <div class="page-sub">{{ editMode ? 'Update the details below — only possible while claim is Pending' : 'Fill all fields and attach your supporting document' }}</div>
+      <div class="page-sub">{{ editMode ? 'Update details — only editable while Pending' : 'Fill all fields and attach supporting documents' }}</div>
 
       <div class="locked-banner" *ngIf="editMode && errorMsg && errorMsg.includes('verified')">
         🔒 {{ errorMsg }}
@@ -76,39 +71,44 @@
         </div>
 
         <div class="form-card">
-          <div class="form-card-title">Supporting document</div>
+          <div class="form-card-title">Supporting documents <span class="file-count-hint" *ngIf="previews.length > 0">({{ previews.length }} file{{ previews.length > 1 ? 's' : '' }})</span></div>
 
-          <!-- Show existing file in edit mode -->
-          <div class="existing-file" *ngIf="editMode && existingFileName && !selectedFile">
-            <span class="existing-file-icon">📎</span>
-            <span class="existing-file-name">{{ existingFileName }}</span>
-            <span class="existing-file-hint">— upload a new file below to replace it</span>
-          </div>
-
-          <div class="upload-area" (click)="fileInput.click()">
-            <input #fileInput type="file" accept=".pdf,.jpg,.jpeg,.png"
-              (change)="onFileSelected($event)" hidden />
-            <div class="upload-icon">📄</div>
-            <div class="upload-text" *ngIf="!selectedFile">
-              <strong>{{ editMode && existingFileName ? 'Click to replace' : 'Click to upload' }}</strong> — PDF, JPG, PNG
-            </div>
-            <div class="upload-text success" *ngIf="selectedFile">
-              ✓ {{ selectedFile.name }}
+          <div class="upload-area"
+            [class.dragging]="isDragging"
+            (click)="fileInput.click()"
+            (dragover)="onDragOver($event)"
+            (dragleave)="onDragLeave($event)"
+            (drop)="onDrop($event)">
+            <input #fileInput type="file" accept=".pdf,.jpg,.jpeg,.png" multiple (change)="onFileSelected($event)" hidden />
+            <div class="upload-icon">📎</div>
+            <div class="upload-text">
+              <strong>{{ isDragging ? 'Drop files here' : 'Click or drag & drop' }}</strong>
+              <span class="upload-hint">PDF, JPG, PNG — multiple files supported</span>
             </div>
           </div>
-          <div class="doc-preview" *ngIf="previewUrl">
-            <div class="doc-preview-label">{{ selectedFile ? 'New file preview' : 'Current file' }}</div>
-            <iframe *ngIf="previewIsPdf" [src]="previewUrl" class="preview-frame"></iframe>
-            <img *ngIf="!previewIsPdf" [src]="previewUrl" [alt]="existingFileName || selectedFile?.name" class="preview-img" />
+
+          <!-- File preview list -->
+          <div class="file-list" *ngIf="previews.length > 0">
+            <div class="file-item" *ngFor="let p of previews; let i = index">
+              <div class="file-item-header">
+                <span class="file-item-icon">{{ p.isPdf ? '📄' : '🖼️' }}</span>
+                <span class="file-item-name">{{ p.name }}</span>
+                <button class="btn-remove-file" (click)="removeFile(i)" title="Remove">✕</button>
+              </div>
+              <div class="file-preview-wrap">
+                <iframe *ngIf="p.isPdf" [src]="p.url" class="preview-frame"></iframe>
+                <img *ngIf="!p.isPdf" [src]="p.url" [alt]="p.name" class="preview-img" />
+              </div>
+            </div>
           </div>
         </div>
 
         <div class="error-msg" *ngIf="errorMsg && !errorMsg.includes('verified')">{{ errorMsg }}</div>
-        <div class="success-msg" *ngIf="successMsg">{{ successMsg }}</div>
 
         <div class="form-actions">
           <button class="btn-cancel" routerLink="/dashboard">Cancel</button>
           <button class="btn-submit" (click)="submitClaim()" [disabled]="loading">
+            <span class="spinner" *ngIf="loading"></span>
             {{ loading ? (editMode ? 'Saving...' : 'Submitting...') : (editMode ? 'Save Changes →' : 'Submit Claim →') }}
           </button>
         </div>

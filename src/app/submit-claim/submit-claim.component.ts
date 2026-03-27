@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { SupabaseService } from '../supabase.service';
+import { ToastService } from '../shared/toast.service';
 
 @Component({
   selector: 'app-submit-claim',
@@ -13,7 +14,6 @@ import { SupabaseService } from '../supabase.service';
   styleUrls: ['./submit-claim.component.scss']
 })
 export class SubmitClaimComponent implements OnInit, OnDestroy {
-  // Edit mode
   editMode = false;
   editClaimId = '';
   existingFileUrl = '';
@@ -26,19 +26,20 @@ export class SubmitClaimComponent implements OnInit, OnDestroy {
   vendor = '';
   payMode = 'Company Card';
   description = '';
-  selectedFile: File | null = null;
-  previewUrl: SafeResourceUrl | string = '';
-  previewIsPdf = false;
+
+  selectedFiles: File[] = [];
+  previews: { url: SafeResourceUrl | string; isPdf: boolean; name: string }[] = [];
+  isDragging = false;
   loading = false;
   errorMsg = '';
-  successMsg = '';
-  private objectUrl = '';
+  private objectUrls: string[] = [];
 
   constructor(
     private supabase: SupabaseService,
     private router: Router,
     private route: ActivatedRoute,
-    private sanitizer: DomSanitizer
+    private sanitizer: DomSanitizer,
+    private toastService: ToastService
   ) {}
 
   async ngOnInit() {
@@ -52,10 +53,7 @@ export class SubmitClaimComponent implements OnInit, OnDestroy {
 
   async loadClaim(id: string) {
     const { data, error } = await this.supabase.getClaimById(id);
-    if (error || !data) {
-      this.errorMsg = 'Could not load claim.';
-      return;
-    }
+    if (error || !data) { this.errorMsg = 'Could not load claim.'; return; }
     if (data.status !== 'PENDING') {
       this.errorMsg = 'This claim has already been verified and cannot be edited.';
       return;
@@ -69,31 +67,71 @@ export class SubmitClaimComponent implements OnInit, OnDestroy {
     this.description = data.description || '';
     this.existingFileUrl = data.file_url || '';
     this.existingFileName = data.file_name || '';
+    // Show existing files as previews
     if (this.existingFileUrl) {
-      const publicUrl = this.supabase.getFileUrl(this.existingFileUrl);
-      const ext = this.existingFileName.split('.').pop()?.toLowerCase() || '';
-      this.previewIsPdf = ext === 'pdf';
-      this.previewUrl = this.previewIsPdf
-        ? this.sanitizer.bypassSecurityTrustResourceUrl(publicUrl)
-        : publicUrl;
+      const urls = this.parseJsonOrSingle(this.existingFileUrl);
+      const names = this.parseJsonOrSingle(this.existingFileName);
+      urls.forEach((u, i) => {
+        const publicUrl = this.supabase.getFileUrl(u);
+        const ext = (names[i] || u).split('.').pop()?.toLowerCase() || '';
+        const isPdf = ext === 'pdf';
+        this.previews.push({
+          url: isPdf ? this.sanitizer.bypassSecurityTrustResourceUrl(publicUrl) : publicUrl,
+          isPdf,
+          name: names[i] || u
+        });
+      });
     }
   }
 
+  parseJsonOrSingle(val: string): string[] {
+    try { const p = JSON.parse(val); return Array.isArray(p) ? p : [val]; } catch { return [val]; }
+  }
+
   onFileSelected(event: any) {
-    const file: File = event.target.files[0];
-    if (!file) return;
-    this.selectedFile = file;
-    if (this.objectUrl) URL.revokeObjectURL(this.objectUrl);
-    this.objectUrl = URL.createObjectURL(file);
-    const ext = file.name.split('.').pop()?.toLowerCase() || '';
-    this.previewIsPdf = ext === 'pdf';
-    this.previewUrl = this.previewIsPdf
-      ? this.sanitizer.bypassSecurityTrustResourceUrl(this.objectUrl)
-      : this.objectUrl;
+    const files: File[] = Array.from(event.target.files);
+    this.addFiles(files);
+  }
+
+  onDragOver(e: DragEvent) { e.preventDefault(); this.isDragging = true; }
+  onDragLeave(e: DragEvent) { this.isDragging = false; }
+  onDrop(e: DragEvent) {
+    e.preventDefault();
+    this.isDragging = false;
+    const files: File[] = Array.from(e.dataTransfer?.files || []);
+    this.addFiles(files);
+  }
+
+  addFiles(files: File[]) {
+    const allowed = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
+    for (const file of files) {
+      if (!allowed.includes(file.type)) { this.toastService.show(`${file.name}: unsupported type`, 'error'); continue; }
+      this.selectedFiles.push(file);
+      const objUrl = URL.createObjectURL(file);
+      this.objectUrls.push(objUrl);
+      const ext = file.name.split('.').pop()?.toLowerCase() || '';
+      const isPdf = ext === 'pdf';
+      this.previews.push({
+        url: isPdf ? this.sanitizer.bypassSecurityTrustResourceUrl(objUrl) : objUrl,
+        isPdf,
+        name: file.name
+      });
+    }
+  }
+
+  removeFile(index: number) {
+    // Only remove new files (existing ones are at start in edit mode)
+    const existingCount = this.editMode ? this.parseJsonOrSingle(this.existingFileUrl || '[]').filter(u => u).length : 0;
+    if (index < existingCount) return; // can't remove existing via this UI
+    const newFileIndex = index - existingCount;
+    this.selectedFiles.splice(newFileIndex, 1);
+    if (this.objectUrls[newFileIndex]) URL.revokeObjectURL(this.objectUrls[newFileIndex]);
+    this.objectUrls.splice(newFileIndex, 1);
+    this.previews.splice(index, 1);
   }
 
   ngOnDestroy() {
-    if (this.objectUrl) URL.revokeObjectURL(this.objectUrl);
+    this.objectUrls.forEach(u => URL.revokeObjectURL(u));
   }
 
   async submitClaim() {
@@ -103,71 +141,61 @@ export class SubmitClaimComponent implements OnInit, OnDestroy {
     }
     this.loading = true;
     this.errorMsg = '';
-    this.successMsg = '';
     try {
-      let fileUrl = this.existingFileUrl;
-      let fileName = this.existingFileName;
+      // Upload new files
+      const uploadedPaths: string[] = [];
+      const uploadedNames: string[] = [];
 
-      if (this.selectedFile) {
-        const claimId = 'VCT-' + Date.now();
-        const { data, error: uploadError } = await this.supabase.uploadFile(claimId, this.selectedFile);
+      // In edit mode, start with existing files
+      if (this.editMode && this.existingFileUrl) {
+        const existingUrls = this.parseJsonOrSingle(this.existingFileUrl);
+        const existingNames = this.parseJsonOrSingle(this.existingFileName);
+        uploadedPaths.push(...existingUrls);
+        uploadedNames.push(...existingNames);
+      }
+
+      for (const file of this.selectedFiles) {
+        const claimId = 'VCT-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+        const { data, error: uploadError } = await this.supabase.uploadFile(claimId, file);
         if (uploadError) {
           this.errorMsg = 'File upload failed: ' + uploadError.message;
           this.loading = false;
           return;
         }
-        if (data) {
-          fileUrl = data.path;
-          fileName = this.selectedFile.name;
-        }
+        if (data) { uploadedPaths.push(data.path); uploadedNames.push(file.name); }
       }
+
+      const fileUrl = uploadedPaths.length === 1 ? uploadedPaths[0] : JSON.stringify(uploadedPaths);
+      const fileName = uploadedNames.length === 1 ? uploadedNames[0] : JSON.stringify(uploadedNames);
 
       if (this.editMode) {
         const { error } = await this.supabase.updateClaimDetails(this.editClaimId, {
-          title: this.title,
-          category: this.category,
-          amount: this.amount,
-          expense_date: this.expenseDate,
-          vendor: this.vendor,
-          pay_mode: this.payMode,
-          description: this.description,
-          file_url: fileUrl,
-          file_name: fileName,
+          title: this.title, category: this.category, amount: this.amount,
+          expense_date: this.expenseDate, vendor: this.vendor, pay_mode: this.payMode,
+          description: this.description, file_url: fileUrl, file_name: fileName
         });
-        if (error) {
-          this.errorMsg = error.message;
-        } else {
-          this.successMsg = '✓ Claim updated successfully!';
-          setTimeout(() => this.router.navigate(['/dashboard']), 1500);
+        if (error) { this.errorMsg = error.message; }
+        else {
+          this.toastService.show('Claim updated successfully!');
+          setTimeout(() => this.router.navigate(['/dashboard']), 1200);
         }
       } else {
         const user = await this.supabase.getClient().auth.getUser();
-        const userId = user.data.user?.id;
         const claimNumber = 'VCT-' + Date.now().toString().slice(-6);
         const { error } = await this.supabase.submitClaim({
-          claim_number: claimNumber,
-          title: this.title,
-          category: this.category,
-          amount: this.amount,
-          expense_date: this.expenseDate,
-          vendor: this.vendor,
-          pay_mode: this.payMode,
-          description: this.description,
-          file_url: fileUrl,
-          file_name: fileName,
-          submitted_by: userId,
-          status: 'PENDING'
+          claim_number: claimNumber, title: this.title, category: this.category,
+          amount: this.amount, expense_date: this.expenseDate, vendor: this.vendor,
+          pay_mode: this.payMode, description: this.description,
+          file_url: fileUrl, file_name: fileName,
+          submitted_by: user.data.user?.id, status: 'PENDING'
         });
-        if (error) {
-          this.errorMsg = error.message;
-        } else {
-          this.successMsg = '✓ Claim submitted successfully!';
-          setTimeout(() => this.router.navigate(['/dashboard']), 1500);
+        if (error) { this.errorMsg = error.message; }
+        else {
+          this.toastService.show('Claim submitted successfully!');
+          setTimeout(() => this.router.navigate(['/dashboard']), 1200);
         }
       }
-    } catch (err) {
-      this.errorMsg = 'Something went wrong. Please try again.';
-    }
+    } catch (err) { this.errorMsg = 'Something went wrong. Please try again.'; }
     this.loading = false;
   }
 }

@@ -1,14 +1,16 @@
 import { Component, OnInit } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { CommonModule, DatePipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { SupabaseService } from '../supabase.service';
 import { ClaimDetailComponent } from '../claim-detail/claim-detail.component';
+import { ToastService } from '../shared/toast.service';
 
 @Component({
   selector: 'app-accounts',
   standalone: true,
-  imports: [CommonModule, RouterLink, DatePipe, ClaimDetailComponent],
+  imports: [CommonModule, RouterLink, DatePipe, ClaimDetailComponent, FormsModule],
   templateUrl: './accounts.component.html',
   styleUrls: ['./accounts.component.scss']
 })
@@ -67,7 +69,8 @@ export class AccountsComponent implements OnInit {
   constructor(
     private supabase: SupabaseService,
     private router: Router,
-    private sanitizer: DomSanitizer
+    private sanitizer: DomSanitizer,
+    private toast: ToastService
   ) {}
 
   async ngOnInit() {
@@ -85,6 +88,7 @@ export class AccountsComponent implements OnInit {
         verified_at: new Date()
       })
       .eq('id', id);
+    this.toast.show('Claim verified and sent to MD!');
     await this.ngOnInit();
   }
 
@@ -98,6 +102,7 @@ export class AccountsComponent implements OnInit {
         paid_at: new Date()
       })
       .eq('id', id);
+    this.toast.show('Payment released successfully!', 'success');
     await this.ngOnInit();
   }
 

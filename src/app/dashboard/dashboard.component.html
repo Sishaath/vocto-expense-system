@@ -1,16 +1,10 @@
 <div class="app-wrap">
   <div class="topbar">
-    <div class="logo">
-      <div class="logo-mark">V</div>
-      <div class="logo-text">Voc<span>to</span></div>
-    </div>
+    <div class="logo"><div class="logo-mark">V</div><div class="logo-text">Voc<span>to</span></div></div>
     <div class="tb-divider"></div>
     <div class="tb-section">DASHBOARD</div>
     <div class="tb-right">
-      <div class="user-chip">
-        <div class="user-av">AM</div>
-        <div class="user-name">Admin</div>
-      </div>
+      <div class="user-chip"><div class="user-av">AM</div><div class="user-name">Admin</div></div>
       <button class="btn-logout" (click)="logout()">Logout</button>
     </div>
   </div>
@@ -20,72 +14,94 @@
       <div class="nav-label">Navigation</div>
       <div class="nav-item active">Dashboard</div>
       <div class="nav-item" routerLink="/submit">New Claim</div>
-
-      <div class="nav-label" style="margin-top: 16px;">By Month</div>
-      <div class="nav-item" [class.active]="selectedMonth === 'all' && selectedStatus === 'all'"
-        (click)="selectedMonth = 'all'; selectedStatus = 'all'">All Claims</div>
-      <div class="nav-item" [class.active]="selectedStatus === 'REJECTED'"
-        (click)="selectedStatus = 'REJECTED'; selectedMonth = 'all'">Rejected</div>
-      <div class="nav-item"
-        *ngFor="let m of availableMonths"
-        [class.active]="selectedMonth === m.key && selectedStatus !== 'REJECTED'"
-        (click)="selectedMonth = m.key; selectedStatus = 'all'">
-        {{ m.label }}
-      </div>
+      <div class="nav-label" style="margin-top:16px;">By Month</div>
+      <div class="nav-item" [class.active]="selectedMonth==='all' && selectedStatus==='all'"
+        (click)="selectedMonth='all'; selectedStatus='all'">All Claims</div>
+      <div class="nav-item" [class.active]="selectedStatus==='REJECTED'"
+        (click)="selectedStatus='REJECTED'; selectedMonth='all'">Rejected</div>
+      <div class="nav-item" *ngFor="let m of availableMonths"
+        [class.active]="selectedMonth===m.key && selectedStatus!=='REJECTED'"
+        (click)="selectedMonth=m.key; selectedStatus='all'">{{ m.label }}</div>
     </div>
 
     <div class="main">
+      <!-- Page header -->
       <div class="page-header">
         <div>
           <div class="page-title">
-            <span *ngIf="selectedStatus === 'REJECTED'">Rejected <span>Claims</span></span>
-            <span *ngIf="selectedStatus !== 'REJECTED' && selectedMonth === 'all'">My <span>Dashboard</span></span>
-            <span *ngIf="selectedStatus !== 'REJECTED' && selectedMonth !== 'all'">
-              {{ selectedMonthLabel }} <span>Expenses</span>
-            </span>
+            <span *ngIf="selectedStatus==='REJECTED'">Rejected <span>Claims</span></span>
+            <span *ngIf="selectedStatus!=='REJECTED' && selectedMonth==='all'">My <span>Dashboard</span></span>
+            <span *ngIf="selectedStatus!=='REJECTED' && selectedMonth!=='all'">{{ selectedMonthLabel }} <span>Expenses</span></span>
           </div>
           <div class="page-sub">
-            <span *ngIf="selectedStatus === 'REJECTED'">{{ filteredClaims.length }} rejected claim(s)</span>
-            <span *ngIf="selectedStatus !== 'REJECTED' && selectedMonth !== 'all'">
+            <span *ngIf="selectedStatus==='REJECTED'">{{ filteredClaims.length }} rejected claim(s)</span>
+            <span *ngIf="selectedStatus!=='REJECTED' && selectedMonth!=='all'">
               {{ filteredClaims.length }} claim(s) · Total ₹{{ monthTotal.toLocaleString('en-IN') }}
             </span>
-            <span *ngIf="selectedStatus !== 'REJECTED' && selectedMonth === 'all'">Track all your submitted claims</span>
+            <span *ngIf="selectedStatus!=='REJECTED' && selectedMonth==='all'">Track all your submitted claims</span>
           </div>
-        </div>
-      </div>
-
-      <div class="stats" *ngIf="selectedMonth === 'all' && selectedStatus === 'all'">
-        <div class="stat s1">
-          <div class="stat-label">Total Claims</div>
-          <div class="stat-value">{{ claims.length }}</div>
-          <div class="stat-sub">All time</div>
-        </div>
-        <div class="stat s2">
-          <div class="stat-label">Pending</div>
-          <div class="stat-value">{{ pendingCount }}</div>
-          <div class="stat-sub">Awaiting review</div>
-        </div>
-        <div class="stat s3">
-          <div class="stat-label">Approved</div>
-          <div class="stat-value">{{ approvedCount }}</div>
-          <div class="stat-sub">MD approved</div>
-        </div>
-        <div class="stat s4">
-          <div class="stat-label">Total Paid</div>
-          <div class="stat-value">₹{{ totalPaid.toLocaleString('en-IN') }}</div>
-          <div class="stat-sub">Reimbursed</div>
-        </div>
-      </div>
-
-      <div class="section-head">
-        <div class="section-title">
-          <span *ngIf="selectedStatus === 'REJECTED'">Rejected Claims</span>
-          <span *ngIf="selectedStatus !== 'REJECTED' && selectedMonth !== 'all'">Claims in this month</span>
-          <span *ngIf="selectedStatus !== 'REJECTED' && selectedMonth === 'all'">My Claims</span>
         </div>
         <button class="btn-new" routerLink="/submit">+ New Claim</button>
       </div>
 
+      <!-- Stats cards (show only when "All") -->
+      <div class="stats" *ngIf="selectedMonth==='all' && selectedStatus==='all'">
+        <div class="stat s1"><div class="stat-label">Total Claims</div><div class="stat-value">{{ claims.length }}</div><div class="stat-sub">All time</div></div>
+        <div class="stat s2"><div class="stat-label">Pending</div><div class="stat-value">{{ pendingCount }}</div><div class="stat-sub">Awaiting review</div></div>
+        <div class="stat s3"><div class="stat-label">Approved</div><div class="stat-value">{{ approvedCount }}</div><div class="stat-sub">MD approved</div></div>
+        <div class="stat s4"><div class="stat-label">Total Paid</div><div class="stat-value">₹{{ totalPaid.toLocaleString('en-IN') }}</div><div class="stat-sub">Reimbursed</div></div>
+      </div>
+
+      <!-- Month comparison analytics -->
+      <div class="analytics-card" *ngIf="selectedMonth==='all' && selectedStatus==='all'">
+        <div class="analytics-title">Month Comparison</div>
+        <div class="analytics-row">
+          <div class="analytics-month">
+            <div class="am-label">{{ thisMonthLabel }}</div>
+            <div class="am-value">₹{{ thisMonthTotal.toLocaleString('en-IN') }}</div>
+            <div class="am-count">{{ thisMonthClaims.length }} claim(s)</div>
+            <div class="am-bar"><div class="am-bar-fill current" [style.width.%]="lastMonthTotal === 0 ? 100 : thisMonthTotal > lastMonthTotal ? 100 : (thisMonthTotal/lastMonthTotal*100)"></div></div>
+          </div>
+          <div class="analytics-vs">
+            <div class="change-badge" [class.up]="monthChangePercent >= 0" [class.down]="monthChangePercent < 0">
+              {{ monthChangePercent >= 0 ? '▲' : '▼' }} {{ monthChangePercent | number:'1.0-0' }}%
+            </div>
+            <div class="vs-label">vs last month</div>
+          </div>
+          <div class="analytics-month">
+            <div class="am-label">{{ lastMonthLabel }}</div>
+            <div class="am-value">₹{{ lastMonthTotal.toLocaleString('en-IN') }}</div>
+            <div class="am-count">{{ lastMonthClaims.length }} claim(s)</div>
+            <div class="am-bar"><div class="am-bar-fill last" [style.width.%]="thisMonthTotal === 0 ? 100 : lastMonthTotal > thisMonthTotal ? 100 : (lastMonthTotal/thisMonthTotal*100)"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Search & Filter bar -->
+      <div class="filter-bar">
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input class="search-input" [(ngModel)]="searchQuery" placeholder="Search by title or claim ID..." />
+        </div>
+        <select class="filter-select" [(ngModel)]="filterCategory">
+          <option value="all">All Categories</option>
+          <option *ngFor="let c of categories" [value]="c">{{ c }}</option>
+        </select>
+        <select class="filter-select" [(ngModel)]="selectedStatus">
+          <option value="all">All Statuses</option>
+          <option value="PENDING">Pending</option>
+          <option value="VERIFIED">Verified</option>
+          <option value="MD_APPROVED">Approved</option>
+          <option value="PAID">Paid</option>
+          <option value="REJECTED">Rejected</option>
+        </select>
+        <input class="filter-date" type="date" [(ngModel)]="filterDateFrom" title="From date" />
+        <input class="filter-date" type="date" [(ngModel)]="filterDateTo" title="To date" />
+        <button class="btn-clear" *ngIf="hasActiveFilters" (click)="clearFilters()">✕ Clear</button>
+        <button class="btn-export" (click)="exportCSV()" title="Export to CSV">⬇ Export CSV</button>
+      </div>
+
+      <!-- Table -->
       <div class="table-wrap">
         <table>
           <thead>
@@ -93,9 +109,9 @@
               <th>Claim ID</th>
               <th>Title</th>
               <th>Category</th>
-              <th>Amount</th>
-              <th>Status</th>
-              <th>Date</th>
+              <th class="sortable" (click)="sortBy('amount')">Amount {{ sortIcon('amount') }}</th>
+              <th class="sortable" (click)="sortBy('status')">Status {{ sortIcon('status') }}</th>
+              <th class="sortable" (click)="sortBy('created_at')">Date {{ sortIcon('created_at') }}</th>
               <th>Attachment</th>
               <th>Action</th>
             </tr>
@@ -113,43 +129,34 @@
                 <span class="muted" *ngIf="!claim.file_url">—</span>
               </td>
               <td>
-                <button class="btn-edit"
-                  *ngIf="claim.status === 'PENDING'"
-                  (click)="$event.stopPropagation(); editClaim(claim)"
-                  title="Edit claim">
-                  ✎ Edit
-                </button>
-                <span class="locked-icon" *ngIf="claim.status !== 'PENDING'" title="Locked after verification">🔒</span>
+                <button class="btn-edit" *ngIf="claim.status==='PENDING'" (click)="$event.stopPropagation(); editClaim(claim)">✎ Edit</button>
+                <span class="locked-icon" *ngIf="claim.status!=='PENDING'" title="Locked after verification">🔒</span>
               </td>
             </tr>
             <tr *ngIf="filteredClaims.length === 0">
               <td colspan="8" class="empty">
-                <span *ngIf="selectedStatus === 'REJECTED'">No rejected claims.</span>
-                <span *ngIf="selectedStatus !== 'REJECTED' && selectedMonth !== 'all'">No claims in this month.</span>
-                <span *ngIf="selectedStatus !== 'REJECTED' && selectedMonth === 'all'">No claims yet — submit your first one!</span>
+                <span *ngIf="hasActiveFilters">No claims match your filters. <button class="link-btn" (click)="clearFilters()">Clear filters</button></span>
+                <span *ngIf="!hasActiveFilters && selectedStatus==='REJECTED'">No rejected claims.</span>
+                <span *ngIf="!hasActiveFilters && selectedStatus!=='REJECTED' && selectedMonth!=='all'">No claims in this month.</span>
+                <span *ngIf="!hasActiveFilters && selectedStatus!=='REJECTED' && selectedMonth==='all'">No claims yet — submit your first one!</span>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
+
+      <div class="table-footer" *ngIf="filteredClaims.length > 0">
+        {{ filteredClaims.length }} claim(s) shown · Total ₹{{ monthTotal.toLocaleString('en-IN') }}
+      </div>
     </div>
   </div>
 </div>
 
-<!-- Claim Detail Modal -->
-<app-claim-detail
-  *ngIf="selectedClaim"
-  [claim]="selectedClaim"
-  (closed)="closeDetail()">
-</app-claim-detail>
+<app-claim-detail *ngIf="selectedClaim" [claim]="selectedClaim" (closed)="closeDetail()"></app-claim-detail>
 
-<!-- File Viewer Modal -->
 <div class="file-modal-overlay" *ngIf="viewerOpen" (click)="closeViewer()">
   <div class="file-modal" (click)="$event.stopPropagation()">
-    <div class="file-modal-header">
-      <div class="file-modal-title">{{ viewerName }}</div>
-      <button class="btn-close" (click)="closeViewer()">✕</button>
-    </div>
+    <div class="file-modal-header"><div class="file-modal-title">{{ viewerName }}</div><button class="btn-close" (click)="closeViewer()">✕</button></div>
     <div class="file-modal-body">
       <iframe *ngIf="viewerIsPdf" [src]="viewerUrl"></iframe>
       <img *ngIf="!viewerIsPdf" [src]="viewerUrl" [alt]="viewerName" />
