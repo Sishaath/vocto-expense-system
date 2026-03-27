@@ -70,7 +70,7 @@
           <thead>
             <tr>
               <th>Claim ID</th><th>Employee</th><th>Title</th>
-              <th>Amount</th><th>Date</th><th>Attachment</th><th>Action</th>
+              <th>Amount</th><th>Date</th><th>Attachment</th><th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -85,7 +85,10 @@
                 <span class="muted" *ngIf="!claim.file_url">—</span>
               </td>
               <td>
-                <button class="btn-verify" (click)="$event.stopPropagation(); verifyClaim(claim.id)">✓ Verify</button>
+                <div class="action-btns">
+                  <button class="btn-verify" (click)="$event.stopPropagation(); verifyClaim(claim.id)">✓ Verify</button>
+                  <button class="btn-reject" (click)="$event.stopPropagation(); openRejectModal(claim.id)">✕ Reject</button>
+                </div>
               </td>
             </tr>
             <tr *ngIf="pendingClaims.length === 0">
@@ -171,7 +174,7 @@
             <thead>
               <tr>
                 <th>Claim ID</th><th>Employee</th><th>Title</th>
-                <th>Amount</th><th>Attachment</th><th>Date</th>
+                <th>Amount</th><th>Reason</th><th>Attachment</th><th>Date</th>
               </tr>
             </thead>
             <tbody>
@@ -180,6 +183,7 @@
                 <td>{{ claim.submitted_by }}</td>
                 <td><strong>{{ claim.title }}</strong></td>
                 <td class="amount">₹{{ claim.amount.toLocaleString('en-IN') }}</td>
+                <td class="rejection-reason">{{ claim.rejection_reason || '—' }}</td>
                 <td>
                   <button class="btn-view" *ngIf="claim.file_url" (click)="$event.stopPropagation(); openViewer(claim)">View</button>
                   <span class="muted" *ngIf="!claim.file_url">—</span>
@@ -187,13 +191,36 @@
                 <td class="mono">{{ claim.created_at | date:'dd MMM' }}</td>
               </tr>
               <tr *ngIf="rejectedClaims.length === 0">
-                <td colspan="6" class="empty">No rejected claims</td>
+                <td colspan="7" class="empty">No rejected claims</td>
               </tr>
             </tbody>
           </table>
         </div>
       </ng-container>
 
+    </div>
+  </div>
+</div>
+
+<!-- Rejection Reason Modal -->
+<div class="reject-overlay" *ngIf="rejectModalOpen" (click)="cancelReject()">
+  <div class="reject-modal" (click)="$event.stopPropagation()">
+    <div class="reject-modal-header">
+      <div class="reject-modal-title">Reason for Rejection</div>
+      <button class="btn-close" (click)="cancelReject()">✕</button>
+    </div>
+    <div class="reject-modal-body">
+      <p class="reject-hint">Please provide a reason so the employee can resubmit correctly.</p>
+      <textarea
+        class="reject-textarea"
+        [(ngModel)]="rejectionReason"
+        placeholder="e.g. Receipt missing, amount mismatch, invalid category..."
+        rows="4">
+      </textarea>
+    </div>
+    <div class="reject-modal-footer">
+      <button class="btn-cancel-reject" (click)="cancelReject()">Cancel</button>
+      <button class="btn-confirm-reject" (click)="confirmReject()" [disabled]="!rejectionReason.trim()">✕ Confirm Reject</button>
     </div>
   </div>
 </div>

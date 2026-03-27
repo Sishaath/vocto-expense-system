@@ -19,6 +19,9 @@ export class MdComponent implements OnInit {
   selectedClaim: any = null;
   selectedMonth = 'all';
   showRejected = false;
+  rejectModalOpen = false;
+  rejectingClaimId: string | null = null;
+  rejectionReason = '';
   viewerOpen = false;
   viewerUrl: SafeResourceUrl | string = '';
   viewerName = '';
@@ -98,10 +101,28 @@ export class MdComponent implements OnInit {
     await this.ngOnInit();
   }
 
-  async rejectClaim(id: string) {
+  openRejectModal(id: string) {
+    this.rejectingClaimId = id;
+    this.rejectionReason = '';
+    this.rejectModalOpen = true;
+  }
+
+  cancelReject() {
+    this.rejectModalOpen = false;
+    this.rejectingClaimId = null;
+    this.rejectionReason = '';
+  }
+
+  async confirmReject() {
+    if (!this.rejectingClaimId || !this.rejectionReason.trim()) return;
+    await this.rejectClaim(this.rejectingClaimId, this.rejectionReason.trim());
+    this.cancelReject();
+  }
+
+  async rejectClaim(id: string, reason: string) {
     await this.supabase.getClient()
       .from('claims')
-      .update({ status: 'REJECTED' })
+      .update({ status: 'REJECTED', rejection_reason: reason })
       .eq('id', id);
     this.toast.show('Claim rejected.', 'warning');
     await this.ngOnInit();
