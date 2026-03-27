@@ -15,24 +15,48 @@ import { ClaimDetailComponent } from '../claim-detail/claim-detail.component';
 export class MdComponent implements OnInit {
   allClaims: any[] = [];
   selectedClaim: any = null;
+  selectedMonth = 'all';
+  showRejected = false;
   viewerOpen = false;
   viewerUrl: SafeResourceUrl | string = '';
   viewerName = '';
   viewerIsPdf = false;
 
+  get availableMonths(): { key: string; label: string }[] {
+    const seen = new Set<string>();
+    const months: { key: string; label: string }[] = [];
+    for (const c of this.allClaims) {
+      const d = new Date(c.created_at);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        months.push({ key, label: d.toLocaleString('default', { month: 'long', year: 'numeric' }) });
+      }
+    }
+    return months;
+  }
+
+  private matchesMonth(c: any) {
+    if (this.selectedMonth === 'all') return true;
+    const d = new Date(c.created_at);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}` === this.selectedMonth;
+  }
+
   get verifiedClaims() {
-    return this.allClaims.filter(c => c.status === 'VERIFIED');
+    return this.allClaims.filter(c => c.status === 'VERIFIED' && this.matchesMonth(c));
   }
 
   get approvedClaims() {
-    return this.allClaims.filter(c => c.status === 'MD_APPROVED');
+    return this.allClaims.filter(c => c.status === 'MD_APPROVED' && this.matchesMonth(c));
+  }
+
+  get rejectedClaims() {
+    return this.allClaims.filter(c => c.status === 'REJECTED' && this.matchesMonth(c));
   }
 
   get processedClaims() {
     return this.allClaims.filter(c =>
-      c.status === 'MD_APPROVED' ||
-      c.status === 'PAID' ||
-      c.status === 'REJECTED'
+      (c.status === 'MD_APPROVED' || c.status === 'PAID' || c.status === 'REJECTED') && this.matchesMonth(c)
     );
   }
 

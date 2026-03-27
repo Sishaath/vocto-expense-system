@@ -5,7 +5,7 @@
       <div class="logo-text">Voc<span>to</span></div>
     </div>
     <div class="tb-divider"></div>
-    <div class="tb-section">NEW CLAIM</div>
+    <div class="tb-section">{{ editMode ? 'EDIT CLAIM' : 'NEW CLAIM' }}</div>
     <div class="tb-right">
       <button class="btn-back" routerLink="/dashboard">← Back</button>
     </div>
@@ -15,89 +15,107 @@
     <div class="sidebar">
       <div class="nav-label">Navigation</div>
       <div class="nav-item" routerLink="/dashboard">Dashboard</div>
-      <div class="nav-item active">New Claim</div>
+      <div class="nav-item active">{{ editMode ? 'Edit Claim' : 'New Claim' }}</div>
     </div>
 
     <div class="main">
-      <div class="page-title">Submit <span>New Claim</span></div>
-      <div class="page-sub">Fill all fields and attach your supporting document</div>
+      <div class="page-title">{{ editMode ? 'Edit' : 'Submit' }} <span>{{ editMode ? 'Claim' : 'New Claim' }}</span></div>
+      <div class="page-sub">{{ editMode ? 'Update the details below — only possible while claim is Pending' : 'Fill all fields and attach your supporting document' }}</div>
 
-      <div class="form-card">
-        <div class="form-card-title">Claim details</div>
-        <div class="form-grid">
-          <div class="form-group">
-            <label>Claim Title</label>
-            <input type="text" [(ngModel)]="title" placeholder="e.g. Client Meeting Travel" />
-          </div>
-          <div class="form-group">
-            <label>Category</label>
-            <select [(ngModel)]="category">
-              <option>Travel & Transport</option>
-              <option>Accommodation</option>
-              <option>Meals & Entertainment</option>
-              <option>Office Supplies</option>
-              <option>Software / Subscriptions</option>
-              <option>Training & Conference</option>
-              <option>Vendor Invoice</option>
-              <option>Other</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Amount (₹)</label>
-            <input type="number" [(ngModel)]="amount" placeholder="5000" />
-          </div>
-          <div class="form-group">
-            <label>Expense Date</label>
-            <input type="date" [(ngModel)]="expenseDate" />
-          </div>
-          <div class="form-group">
-            <label>Vendor / Payee</label>
-            <input type="text" [(ngModel)]="vendor" placeholder="Company name" />
-          </div>
-          <div class="form-group">
-            <label>Payment Mode</label>
-            <select [(ngModel)]="payMode">
-              <option>Company Card</option>
-              <option>Personal Card</option>
-              <option>Cash</option>
-              <option>UPI / Bank Transfer</option>
-            </select>
-          </div>
-          <div class="form-group full">
-            <label>Description</label>
-            <textarea [(ngModel)]="description" placeholder="Describe the purpose..."></textarea>
-          </div>
-        </div>
+      <div class="locked-banner" *ngIf="editMode && errorMsg && errorMsg.includes('verified')">
+        🔒 {{ errorMsg }}
       </div>
 
-      <div class="form-card">
-        <div class="form-card-title">Supporting document</div>
-        <div class="upload-area" (click)="fileInput.click()">
-          <input #fileInput type="file" accept=".pdf,.jpg,.jpeg,.png"
-            (change)="onFileSelected($event)" hidden />
-          <div class="upload-icon">📄</div>
-          <div class="upload-text" *ngIf="!selectedFile">
-            <strong>Click to upload</strong> — PDF, JPG, PNG
-          </div>
-          <div class="upload-text success" *ngIf="selectedFile">
-            ✓ {{ selectedFile.name }}
+      <ng-container *ngIf="!errorMsg || !errorMsg.includes('verified')">
+        <div class="form-card">
+          <div class="form-card-title">Claim details</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Claim Title</label>
+              <input type="text" [(ngModel)]="title" placeholder="e.g. Client Meeting Travel" />
+            </div>
+            <div class="form-group">
+              <label>Category</label>
+              <select [(ngModel)]="category">
+                <option>Travel & Transport</option>
+                <option>Accommodation</option>
+                <option>Meals & Entertainment</option>
+                <option>Office Supplies</option>
+                <option>Software / Subscriptions</option>
+                <option>Training & Conference</option>
+                <option>Vendor Invoice</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Amount (₹)</label>
+              <input type="number" [(ngModel)]="amount" placeholder="5000" />
+            </div>
+            <div class="form-group">
+              <label>Expense Date</label>
+              <input type="date" [(ngModel)]="expenseDate" />
+            </div>
+            <div class="form-group">
+              <label>Vendor / Payee</label>
+              <input type="text" [(ngModel)]="vendor" placeholder="Company name" />
+            </div>
+            <div class="form-group">
+              <label>Payment Mode</label>
+              <select [(ngModel)]="payMode">
+                <option>Company Card</option>
+                <option>Personal Card</option>
+                <option>Cash</option>
+                <option>UPI / Bank Transfer</option>
+              </select>
+            </div>
+            <div class="form-group full">
+              <label>Description</label>
+              <textarea [(ngModel)]="description" placeholder="Describe the purpose..."></textarea>
+            </div>
           </div>
         </div>
-        <div class="doc-preview" *ngIf="selectedFile">
-          <div class="doc-preview-label">Preview</div>
-          <iframe *ngIf="previewIsPdf" [src]="previewUrl" class="preview-frame"></iframe>
-          <img *ngIf="!previewIsPdf" [src]="previewUrl" [alt]="selectedFile.name" class="preview-img" />
+
+        <div class="form-card">
+          <div class="form-card-title">Supporting document</div>
+
+          <!-- Show existing file in edit mode -->
+          <div class="existing-file" *ngIf="editMode && existingFileName && !selectedFile">
+            <span class="existing-file-icon">📎</span>
+            <span class="existing-file-name">{{ existingFileName }}</span>
+            <span class="existing-file-hint">— upload a new file below to replace it</span>
+          </div>
+
+          <div class="upload-area" (click)="fileInput.click()">
+            <input #fileInput type="file" accept=".pdf,.jpg,.jpeg,.png"
+              (change)="onFileSelected($event)" hidden />
+            <div class="upload-icon">📄</div>
+            <div class="upload-text" *ngIf="!selectedFile">
+              <strong>{{ editMode && existingFileName ? 'Click to replace' : 'Click to upload' }}</strong> — PDF, JPG, PNG
+            </div>
+            <div class="upload-text success" *ngIf="selectedFile">
+              ✓ {{ selectedFile.name }}
+            </div>
+          </div>
+          <div class="doc-preview" *ngIf="previewUrl">
+            <div class="doc-preview-label">{{ selectedFile ? 'New file preview' : 'Current file' }}</div>
+            <iframe *ngIf="previewIsPdf" [src]="previewUrl" class="preview-frame"></iframe>
+            <img *ngIf="!previewIsPdf" [src]="previewUrl" [alt]="existingFileName || selectedFile?.name" class="preview-img" />
+          </div>
         </div>
-      </div>
 
-      <div class="error-msg" *ngIf="errorMsg">{{ errorMsg }}</div>
-      <div class="success-msg" *ngIf="successMsg">{{ successMsg }}</div>
+        <div class="error-msg" *ngIf="errorMsg && !errorMsg.includes('verified')">{{ errorMsg }}</div>
+        <div class="success-msg" *ngIf="successMsg">{{ successMsg }}</div>
 
-      <div class="form-actions">
-        <button class="btn-cancel" routerLink="/dashboard">Cancel</button>
-        <button class="btn-submit" (click)="submitClaim()" [disabled]="loading">
-          {{ loading ? 'Submitting...' : 'Submit Claim →' }}
-        </button>
+        <div class="form-actions">
+          <button class="btn-cancel" routerLink="/dashboard">Cancel</button>
+          <button class="btn-submit" (click)="submitClaim()" [disabled]="loading">
+            {{ loading ? (editMode ? 'Saving...' : 'Submitting...') : (editMode ? 'Save Changes →' : 'Submit Claim →') }}
+          </button>
+        </div>
+      </ng-container>
+
+      <div class="form-actions" *ngIf="errorMsg && errorMsg.includes('verified')">
+        <button class="btn-cancel" routerLink="/dashboard">← Back to Dashboard</button>
       </div>
     </div>
   </div>

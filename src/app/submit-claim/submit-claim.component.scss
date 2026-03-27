@@ -52,6 +52,13 @@
 .form-group textarea:focus { border-color: #F4721B; box-shadow: 0 0 0 3px rgba(244,114,27,0.1); }
 .form-group textarea { min-height: 80px; resize: vertical; }
 
+.locked-banner { background: #FEF0E6; border: 1px solid #F4C28B; color: #B85510; padding: 14px 18px; border-radius: 10px; font-size: 13px; font-weight: 500; margin-bottom: 20px; }
+
+.existing-file { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: #F4F6FA; border-radius: 8px; margin-bottom: 12px; font-size: 12px; }
+.existing-file-icon { font-size: 16px; }
+.existing-file-name { font-weight: 600; color: #0C2D5E; }
+.existing-file-hint { color: #8A9BB0; }
+
 .upload-area { border: 2px dashed #C5CDD8; border-radius: 10px; padding: 28px; text-align: center; cursor: pointer; transition: all 0.2s; }
 .upload-area:hover { border-color: #F4721B; background: rgba(244,114,27,0.04); }
 .upload-icon { font-size: 28px; margin-bottom: 8px; }

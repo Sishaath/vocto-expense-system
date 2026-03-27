@@ -10,6 +10,7 @@ export const routes: Routes = [
   { path: 'login', component: LoginComponent },
   { path: 'dashboard', component: DashboardComponent },
   { path: 'submit', component: SubmitClaimComponent },
+  { path: 'edit/:id', component: SubmitClaimComponent },
   { path: 'accounts', component: AccountsComponent },
   { path: 'md', component: MdComponent },
 ];

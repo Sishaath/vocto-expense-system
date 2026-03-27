@@ -20,15 +20,41 @@
       <div class="nav-label">Navigation</div>
       <div class="nav-item active">Dashboard</div>
       <div class="nav-item" routerLink="/submit">New Claim</div>
+
+      <div class="nav-label" style="margin-top: 16px;">By Month</div>
+      <div class="nav-item" [class.active]="selectedMonth === 'all' && selectedStatus === 'all'"
+        (click)="selectedMonth = 'all'; selectedStatus = 'all'">All Claims</div>
+      <div class="nav-item" [class.active]="selectedStatus === 'REJECTED'"
+        (click)="selectedStatus = 'REJECTED'; selectedMonth = 'all'">Rejected</div>
+      <div class="nav-item"
+        *ngFor="let m of availableMonths"
+        [class.active]="selectedMonth === m.key && selectedStatus !== 'REJECTED'"
+        (click)="selectedMonth = m.key; selectedStatus = 'all'">
+        {{ m.label }}
+      </div>
     </div>
 
     <div class="main">
       <div class="page-header">
-        <div class="page-title">My <span>Dashboard</span></div>
-        <div class="page-sub">Track all your submitted claims</div>
+        <div>
+          <div class="page-title">
+            <span *ngIf="selectedStatus === 'REJECTED'">Rejected <span>Claims</span></span>
+            <span *ngIf="selectedStatus !== 'REJECTED' && selectedMonth === 'all'">My <span>Dashboard</span></span>
+            <span *ngIf="selectedStatus !== 'REJECTED' && selectedMonth !== 'all'">
+              {{ selectedMonthLabel }} <span>Expenses</span>
+            </span>
+          </div>
+          <div class="page-sub">
+            <span *ngIf="selectedStatus === 'REJECTED'">{{ filteredClaims.length }} rejected claim(s)</span>
+            <span *ngIf="selectedStatus !== 'REJECTED' && selectedMonth !== 'all'">
+              {{ filteredClaims.length }} claim(s) · Total ₹{{ monthTotal.toLocaleString('en-IN') }}
+            </span>
+            <span *ngIf="selectedStatus !== 'REJECTED' && selectedMonth === 'all'">Track all your submitted claims</span>
+          </div>
+        </div>
       </div>
 
-      <div class="stats">
+      <div class="stats" *ngIf="selectedMonth === 'all' && selectedStatus === 'all'">
         <div class="stat s1">
           <div class="stat-label">Total Claims</div>
           <div class="stat-value">{{ claims.length }}</div>
@@ -52,7 +78,11 @@
       </div>
 
       <div class="section-head">
-        <div class="section-title">My Claims</div>
+        <div class="section-title">
+          <span *ngIf="selectedStatus === 'REJECTED'">Rejected Claims</span>
+          <span *ngIf="selectedStatus !== 'REJECTED' && selectedMonth !== 'all'">Claims in this month</span>
+          <span *ngIf="selectedStatus !== 'REJECTED' && selectedMonth === 'all'">My Claims</span>
+        </div>
         <button class="btn-new" routerLink="/submit">+ New Claim</button>
       </div>
 
@@ -67,10 +97,11 @@
               <th>Status</th>
               <th>Date</th>
               <th>Attachment</th>
+              <th>Action</th>
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let claim of claims" class="clickable-row" (click)="openDetail(claim)">
+            <tr *ngFor="let claim of filteredClaims" class="clickable-row" (click)="openDetail(claim)">
               <td class="mono">{{ claim.claim_number }}</td>
               <td><strong>{{ claim.title }}</strong></td>
               <td class="muted">{{ claim.category }}</td>
@@ -81,9 +112,22 @@
                 <button class="btn-view" *ngIf="claim.file_url" (click)="$event.stopPropagation(); openViewer(claim)">View</button>
                 <span class="muted" *ngIf="!claim.file_url">—</span>
               </td>
+              <td>
+                <button class="btn-edit"
+                  *ngIf="claim.status === 'PENDING'"
+                  (click)="$event.stopPropagation(); editClaim(claim)"
+                  title="Edit claim">
+                  ✎ Edit
+                </button>
+                <span class="locked-icon" *ngIf="claim.status !== 'PENDING'" title="Locked after verification">🔒</span>
+              </td>
             </tr>
-            <tr *ngIf="claims.length === 0">
-              <td colspan="7" class="empty">No claims yet — submit your first one!</td>
+            <tr *ngIf="filteredClaims.length === 0">
+              <td colspan="8" class="empty">
+                <span *ngIf="selectedStatus === 'REJECTED'">No rejected claims.</span>
+                <span *ngIf="selectedStatus !== 'REJECTED' && selectedMonth !== 'all'">No claims in this month.</span>
+                <span *ngIf="selectedStatus !== 'REJECTED' && selectedMonth === 'all'">No claims yet — submit your first one!</span>
+              </td>
             </tr>
           </tbody>
         </table>

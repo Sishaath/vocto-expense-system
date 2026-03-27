@@ -20,6 +20,17 @@
       <div class="nav-label">Navigation</div>
       <div class="nav-item active">Approvals</div>
       <div class="nav-item" routerLink="/submit">Submit My Claim</div>
+      <div class="nav-label" style="margin-top:16px;">Filter</div>
+      <div class="nav-item" [class.active]="selectedMonth === 'all' && !showRejected"
+        (click)="selectedMonth='all'; showRejected=false">All Claims</div>
+      <div class="nav-item" [class.active]="showRejected"
+        (click)="showRejected=true; selectedMonth='all'">Rejected</div>
+      <div class="nav-item"
+        *ngFor="let m of availableMonths"
+        [class.active]="selectedMonth === m.key && !showRejected"
+        (click)="selectedMonth=m.key; showRejected=false">
+        {{ m.label }}
+      </div>
     </div>
 
     <div class="main">
@@ -49,6 +60,7 @@
         </div>
       </div>
 
+      <ng-container *ngIf="!showRejected">
       <!-- AWAITING APPROVAL -->
       <div class="section-head">
         <div class="section-title">Claims Awaiting Your Approval</div>
@@ -125,6 +137,39 @@
           </tbody>
         </table>
       </div>
+
+      </ng-container>
+
+      <!-- REJECTED VIEW -->
+      <ng-container *ngIf="showRejected">
+        <div class="section-head">
+          <div class="section-title">❌ Rejected Claims</div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Claim ID</th><th>Title</th><th>Amount</th><th>Attachment</th><th>Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let claim of rejectedClaims" class="clickable-row" (click)="openDetail(claim)">
+                <td class="mono">{{ claim.claim_number }}</td>
+                <td><strong>{{ claim.title }}</strong></td>
+                <td class="amount">₹{{ claim.amount.toLocaleString('en-IN') }}</td>
+                <td>
+                  <button class="btn-view" *ngIf="claim.file_url" (click)="$event.stopPropagation(); openViewer(claim)">View</button>
+                  <span class="muted" *ngIf="!claim.file_url">—</span>
+                </td>
+                <td class="mono">{{ claim.approved_at | date:'dd MMM' }}</td>
+              </tr>
+              <tr *ngIf="rejectedClaims.length === 0">
+                <td colspan="5" class="empty">No rejected claims</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </ng-container>
 
     </div>
   </div>

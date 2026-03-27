@@ -37,6 +37,14 @@ export class SupabaseService {
     return this.supabase.from('claims').insert(claim);
   }
 
+  async getClaimById(id: string) {
+    return this.supabase.from('claims').select('*').eq('id', id).single();
+  }
+
+  async updateClaimDetails(id: string, updates: any) {
+    return this.supabase.from('claims').update(updates).eq('id', id);
+  }
+
   async updateClaimStatus(id: string, status: string) {
     return this.supabase
       .from('claims')

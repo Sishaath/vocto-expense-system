@@ -1,5 +1,5 @@
-import { Component, OnDestroy } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
@@ -12,7 +12,13 @@ import { SupabaseService } from '../supabase.service';
   templateUrl: './submit-claim.component.html',
   styleUrls: ['./submit-claim.component.scss']
 })
-export class SubmitClaimComponent implements OnDestroy {
+export class SubmitClaimComponent implements OnInit, OnDestroy {
+  // Edit mode
+  editMode = false;
+  editClaimId = '';
+  existingFileUrl = '';
+  existingFileName = '';
+
   title = '';
   category = 'Travel & Transport';
   amount = 0;
@@ -31,8 +37,47 @@ export class SubmitClaimComponent implements OnDestroy {
   constructor(
     private supabase: SupabaseService,
     private router: Router,
+    private route: ActivatedRoute,
     private sanitizer: DomSanitizer
   ) {}
+
+  async ngOnInit() {
+    const id = this.route.snapshot.paramMap.get('id');
+    if (id) {
+      this.editMode = true;
+      this.editClaimId = id;
+      await this.loadClaim(id);
+    }
+  }
+
+  async loadClaim(id: string) {
+    const { data, error } = await this.supabase.getClaimById(id);
+    if (error || !data) {
+      this.errorMsg = 'Could not load claim.';
+      return;
+    }
+    if (data.status !== 'PENDING') {
+      this.errorMsg = 'This claim has already been verified and cannot be edited.';
+      return;
+    }
+    this.title = data.title || '';
+    this.category = data.category || 'Travel & Transport';
+    this.amount = data.amount || 0;
+    this.expenseDate = data.expense_date || '';
+    this.vendor = data.vendor || '';
+    this.payMode = data.pay_mode || 'Company Card';
+    this.description = data.description || '';
+    this.existingFileUrl = data.file_url || '';
+    this.existingFileName = data.file_name || '';
+    if (this.existingFileUrl) {
+      const publicUrl = this.supabase.getFileUrl(this.existingFileUrl);
+      const ext = this.existingFileName.split('.').pop()?.toLowerCase() || '';
+      this.previewIsPdf = ext === 'pdf';
+      this.previewUrl = this.previewIsPdf
+        ? this.sanitizer.bypassSecurityTrustResourceUrl(publicUrl)
+        : publicUrl;
+    }
+  }
 
   onFileSelected(event: any) {
     const file: File = event.target.files[0];
@@ -60,15 +105,12 @@ export class SubmitClaimComponent implements OnDestroy {
     this.errorMsg = '';
     this.successMsg = '';
     try {
-      const user = await this.supabase.getClient().auth.getUser();
-      const userId = user.data.user?.id;
-      let fileUrl = '';
-      let fileName = '';
+      let fileUrl = this.existingFileUrl;
+      let fileName = this.existingFileName;
+
       if (this.selectedFile) {
         const claimId = 'VCT-' + Date.now();
-        const { data, error: uploadError } = await this.supabase.uploadFile(
-          claimId, this.selectedFile
-        );
+        const { data, error: uploadError } = await this.supabase.uploadFile(claimId, this.selectedFile);
         if (uploadError) {
           this.errorMsg = 'File upload failed: ' + uploadError.message;
           this.loading = false;
@@ -79,26 +121,49 @@ export class SubmitClaimComponent implements OnDestroy {
           fileName = this.selectedFile.name;
         }
       }
-      const claimNumber = 'VCT-' + Date.now().toString().slice(-6);
-      const { error } = await this.supabase.submitClaim({
-        claim_number: claimNumber,
-        title: this.title,
-        category: this.category,
-        amount: this.amount,
-        expense_date: this.expenseDate,
-        vendor: this.vendor,
-        pay_mode: this.payMode,
-        description: this.description,
-        file_url: fileUrl,
-        file_name: fileName,
-        submitted_by: userId,
-        status: 'PENDING'
-      });
-      if (error) {
-        this.errorMsg = error.message;
+
+      if (this.editMode) {
+        const { error } = await this.supabase.updateClaimDetails(this.editClaimId, {
+          title: this.title,
+          category: this.category,
+          amount: this.amount,
+          expense_date: this.expenseDate,
+          vendor: this.vendor,
+          pay_mode: this.payMode,
+          description: this.description,
+          file_url: fileUrl,
+          file_name: fileName,
+        });
+        if (error) {
+          this.errorMsg = error.message;
+        } else {
+          this.successMsg = '✓ Claim updated successfully!';
+          setTimeout(() => this.router.navigate(['/dashboard']), 1500);
+        }
       } else {
-        this.successMsg = '✓ Claim submitted successfully!';
-        setTimeout(() => this.router.navigate(['/dashboard']), 1500);
+        const user = await this.supabase.getClient().auth.getUser();
+        const userId = user.data.user?.id;
+        const claimNumber = 'VCT-' + Date.now().toString().slice(-6);
+        const { error } = await this.supabase.submitClaim({
+          claim_number: claimNumber,
+          title: this.title,
+          category: this.category,
+          amount: this.amount,
+          expense_date: this.expenseDate,
+          vendor: this.vendor,
+          pay_mode: this.payMode,
+          description: this.description,
+          file_url: fileUrl,
+          file_name: fileName,
+          submitted_by: userId,
+          status: 'PENDING'
+        });
+        if (error) {
+          this.errorMsg = error.message;
+        } else {
+          this.successMsg = '✓ Claim submitted successfully!';
+          setTimeout(() => this.router.navigate(['/dashboard']), 1500);
+        }
       }
     } catch (err) {
       this.errorMsg = 'Something went wrong. Please try again.';
