@@ -63,3 +63,30 @@
 
 .spinner { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  .shell { flex-direction: column; }
+
+  .sidebar {
+    width: 100%; flex-direction: row; overflow-x: auto;
+    padding: 8px 10px; gap: 6px; flex-shrink: 0;
+    scrollbar-width: none;
+  }
+  .sidebar::-webkit-scrollbar { display: none; }
+  .nav-label { display: none; }
+  .nav-item { white-space: nowrap; flex-shrink: 0; padding: 7px 14px; }
+
+  .main { padding: 14px; max-width: 100%; }
+  .page-title { font-size: 18px; }
+
+  .form-grid { grid-template-columns: 1fr; }
+
+  .form-actions { flex-direction: column-reverse; }
+  .btn-cancel, .btn-submit { width: 100%; justify-content: center; }
+
+  .preview-frame { height: 260px; }
+
+  .topbar { padding: 0 14px; gap: 10px; }
+  .tb-section { display: none; }
+}

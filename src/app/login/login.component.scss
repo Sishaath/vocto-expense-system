@@ -188,3 +188,14 @@ h2 {
 .demo-hint strong {
   color: #F4721B;
 }
+
+/* ── Mobile ── */
+@media (max-width: 600px) {
+  .login-wrap { align-items: flex-start; padding: 0; }
+  .login-box {
+    width: 100%; min-height: 100vh;
+    border-radius: 0; padding: 40px 24px;
+  }
+  h2 { font-size: 26px; }
+  .sub { font-size: 14px; }
+}

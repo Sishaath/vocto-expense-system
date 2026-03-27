@@ -88,3 +88,33 @@ tbody td { padding: 12px 14px; font-size: 12px; color: #0C2D5E; }
 .badge.md_approved { background: #E1F5EE; color: #0F6E56; }
 .badge.paid { background: #EAF3DE; color: #3B6D11; }
 .badge.rejected { background: #FCEBEB; color: #A32D2D; }
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  .shell { flex-direction: column; }
+
+  .sidebar {
+    width: 100%; flex-direction: row; overflow-x: auto;
+    padding: 8px 10px; gap: 6px; flex-shrink: 0;
+    scrollbar-width: none;
+  }
+  .sidebar::-webkit-scrollbar { display: none; }
+  .nav-label { display: none; }
+  .nav-item { white-space: nowrap; flex-shrink: 0; padding: 7px 14px; }
+
+  .main { padding: 14px; overflow-x: hidden; }
+  .page-title { font-size: 18px; }
+
+  .stats { grid-template-columns: repeat(2, 1fr); }
+
+  .action-btns { flex-direction: column; gap: 4px; }
+
+  .table-wrap { overflow-x: auto; }
+  table { min-width: 540px; }
+
+  .topbar { padding: 0 14px; gap: 10px; }
+  .tb-section { display: none; }
+  .user-name { display: none; }
+
+  .file-modal { width: 100vw; height: 100vh; border-radius: 0; }
+}
