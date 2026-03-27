@@ -1,0 +1,145 @@
+<div class="app-wrap">
+  <div class="topbar">
+    <div class="logo">
+      <div class="logo-mark">V</div>
+      <div class="logo-text">Voc<span>to</span></div>
+    </div>
+    <div class="tb-divider"></div>
+    <div class="tb-section">MD APPROVALS</div>
+    <div class="tb-right">
+      <div class="user-chip">
+        <div class="user-av">MD</div>
+        <div class="user-name">Managing Director</div>
+      </div>
+      <button class="btn-logout" (click)="logout()">Logout</button>
+    </div>
+  </div>
+
+  <div class="shell">
+    <div class="sidebar">
+      <div class="nav-label">Navigation</div>
+      <div class="nav-item active">Approvals</div>
+      <div class="nav-item" routerLink="/submit">Submit My Claim</div>
+    </div>
+
+    <div class="main">
+      <div class="page-title">MD <span>Approvals</span></div>
+      <div class="page-sub">Review and approve verified claims</div>
+
+      <div class="stats">
+        <div class="stat s1">
+          <div class="stat-label">Awaiting Approval</div>
+          <div class="stat-value">{{ verifiedClaims.length }}</div>
+          <div class="stat-sub">Needs your action</div>
+        </div>
+        <div class="stat s2">
+          <div class="stat-label">Approved</div>
+          <div class="stat-value">{{ approvedClaims.length }}</div>
+          <div class="stat-sub">Processed</div>
+        </div>
+        <div class="stat s3">
+          <div class="stat-label">Pending Value</div>
+          <div class="stat-value">₹{{ pendingValue.toLocaleString('en-IN') }}</div>
+          <div class="stat-sub">To approve</div>
+        </div>
+        <div class="stat s4">
+          <div class="stat-label">Total Released</div>
+          <div class="stat-value">₹{{ totalPaid.toLocaleString('en-IN') }}</div>
+          <div class="stat-sub">Paid out</div>
+        </div>
+      </div>
+
+      <!-- AWAITING APPROVAL -->
+      <div class="section-head">
+        <div class="section-title">Claims Awaiting Your Approval</div>
+        <span class="pending-count">{{ verifiedClaims.length }} pending</span>
+      </div>
+      <div class="table-wrap" style="margin-bottom:24px">
+        <table>
+          <thead>
+            <tr>
+              <th>Claim ID</th>
+              <th>Title</th>
+              <th>Category</th>
+              <th>Amount</th>
+              <th>Date</th>
+              <th>Attachment</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let claim of verifiedClaims">
+              <td class="mono">{{ claim.claim_number }}</td>
+              <td><strong>{{ claim.title }}</strong></td>
+              <td class="muted">{{ claim.category }}</td>
+              <td class="amount">₹{{ claim.amount.toLocaleString('en-IN') }}</td>
+              <td class="mono">{{ claim.created_at | date:'dd MMM' }}</td>
+              <td>
+                <button class="btn-view" *ngIf="claim.file_url" (click)="openViewer(claim)">View</button>
+                <span class="muted" *ngIf="!claim.file_url">—</span>
+              </td>
+              <td>
+                <div class="action-btns">
+                  <button class="btn-approve" (click)="approveClaim(claim.id)">✓ Approve</button>
+                  <button class="btn-reject" (click)="rejectClaim(claim.id)">✕ Reject</button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="verifiedClaims.length === 0">
+              <td colspan="7" class="empty">No claims awaiting approval 🎉</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- RECENTLY PROCESSED -->
+      <div class="section-head">
+        <div class="section-title">Recently Processed</div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Claim ID</th>
+              <th>Title</th>
+              <th>Amount</th>
+              <th>Decision</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let claim of processedClaims">
+              <td class="mono">{{ claim.claim_number }}</td>
+              <td><strong>{{ claim.title }}</strong></td>
+              <td class="amount">₹{{ claim.amount.toLocaleString('en-IN') }}</td>
+              <td>
+                <span class="badge" [ngClass]="claim.status.toLowerCase()">
+                  {{ claim.status }}
+                </span>
+              </td>
+              <td class="mono">{{ claim.approved_at | date:'dd MMM' }}</td>
+            </tr>
+            <tr *ngIf="processedClaims.length === 0">
+              <td colspan="5" class="empty">No history yet</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- File Viewer Modal -->
+<div class="file-modal-overlay" *ngIf="viewerOpen" (click)="closeViewer()">
+  <div class="file-modal" (click)="$event.stopPropagation()">
+    <div class="file-modal-header">
+      <div class="file-modal-title">{{ viewerName }}</div>
+      <button class="btn-close" (click)="closeViewer()">✕</button>
+    </div>
+    <div class="file-modal-body">
+      <iframe *ngIf="viewerIsPdf" [src]="viewerUrl"></iframe>
+      <img *ngIf="!viewerIsPdf" [src]="viewerUrl" [alt]="viewerName" />
+    </div>
+  </div>
+</div>

@@ -1,0 +1,70 @@
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+
+.app-wrap { min-height: 100vh; background: #F4F6FA; display: flex; flex-direction: column; }
+
+.topbar { height: 52px; background: #0C2D5E; display: flex; align-items: center; padding: 0 20px; gap: 14px; }
+.logo { display: flex; align-items: center; gap: 8px; }
+.logo-mark { width: 26px; height: 26px; background: #F4721B; border-radius: 6px; display: grid; place-items: center; color: #fff; font-size: 13px; font-weight: 700; }
+.logo-text { font-size: 15px; font-weight: 700; color: #fff; }
+.logo-text span { color: #F4721B; }
+.tb-divider { width: 1px; height: 20px; background: rgba(255,255,255,0.2); }
+.tb-section { font-size: 10px; color: rgba(255,255,255,0.45); letter-spacing: 0.5px; }
+.tb-right { margin-left: auto; }
+.btn-back { padding: 6px 14px; background: transparent; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; color: rgba(255,255,255,0.7); font-size: 11px; cursor: pointer; }
+.btn-back:hover { border-color: #F4721B; color: #F4721B; }
+
+.shell { display: flex; flex: 1; }
+
+.sidebar { width: 200px; background: #0C2D5E; padding: 16px 10px; display: flex; flex-direction: column; gap: 4px; }
+.nav-label { font-size: 9px; color: rgba(255,255,255,0.3); letter-spacing: 1px; text-transform: uppercase; padding: 8px 10px 4px; }
+.nav-item { padding: 8px 12px; border-radius: 7px; color: rgba(255,255,255,0.55); font-size: 12px; cursor: pointer; }
+.nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
+.nav-item.active { background: #F4721B; color: #fff; }
+
+.main { flex: 1; padding: 24px; max-width: 900px; }
+.page-title { font-size: 22px; font-weight: 700; color: #0C2D5E; margin-bottom: 4px; }
+.page-title span { color: #F4721B; }
+.page-sub { font-size: 12px; color: #8A9BB0; margin-bottom: 20px; }
+
+.form-card { background: #fff; border: 1px solid #E8ECF3; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+.form-card-title { font-size: 14px; font-weight: 700; color: #0C2D5E; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #E8ECF3; }
+
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.form-group { display: flex; flex-direction: column; gap: 5px; }
+.form-group.full { grid-column: 1 / -1; }
+.form-group label { font-size: 10px; color: #8A9BB0; text-transform: uppercase; letter-spacing: 0.6px; }
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  padding: 9px 12px;
+  border: 1px solid #E8ECF3;
+  border-radius: 7px;
+  font-size: 13px;
+  color: #0C2D5E;
+  background: #F4F6FA;
+  outline: none;
+  font-family: 'Inter', sans-serif;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus { border-color: #F4721B; box-shadow: 0 0 0 3px rgba(244,114,27,0.1); }
+.form-group textarea { min-height: 80px; resize: vertical; }
+
+.upload-area { border: 2px dashed #C5CDD8; border-radius: 10px; padding: 28px; text-align: center; cursor: pointer; transition: all 0.2s; }
+.upload-area:hover { border-color: #F4721B; background: rgba(244,114,27,0.04); }
+.upload-icon { font-size: 28px; margin-bottom: 8px; }
+.upload-text { font-size: 13px; color: #4A6080; }
+.upload-text strong { color: #F4721B; }
+.upload-text.success { color: #3B6D11; font-weight: 600; }
+
+.error-msg { background: #FCEBEB; color: #A32D2D; padding: 10px 14px; border-radius: 7px; font-size: 12px; margin-bottom: 14px; }
+.success-msg { background: #EAF3DE; color: #3B6D11; padding: 10px 14px; border-radius: 7px; font-size: 12px; margin-bottom: 14px; font-weight: 600; }
+
+.form-actions { display: flex; gap: 10px; justify-content: flex-end; }
+.btn-cancel { padding: 10px 20px; background: transparent; border: 1px solid #E8ECF3; border-radius: 8px; color: #4A6080; font-size: 13px; cursor: pointer; }
+.btn-cancel:hover { border-color: #0C2D5E; color: #0C2D5E; }
+.btn-submit { padding: 10px 24px; background: #F4721B; color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; }
+.btn-submit:hover { background: #e05f08; }
+.btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }

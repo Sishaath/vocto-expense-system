@@ -1,0 +1,107 @@
+<div class="app-wrap">
+  <div class="topbar">
+    <div class="logo">
+      <div class="logo-mark">V</div>
+      <div class="logo-text">Voc<span>to</span></div>
+    </div>
+    <div class="tb-divider"></div>
+    <div class="tb-section">DASHBOARD</div>
+    <div class="tb-right">
+      <div class="user-chip">
+        <div class="user-av">AM</div>
+        <div class="user-name">Admin</div>
+      </div>
+      <button class="btn-logout" (click)="logout()">Logout</button>
+    </div>
+  </div>
+
+  <div class="shell">
+    <div class="sidebar">
+      <div class="nav-label">Navigation</div>
+      <div class="nav-item active">Dashboard</div>
+      <div class="nav-item" routerLink="/submit">New Claim</div>
+    </div>
+
+    <div class="main">
+      <div class="page-header">
+        <div class="page-title">My <span>Dashboard</span></div>
+        <div class="page-sub">Track all your submitted claims</div>
+      </div>
+
+      <div class="stats">
+        <div class="stat s1">
+          <div class="stat-label">Total Claims</div>
+          <div class="stat-value">{{ claims.length }}</div>
+          <div class="stat-sub">All time</div>
+        </div>
+        <div class="stat s2">
+          <div class="stat-label">Pending</div>
+          <div class="stat-value">{{ pendingCount }}</div>
+          <div class="stat-sub">Awaiting review</div>
+        </div>
+        <div class="stat s3">
+          <div class="stat-label">Approved</div>
+          <div class="stat-value">{{ approvedCount }}</div>
+          <div class="stat-sub">MD approved</div>
+        </div>
+        <div class="stat s4">
+          <div class="stat-label">Total Paid</div>
+          <div class="stat-value">₹{{ totalPaid.toLocaleString('en-IN') }}</div>
+          <div class="stat-sub">Reimbursed</div>
+        </div>
+      </div>
+
+      <div class="section-head">
+        <div class="section-title">My Claims</div>
+        <button class="btn-new" routerLink="/submit">+ New Claim</button>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Claim ID</th>
+              <th>Title</th>
+              <th>Category</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th>Date</th>
+              <th>Attachment</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let claim of claims">
+              <td class="mono">{{ claim.claim_number }}</td>
+              <td><strong>{{ claim.title }}</strong></td>
+              <td class="muted">{{ claim.category }}</td>
+              <td class="amount">₹{{ claim.amount.toLocaleString('en-IN') }}</td>
+              <td><span class="badge" [ngClass]="claim.status.toLowerCase()">{{ claim.status }}</span></td>
+              <td class="mono">{{ claim.created_at | date:'dd MMM' }}</td>
+              <td>
+                <button class="btn-view" *ngIf="claim.file_url" (click)="openViewer(claim)">View</button>
+                <span class="muted" *ngIf="!claim.file_url">—</span>
+              </td>
+            </tr>
+            <tr *ngIf="claims.length === 0">
+              <td colspan="7" class="empty">No claims yet — submit your first one!</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- File Viewer Modal -->
+<div class="file-modal-overlay" *ngIf="viewerOpen" (click)="closeViewer()">
+  <div class="file-modal" (click)="$event.stopPropagation()">
+    <div class="file-modal-header">
+      <div class="file-modal-title">{{ viewerName }}</div>
+      <button class="btn-close" (click)="closeViewer()">✕</button>
+    </div>
+    <div class="file-modal-body">
+      <iframe *ngIf="viewerIsPdf" [src]="viewerUrl"></iframe>
+      <img *ngIf="!viewerIsPdf" [src]="viewerUrl" [alt]="viewerName" />
+    </div>
+  </div>
+</div>

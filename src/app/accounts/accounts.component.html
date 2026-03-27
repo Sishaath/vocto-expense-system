@@ -1,0 +1,171 @@
+<p>accounts works!</p>
+<div class="app-wrap">
+  <div class="topbar">
+    <div class="logo">
+      <div class="logo-mark">V</div>
+      <div class="logo-text">Voc<span>to</span></div>
+    </div>
+    <div class="tb-divider"></div>
+    <div class="tb-section">ACCOUNTS DASHBOARD</div>
+    <div class="tb-right">
+      <div class="user-chip">
+        <div class="user-av">AC</div>
+        <div class="user-name">Accounts Team</div>
+      </div>
+      <button class="btn-logout" (click)="logout()">Logout</button>
+    </div>
+  </div>
+
+  <div class="shell">
+    <div class="sidebar">
+      <div class="nav-label">Navigation</div>
+      <div class="nav-item active">Dashboard</div>
+      <div class="nav-item" routerLink="/submit">Submit My Claim</div>
+    </div>
+
+    <div class="main">
+      <div class="page-title">Accounts <span>Dashboard</span></div>
+      <div class="page-sub">Verify claims and manage the approval pipeline</div>
+
+      <div class="stats">
+        <div class="stat s1">
+          <div class="stat-label">Needs Verification</div>
+          <div class="stat-value">{{ pendingClaims.length }}</div>
+          <div class="stat-sub">Action required</div>
+        </div>
+        <div class="stat s2">
+          <div class="stat-label">With MD</div>
+          <div class="stat-value">{{ verifiedClaims.length }}</div>
+          <div class="stat-sub">Awaiting approval</div>
+        </div>
+        <div class="stat s3">
+          <div class="stat-label">Ready to Pay</div>
+          <div class="stat-value">{{ approvedClaims.length }}</div>
+          <div class="stat-sub">MD approved</div>
+        </div>
+        <div class="stat s4">
+          <div class="stat-label">Total Released</div>
+          <div class="stat-value">₹{{ totalPaid.toLocaleString('en-IN') }}</div>
+          <div class="stat-sub">{{ paidClaims.length }} paid</div>
+        </div>
+      </div>
+
+      <!-- NEEDS VERIFICATION -->
+      <div class="section-head">
+        <div class="section-title">🔴 Needs Verification</div>
+      </div>
+      <div class="table-wrap" style="margin-bottom: 20px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Claim ID</th><th>Employee</th><th>Title</th>
+              <th>Amount</th><th>Date</th><th>Attachment</th><th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let claim of pendingClaims">
+              <td class="mono">{{ claim.claim_number }}</td>
+              <td>{{ claim.submitted_by }}</td>
+              <td><strong>{{ claim.title }}</strong></td>
+              <td class="amount">₹{{ claim.amount.toLocaleString('en-IN') }}</td>
+              <td class="mono">{{ claim.created_at | date:'dd MMM' }}</td>
+              <td>
+                <button class="btn-view" *ngIf="claim.file_url" (click)="openViewer(claim)">View</button>
+                <span class="muted" *ngIf="!claim.file_url">—</span>
+              </td>
+              <td>
+                <button class="btn-verify" (click)="verifyClaim(claim.id)">
+                  ✓ Verify
+                </button>
+              </td>
+            </tr>
+            <tr *ngIf="pendingClaims.length === 0">
+              <td colspan="7" class="empty">All clear — no claims to verify ✓</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- AWAITING MD -->
+      <div class="section-head">
+        <div class="section-title">🔵 Awaiting MD Approval</div>
+      </div>
+      <div class="table-wrap" style="margin-bottom: 20px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Claim ID</th><th>Employee</th><th>Title</th>
+              <th>Amount</th><th>Attachment</th><th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let claim of verifiedClaims">
+              <td class="mono">{{ claim.claim_number }}</td>
+              <td>{{ claim.submitted_by }}</td>
+              <td><strong>{{ claim.title }}</strong></td>
+              <td class="amount">₹{{ claim.amount.toLocaleString('en-IN') }}</td>
+              <td>
+                <button class="btn-view" *ngIf="claim.file_url" (click)="openViewer(claim)">View</button>
+                <span class="muted" *ngIf="!claim.file_url">—</span>
+              </td>
+              <td><span class="badge verified">VERIFIED</span></td>
+            </tr>
+            <tr *ngIf="verifiedClaims.length === 0">
+              <td colspan="6" class="empty">No claims with MD right now</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- READY TO PAY -->
+      <div class="section-head">
+        <div class="section-title">💚 Ready for Payment</div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Claim ID</th><th>Employee</th><th>Title</th>
+              <th>Amount</th><th>Attachment</th><th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let claim of approvedClaims">
+              <td class="mono">{{ claim.claim_number }}</td>
+              <td>{{ claim.submitted_by }}</td>
+              <td><strong>{{ claim.title }}</strong></td>
+              <td class="amount">₹{{ claim.amount.toLocaleString('en-IN') }}</td>
+              <td>
+                <button class="btn-view" *ngIf="claim.file_url" (click)="openViewer(claim)">View</button>
+                <span class="muted" *ngIf="!claim.file_url">—</span>
+              </td>
+              <td>
+                <button class="btn-pay" (click)="releasePay(claim.id)">
+                  💳 Release Payment
+                </button>
+              </td>
+            </tr>
+            <tr *ngIf="approvedClaims.length === 0">
+              <td colspan="6" class="empty">No payments pending</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- File Viewer Modal -->
+<div class="file-modal-overlay" *ngIf="viewerOpen" (click)="closeViewer()">
+  <div class="file-modal" (click)="$event.stopPropagation()">
+    <div class="file-modal-header">
+      <div class="file-modal-title">{{ viewerName }}</div>
+      <button class="btn-close" (click)="closeViewer()">✕</button>
+    </div>
+    <div class="file-modal-body">
+      <iframe *ngIf="viewerIsPdf" [src]="viewerUrl"></iframe>
+      <img *ngIf="!viewerIsPdf" [src]="viewerUrl" [alt]="viewerName" />
+    </div>
+  </div>
+</div>

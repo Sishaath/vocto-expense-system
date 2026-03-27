@@ -1,0 +1,99 @@
+<div class="app-wrap">
+  <div class="topbar">
+    <div class="logo">
+      <div class="logo-mark">V</div>
+      <div class="logo-text">Voc<span>to</span></div>
+    </div>
+    <div class="tb-divider"></div>
+    <div class="tb-section">NEW CLAIM</div>
+    <div class="tb-right">
+      <button class="btn-back" routerLink="/dashboard">← Back</button>
+    </div>
+  </div>
+
+  <div class="shell">
+    <div class="sidebar">
+      <div class="nav-label">Navigation</div>
+      <div class="nav-item" routerLink="/dashboard">Dashboard</div>
+      <div class="nav-item active">New Claim</div>
+    </div>
+
+    <div class="main">
+      <div class="page-title">Submit <span>New Claim</span></div>
+      <div class="page-sub">Fill all fields and attach your supporting document</div>
+
+      <div class="form-card">
+        <div class="form-card-title">Claim details</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Claim Title</label>
+            <input type="text" [(ngModel)]="title" placeholder="e.g. Client Meeting Travel" />
+          </div>
+          <div class="form-group">
+            <label>Category</label>
+            <select [(ngModel)]="category">
+              <option>Travel & Transport</option>
+              <option>Accommodation</option>
+              <option>Meals & Entertainment</option>
+              <option>Office Supplies</option>
+              <option>Software / Subscriptions</option>
+              <option>Training & Conference</option>
+              <option>Vendor Invoice</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Amount (₹)</label>
+            <input type="number" [(ngModel)]="amount" placeholder="5000" />
+          </div>
+          <div class="form-group">
+            <label>Expense Date</label>
+            <input type="date" [(ngModel)]="expenseDate" />
+          </div>
+          <div class="form-group">
+            <label>Vendor / Payee</label>
+            <input type="text" [(ngModel)]="vendor" placeholder="Company name" />
+          </div>
+          <div class="form-group">
+            <label>Payment Mode</label>
+            <select [(ngModel)]="payMode">
+              <option>Company Card</option>
+              <option>Personal Card</option>
+              <option>Cash</option>
+              <option>UPI / Bank Transfer</option>
+            </select>
+          </div>
+          <div class="form-group full">
+            <label>Description</label>
+            <textarea [(ngModel)]="description" placeholder="Describe the purpose..."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-card">
+        <div class="form-card-title">Supporting document</div>
+        <div class="upload-area" (click)="fileInput.click()">
+          <input #fileInput type="file" accept=".pdf,.jpg,.jpeg,.png"
+            (change)="onFileSelected($event)" hidden />
+          <div class="upload-icon">📄</div>
+          <div class="upload-text" *ngIf="!selectedFile">
+            <strong>Click to upload</strong> — PDF, JPG, PNG
+          </div>
+          <div class="upload-text success" *ngIf="selectedFile">
+            ✓ {{ selectedFile.name }}
+          </div>
+        </div>
+      </div>
+
+      <div class="error-msg" *ngIf="errorMsg">{{ errorMsg }}</div>
+      <div class="success-msg" *ngIf="successMsg">{{ successMsg }}</div>
+
+      <div class="form-actions">
+        <button class="btn-cancel" routerLink="/dashboard">Cancel</button>
+        <button class="btn-submit" (click)="submitClaim()" [disabled]="loading">
+          {{ loading ? 'Submitting...' : 'Submit Claim →' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

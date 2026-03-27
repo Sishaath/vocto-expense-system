@@ -1,0 +1,190 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* Background */
+.login-wrap {
+  min-height: 100vh;
+  background: #173A67;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Inter', sans-serif;
+}
+
+/* Card */
+.login-box {
+  width: 520px;
+  background: #F2F2F2;
+  border-radius: 28px;
+  padding: 44px 48px;
+}
+
+/* Logo */
+.login-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.logo-mark {
+  width: 44px;
+  height: 44px;
+  background: #F4721B;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  color: white;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.logo-text {
+  font-size: 26px;
+  font-weight: 700;
+  color: #0C2D5E;
+}
+
+.logo-text span {
+  color: #F4721B;
+}
+
+/* Sub text */
+.login-sub {
+  font-size: 12px;
+  color: #8A9BB0;
+  letter-spacing: 1px;
+  margin-bottom: 18px;
+}
+
+/* Orange line */
+.orange-bar {
+  height: 4px;
+  background: #F4721B;
+  border-radius: 4px;
+  margin: 20px 0 28px;
+}
+
+/* Heading */
+h2 {
+  font-size: 32px;
+  font-weight: 700;
+  color: #0C2D5E;
+  margin-bottom: 6px;
+}
+
+.sub {
+  font-size: 16px;
+  color: #4A6080;
+  margin-bottom: 28px;
+}
+
+/* Fields */
+.field {
+  margin-bottom: 18px;
+}
+
+.field label {
+  display: block;
+  font-size: 12px;
+  color: #8A9BB0;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-bottom: 6px;
+}
+
+.field input {
+  width: 100%;
+  padding: 16px;
+  border: 1px solid #E8ECF3;
+  border-radius: 12px;
+  font-size: 15px;
+  color: #0C2D5E;
+  background: #E6E9EE;
+  outline: none;
+}
+
+.field input:focus {
+  border-color: #F4721B;
+  box-shadow: 0 0 0 3px rgba(244,114,27,0.12);
+}
+
+/* Error */
+.error {
+  color: #A32D2D;
+  font-size: 12px;
+  margin-bottom: 10px;
+  background: #FCEBEB;
+  padding: 10px 14px;
+  border-radius: 8px;
+}
+
+/* Button */
+.btn-login {
+  width: 100%;
+  padding: 16px;
+  background: #F4721B;
+  color: white;
+  border: none;
+  border-radius: 14px;
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: 0.2s;
+}
+
+.btn-login:hover {
+  background: #e05f08;
+}
+
+.btn-login:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.role-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  background: #E6E9EE;
+  padding: 5px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+.role-tabs button {
+  padding: 10px;
+  border: none;
+  background: transparent;
+  border-radius: 7px;
+  color: #4A6080;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+}
+
+.role-tabs button.active {
+  background: #0C2D5E;
+  color: #fff;
+}
+
+.demo-hint {
+  margin-top: 18px;
+  padding: 12px;
+  background: #E6E9EE;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #4A6080;
+  font-family: monospace;
+  line-height: 1.8;
+}
+
+.demo-hint strong {
+  color: #F4721B;
+}
