@@ -1,7 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, OnDestroy } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { SupabaseService } from '../supabase.service';
 
 @Component({
@@ -11,7 +12,7 @@ import { SupabaseService } from '../supabase.service';
   templateUrl: './submit-claim.component.html',
   styleUrls: ['./submit-claim.component.scss']
 })
-export class SubmitClaimComponent {
+export class SubmitClaimComponent implements OnDestroy {
   title = '';
   category = 'Travel & Transport';
   amount = 0;
@@ -20,17 +21,34 @@ export class SubmitClaimComponent {
   payMode = 'Company Card';
   description = '';
   selectedFile: File | null = null;
+  previewUrl: SafeResourceUrl | string = '';
+  previewIsPdf = false;
   loading = false;
   errorMsg = '';
   successMsg = '';
+  private objectUrl = '';
 
   constructor(
     private supabase: SupabaseService,
-    private router: Router
+    private router: Router,
+    private sanitizer: DomSanitizer
   ) {}
 
   onFileSelected(event: any) {
-    this.selectedFile = event.target.files[0];
+    const file: File = event.target.files[0];
+    if (!file) return;
+    this.selectedFile = file;
+    if (this.objectUrl) URL.revokeObjectURL(this.objectUrl);
+    this.objectUrl = URL.createObjectURL(file);
+    const ext = file.name.split('.').pop()?.toLowerCase() || '';
+    this.previewIsPdf = ext === 'pdf';
+    this.previewUrl = this.previewIsPdf
+      ? this.sanitizer.bypassSecurityTrustResourceUrl(this.objectUrl)
+      : this.objectUrl;
+  }
+
+  ngOnDestroy() {
+    if (this.objectUrl) URL.revokeObjectURL(this.objectUrl);
   }
 
   async submitClaim() {

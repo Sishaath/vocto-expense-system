@@ -83,6 +83,11 @@
             ✓ {{ selectedFile.name }}
           </div>
         </div>
+        <div class="doc-preview" *ngIf="selectedFile">
+          <div class="doc-preview-label">Preview</div>
+          <iframe *ngIf="previewIsPdf" [src]="previewUrl" class="preview-frame"></iframe>
+          <img *ngIf="!previewIsPdf" [src]="previewUrl" [alt]="selectedFile.name" class="preview-img" />
+        </div>
       </div>
 
       <div class="error-msg" *ngIf="errorMsg">{{ errorMsg }}</div>
