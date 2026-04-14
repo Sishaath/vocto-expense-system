@@ -5,6 +5,23 @@ Format: Version · Date · Commit · What changed · Why
 
 ---
 
+## v1.9 · 2026-04-14 · `79039ca`
+### Added
+- Admin dashboard (`/admin`) — separate portal for admin role, no employee views
+- User management: invite users by email, assign role (Employee / Accounts / MD / Admin)
+- Invited users receive email with set-password link
+- Role-based login redirect — admin → `/admin`, accounts → `/accounts`, MD → `/md`, employee → `/dashboard`
+- Active/Inactive toggle per user — disable access without deleting account
+- Last login date shown for each user
+- Resend invite button for users who never set their password
+- Delete user — removes from auth and role table with confirmation prompt
+- User count stat cards by role (Total / Employee / Accounts / MD / Admin)
+- `user_roles` table in Supabase drives all role checks (replaces hardcoded email arrays)
+- New API endpoints: `/api/get-role`, `/api/invite-user`, `/api/admin-users` (all use service role key)
+- Sidebar shows "User Management" link only for admin users
+
+---
+
 ## v1.8 · 2026-04-14 · `71dbcd7`
 ### Added
 - Employee receives confirmation email after submitting a claim (#2)
