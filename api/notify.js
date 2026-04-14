@@ -7,7 +7,7 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const secret = process.env.NOTIFY_SECRET;
-  if (secret && req.headers['x-notify-secret'] !== secret) {
+  if (secret && req.headers['x-notify-secret']?.trim() !== secret.trim()) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 

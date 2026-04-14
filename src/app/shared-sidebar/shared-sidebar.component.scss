@@ -6,3 +6,6 @@
 .nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
 .nav-item.active { background: #F4721B; color: #fff; }
 .nav-sub { padding-left: 20px; font-size: 11px; }
+.admin-link { color: #E8A838; font-weight: 600; }
+.admin-link:hover { background: rgba(248,166,56,0.15); color: #F4721B; }
+.admin-link.active { background: #F4721B; color: #fff; }

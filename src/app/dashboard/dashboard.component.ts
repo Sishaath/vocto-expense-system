@@ -4,6 +4,7 @@ import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { SupabaseService } from '../supabase.service';
+import { environment } from '../../environments/environment';
 import { ClaimDetailComponent } from '../claim-detail/claim-detail.component';
 import { ToastService } from '../shared/toast.service';
 import { NotifBellComponent } from '../notif-bell/notif-bell.component';
@@ -273,8 +274,11 @@ export class DashboardComponent implements OnInit {
     const { data: { session } } = await this.supabase.getClient().auth.getSession();
     this.userEmail = session?.user?.email || '';
     this.fullName = session?.user?.user_metadata?.['full_name'] || '';
-    if (this.userEmail === 'yogeshwari@voctotechnologies.com' || this.userEmail === 'accounts@voctotechnologies.com') { this.router.navigate(['/accounts']); return; }
-    if (this.userEmail === 'rrk@voctotechnologies.com' || this.userEmail === 'md@voctotechnologies.com') { this.router.navigate(['/md']); return; }
+    // Role-based redirect — admin must not see employee dashboard
+    const role = await this.supabase.getUserRole(this.userEmail);
+    if (role === 'admin') { this.router.navigate(['/admin']); return; }
+    if (role === 'accounts') { this.router.navigate(['/accounts']); return; }
+    if (role === 'md') { this.router.navigate(['/md']); return; }
     const { data } = await this.supabase.getMyClaims(this.userEmail);
     if (data) this.claims = data;
 

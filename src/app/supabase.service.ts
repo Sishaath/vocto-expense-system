@@ -367,4 +367,18 @@ export class SupabaseService {
       .eq('entity_id', entityId)
       .order('created_at', { ascending: false });
   }
+
+  // USER ROLES
+  async getUserRole(email: string): Promise<string | null> {
+    const { data } = await this.supabase.from('user_roles').select('role').eq('email', email).single();
+    return data?.role || null;
+  }
+
+  async getAllUserRoles() {
+    return this.supabase.from('user_roles').select('*').order('created_at', { ascending: false });
+  }
+
+  async updateUserRole(email: string, role: string, updatedBy: string) {
+    return this.supabase.from('user_roles').update({ role, updated_at: new Date().toISOString(), invited_by: updatedBy }).eq('email', email);
+  }
 }

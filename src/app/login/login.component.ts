@@ -3,6 +3,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { SupabaseService } from '../supabase.service';
+import { environment } from '../../environments/environment';
 
 @Component({
   selector: 'app-login',
@@ -36,7 +37,21 @@ export class LoginComponent implements OnInit {
     this.errorMsg = '';
     const { data, error } = await this.supabase.signIn(this.email.trim(), this.password);
     if (error) { this.errorMsg = error.message; this.loading = false; return; }
-    this.router.navigate(['/dashboard']);
+    const canonicalEmail = data.user?.email || this.email.trim().toLowerCase();
+    let role: string | null = null;
+    try {
+      const res = await fetch(`${environment.apiBaseUrl}/api/get-role`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-notify-secret': 'vocto-notify-2024' },
+        body: JSON.stringify({ email: canonicalEmail })
+      });
+      const json = await res.json();
+      role = json.role || null;
+    } catch {}
+    if (role === 'accounts') this.router.navigate(['/accounts']);
+    else if (role === 'md') this.router.navigate(['/md']);
+    else if (role === 'admin') this.router.navigate(['/admin']);
+    else this.router.navigate(['/dashboard']);
     this.loading = false;
   }
 

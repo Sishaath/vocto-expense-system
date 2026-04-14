@@ -1,28 +1,42 @@
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { SupabaseService } from '../supabase.service';
+import { environment } from '../../environments/environment';
 
-const ACCOUNTS_EMAILS = ['yogeshwari@voctotechnologies.com', 'accounts@voctotechnologies.com'];
-const MD_EMAILS = ['rrk@voctotechnologies.com', 'md@voctotechnologies.com'];
+async function getRoleFromApi(email: string): Promise<string | null> {
+  try {
+    const res = await fetch(`${environment.apiBaseUrl}/api/get-role`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-notify-secret': 'vocto-notify-2024' },
+      body: JSON.stringify({ email })
+    });
+    const json = await res.json();
+    return json.role || null;
+  } catch {
+    return null;
+  }
+}
 
-async function getSession() {
+async function getSessionAndRole() {
   const supabase = inject(SupabaseService);
   const { data: { session } } = await supabase.getClient().auth.getSession();
-  return session;
+  if (!session) return { session: null, role: null };
+  const role = await getRoleFromApi(session.user.email || '');
+  return { session, role };
 }
 
 export const authGuard = async (): Promise<boolean> => {
   const router = inject(Router);
-  const session = await getSession();
+  const { session } = await getSessionAndRole();
   if (!session) { router.navigate(['/login']); return false; }
   return true;
 };
 
 export const accountsGuard = async (): Promise<boolean> => {
   const router = inject(Router);
-  const session = await getSession();
+  const { session, role } = await getSessionAndRole();
   if (!session) { router.navigate(['/login']); return false; }
-  if (!ACCOUNTS_EMAILS.includes(session.user.email || '')) {
+  if (role !== 'accounts' && role !== 'admin') {
     router.navigate(['/dashboard']); return false;
   }
   return true;
@@ -30,9 +44,19 @@ export const accountsGuard = async (): Promise<boolean> => {
 
 export const mdGuard = async (): Promise<boolean> => {
   const router = inject(Router);
-  const session = await getSession();
+  const { session, role } = await getSessionAndRole();
   if (!session) { router.navigate(['/login']); return false; }
-  if (!MD_EMAILS.includes(session.user.email || '')) {
+  if (role !== 'md' && role !== 'admin') {
+    router.navigate(['/dashboard']); return false;
+  }
+  return true;
+};
+
+export const adminGuard = async (): Promise<boolean> => {
+  const router = inject(Router);
+  const { session, role } = await getSessionAndRole();
+  if (!session) { router.navigate(['/login']); return false; }
+  if (role !== 'admin') {
     router.navigate(['/dashboard']); return false;
   }
   return true;

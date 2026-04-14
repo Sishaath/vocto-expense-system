@@ -58,6 +58,14 @@ export class SetPasswordComponent implements OnInit {
     this.loading = false;
     if (error) { this.errorMsg = error.message; return; }
     this.done = true;
-    setTimeout(() => this.router.navigate(['/dashboard']), 2000);
+    const { data: { session } } = await this.supabase.getClient().auth.getSession();
+    const email = session?.user?.email || '';
+    const role = email ? await this.supabase.getUserRole(email) : null;
+    setTimeout(() => {
+      if (role === 'accounts') this.router.navigate(['/accounts']);
+      else if (role === 'md') this.router.navigate(['/md']);
+      else if (role === 'admin') this.router.navigate(['/admin']);
+      else this.router.navigate(['/dashboard']);
+    }, 2000);
   }
 }

@@ -7,7 +7,8 @@ import { MdComponent } from './md/md.component';
 import { CreatePoComponent } from './create-po/create-po.component';
 import { ViewPoComponent } from './view-po/view-po.component';
 import { SetPasswordComponent } from './set-password/set-password.component';
-import { authGuard, accountsGuard, mdGuard } from './guards/auth.guard';
+import { authGuard, accountsGuard, mdGuard, adminGuard } from './guards/auth.guard';
+import { AdminComponent } from './admin/admin.component';
 import { ProfileComponent } from './profile/profile.component';
 import { VendorsComponent } from './vendors/vendors.component';
 import { VendorDetailComponent } from './vendor-detail/vendor-detail.component';
@@ -41,4 +42,5 @@ export const routes: Routes = [
   { path: 'invoice/export/:id', component: SalesInvoiceComponent, canActivate: [authGuard] },
   { path: 'invoice/dta/create', component: SalesInvoiceComponent, canActivate: [authGuard] },
   { path: 'invoice/dta/:id', component: SalesInvoiceComponent, canActivate: [authGuard] },
+  { path: 'admin', component: AdminComponent },
 ];

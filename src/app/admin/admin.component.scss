@@ -1,0 +1,109 @@
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+
+.topbar { background: #0C1F3D; }
+.topbar-accent { height: 3px; background: linear-gradient(90deg, #F4721B, #E8A838); }
+.topbar-main { display: flex; align-items: center; justify-content: space-between; padding: 0 28px; height: 56px; }
+.logo { display: flex; align-items: center; gap: 10px; }
+.logo-img { height: 32px; }
+.logo-divider { width: 1px; height: 28px; background: rgba(255,255,255,0.2); margin: 0 4px; }
+.logo-company { font-size: 13px; font-weight: 700; color: #fff; }
+.tb-section { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.5); letter-spacing: 1.5px; }
+.tb-right { display: flex; align-items: center; gap: 12px; }
+.admin-email { font-size: 12px; color: rgba(255,255,255,0.6); }
+.btn-logout { padding: 6px 14px; background: transparent; border: 1px solid rgba(255,255,255,0.25); border-radius: 6px; color: rgba(255,255,255,0.7); font-size: 12px; cursor: pointer; }
+.btn-logout:hover { border-color: #fff; color: #fff; }
+
+.main-content { max-width: 1150px; margin: 0 auto; padding: 32px 24px; }
+.page-title { font-size: 26px; font-weight: 800; color: #0C1F3D; margin-bottom: 4px; }
+.page-title span { color: #F4721B; }
+.page-sub { font-size: 13px; color: #8094AE; margin-bottom: 24px; }
+
+/* Stat Cards */
+.stat-row { display: flex; gap: 14px; margin-bottom: 24px; flex-wrap: wrap; }
+.stat-card { flex: 1; min-width: 100px; background: #fff; border: 1.5px solid #E8ECF3; border-radius: 12px; padding: 16px 20px; text-align: center; }
+.stat-card.role-employee { border-color: #C7D2FE; background: #EEF2FF; }
+.stat-card.role-accounts { border-color: #BBF7D0; background: #E6F4EA; }
+.stat-card.role-md { border-color: #FED7AA; background: #FEF0E6; }
+.stat-card.role-admin { border-color: #CBD5E1; background: #0C1F3D; }
+.stat-card.role-admin .stat-num,
+.stat-card.role-admin .stat-label { color: #fff; }
+.stat-num { font-size: 28px; font-weight: 800; color: #0C1F3D; }
+.stat-label { font-size: 11px; font-weight: 600; color: #8094AE; text-transform: uppercase; letter-spacing: 0.8px; margin-top: 2px; }
+
+/* Invite Card */
+.invite-card { background: #fff; border: 1.5px solid #E8ECF3; border-radius: 12px; padding: 20px 24px; margin-bottom: 20px; }
+.invite-title { font-size: 14px; font-weight: 700; color: #0C1F3D; margin-bottom: 14px; }
+.invite-form { display: flex; gap: 10px; flex-wrap: wrap; }
+.invite-input { flex: 1; min-width: 200px; padding: 9px 14px; border: 1.5px solid #E8ECF3; border-radius: 8px; font-size: 13px; outline: none; }
+.invite-input:focus { border-color: #4F46E5; }
+.invite-select { padding: 9px 12px; border: 1.5px solid #E8ECF3; border-radius: 8px; font-size: 13px; outline: none; background: #fff; }
+.btn-invite { padding: 9px 20px; background: #F4721B; color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.btn-invite:hover:not(:disabled) { background: #d9611a; }
+.btn-invite:disabled { opacity: 0.6; cursor: not-allowed; }
+.invite-error { margin-top: 10px; font-size: 12px; color: #C0392B; }
+.invite-hint { margin-top: 8px; font-size: 11px; color: #8094AE; }
+
+/* Filters */
+.filter-bar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+.search-input { flex: 1; min-width: 200px; max-width: 360px; padding: 9px 14px; border: 1.5px solid #E8ECF3; border-radius: 8px; font-size: 13px; outline: none; }
+.search-input:focus { border-color: #4F46E5; }
+.role-filter { padding: 9px 12px; border: 1.5px solid #E8ECF3; border-radius: 8px; font-size: 13px; outline: none; background: #fff; }
+
+/* Table */
+.table-wrap { background: #fff; border-radius: 12px; border: 1px solid #E8ECF3; overflow: hidden; }
+table { width: 100%; border-collapse: collapse; }
+th { padding: 11px 14px; font-size: 11px; font-weight: 700; text-transform: uppercase; color: #8094AE; background: #F8F9FC; border-bottom: 1px solid #E8ECF3; text-align: left; }
+td { padding: 12px 14px; font-size: 13px; color: #0C1F3D; border-bottom: 1px solid #F0F3F8; }
+tr:last-child td { border-bottom: none; }
+.self-row td { background: #FFFBF7; }
+.inactive-row td { opacity: 0.5; }
+.muted { color: #8094AE; font-size: 12px; }
+.empty { text-align: center; color: #8094AE; padding: 32px; }
+
+.email-text { font-weight: 500; }
+.you-badge { margin-left: 8px; background: #EEF2FF; color: #4F46E5; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; }
+
+/* Role badges */
+.role-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+.role-employee { background: #EEF2FF; color: #4F46E5; }
+.role-accounts { background: #E6F4EA; color: #1A7F37; }
+.role-md { background: #FEF0E6; color: #F4721B; }
+.role-admin { background: #0C1F3D; color: #fff; }
+
+/* Status toggle */
+.btn-status { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; border: none; cursor: pointer; background: #E6F4EA; color: #1A7F37; }
+.btn-status.inactive { background: #FEE2E2; color: #C0392B; }
+.btn-status:disabled { cursor: not-allowed; opacity: 0.5; }
+
+/* Role change select */
+.role-select { padding: 5px 10px; border: 1.5px solid #E8ECF3; border-radius: 6px; font-size: 12px; outline: none; background: #fff; cursor: pointer; }
+.role-select:focus { border-color: #4F46E5; }
+.role-select:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Actions */
+.actions-cell { display: flex; gap: 6px; align-items: center; }
+.btn-resend { padding: 4px 10px; background: #EEF2FF; color: #4F46E5; border: none; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.btn-resend:hover { background: #C7D2FE; }
+.btn-delete { padding: 4px 8px; background: #FEE2E2; color: #C0392B; border: none; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; }
+.btn-delete:hover { background: #FECACA; }
+.btn-delete:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* Loading */
+.loading-overlay { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px; gap: 12px; }
+.spinner { width: 32px; height: 32px; border: 3px solid #E8ECF3; border-top-color: #4F46E5; border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { font-size: 13px; color: #8094AE; }
+
+/* Modals */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+.modal { background: #fff; border-radius: 12px; padding: 28px; max-width: 420px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.15); }
+.modal-title { font-size: 16px; font-weight: 700; color: #0C1F3D; margin-bottom: 14px; }
+.modal-body { font-size: 13px; color: #4A6080; line-height: 1.6; margin-bottom: 24px; }
+.modal-body .role-badge { margin: 0 4px; }
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+.btn-cancel { padding: 8px 18px; background: #F0F3F8; color: #4A6080; border: none; border-radius: 7px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.btn-cancel:hover { background: #E2E8F0; }
+.btn-confirm { padding: 8px 18px; background: #0C1F3D; color: #fff; border: none; border-radius: 7px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.btn-confirm:hover { background: #0C2D5E; }
+.btn-delete-confirm { padding: 8px 18px; background: #C0392B; color: #fff; border: none; border-radius: 7px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.btn-delete-confirm:hover { background: #A93226; }
