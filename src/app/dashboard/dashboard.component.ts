@@ -275,10 +275,17 @@ export class DashboardComponent implements OnInit {
     this.userEmail = session?.user?.email || '';
     this.fullName = session?.user?.user_metadata?.['full_name'] || '';
     // Role-based redirect — admin must not see employee dashboard
-    const role = await this.supabase.getUserRole(this.userEmail);
-    if (role === 'admin') { this.router.navigate(['/admin']); return; }
-    if (role === 'accounts') { this.router.navigate(['/accounts']); return; }
-    if (role === 'md') { this.router.navigate(['/md']); return; }
+    try {
+      const roleRes = await fetch(`https://vocto-expense-system.vercel.app/api/get-role`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-notify-secret': 'vocto-notify-2024' },
+        body: JSON.stringify({ email: this.userEmail })
+      });
+      const { role } = await roleRes.json();
+      if (role === 'admin') { this.router.navigate(['/admin']); return; }
+      if (role === 'accounts') { this.router.navigate(['/accounts']); return; }
+      if (role === 'md') { this.router.navigate(['/md']); return; }
+    } catch {}
     const { data } = await this.supabase.getMyClaims(this.userEmail);
     if (data) this.claims = data;
 
