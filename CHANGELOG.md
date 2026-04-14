@@ -5,6 +5,19 @@ Format: Version · Date · Commit · What changed · Why
 
 ---
 
+## v1.7 · 2026-04-14 · `df2b91b`
+### Security
+- Added `.env` to `.gitignore` — prevents accidental secret commits
+- Moved Supabase config to Angular environment files (out of source)
+- Added `x-notify-secret` auth to `/api/notify` — only app can trigger emails
+- Added `NOTIFY_SECRET` env var to Vercel production
+
+### Added
+- Email notification when employee edits a claim (accounts team notified)
+- Print / PDF export button on claim detail modal (🖨)
+
+---
+
 ## v1.6 · 2026-04-14 · `192e190`
 ### Added
 - PO management (create, edit, view purchase orders)
