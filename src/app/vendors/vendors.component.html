@@ -22,6 +22,7 @@
 
     <div class="filter-bar">
       <input class="search-input" [(ngModel)]="search" placeholder="Search by name, GSTIN or city..." />
+      <button class="btn-export" (click)="exportVendorSpendReport()">Export Spend Report</button>
     </div>
 
     <div class="loading-overlay" *ngIf="loading">

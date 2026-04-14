@@ -58,8 +58,14 @@
 .btn-export-pdf { padding: 7px 14px; background: #A32D2D; color: #fff; border: none; border-radius: 8px; font-size: 11px; font-weight: 600; cursor: pointer; white-space: nowrap; }
 .btn-export-pdf:hover { background: #7B1E1E; }
 
-.section-head { margin-bottom: 10px; }
-.section-title { font-size: 14px; font-weight: 700; color: #0C2D5E; }
+.section-head { margin-bottom: 10px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.section-title { font-size: 14px; font-weight: 700; color: #0C2D5E; flex: 1; }
+.bulk-actions { display: flex; align-items: center; gap: 8px; }
+.bulk-count { font-size: 12px; color: #4A6080; font-weight: 600; }
+.btn-bulk-verify { padding: 5px 12px; background: #0F9B6A; color: #fff; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; }
+.btn-bulk-reject { padding: 5px 12px; background: #A32D2D; color: #fff; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; }
+.badge-expiry { margin-left: 6px; padding: 2px 7px; border-radius: 20px; font-size: 10px; font-weight: 600; background: #FFF3CD; color: #856404; }
+.btn-pdf { padding: 3px 10px; background: #0C1F3D; color: #fff; border: none; border-radius: 5px; font-size: 11px; font-weight: 600; cursor: pointer; }
 
 .table-wrap { background: #fff; border-radius: 10px; border: 1px solid #E8ECF3; overflow: hidden; }
 table { width: 100%; border-collapse: collapse; }

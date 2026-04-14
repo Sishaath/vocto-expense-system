@@ -124,20 +124,31 @@
       <ng-container *ngIf="show('pending')">
       <div class="section-head">
         <div class="section-title">Vouchers — Needs Verification</div>
+        <div class="bulk-actions" *ngIf="selectedClaimIds.size > 0">
+          <span class="bulk-count">{{ selectedClaimIds.size }} selected</span>
+          <button class="btn-bulk-verify" (click)="bulkVerify()">✓ Verify All</button>
+          <button class="btn-bulk-reject" (click)="bulkReject()">✕ Reject All</button>
+        </div>
       </div>
       <div class="table-wrap" style="margin-bottom: 20px;">
         <table>
           <thead>
             <tr>
+              <th><input type="checkbox" [checked]="allPendingSelected" (change)="toggleSelectAll()" /></th>
               <th>Voucher ID</th><th>Employee</th><th>Title</th>
               <th>Amount</th><th>Date</th><th>Attachment</th><th>Actions</th>
             </tr>
           </thead>
           <tbody>
             <tr *ngFor="let claim of pendingClaims" class="clickable-row" (click)="openDetail(claim)">
+              <td (click)="$event.stopPropagation()">
+                <input type="checkbox" [checked]="selectedClaimIds.has(claim.id)" (change)="toggleSelect(claim.id)" />
+              </td>
               <td class="mono">{{ claim.claim_number }}</td>
               <td>{{ claim.employee_email || '—' }}</td>
-              <td><strong>{{ claim.title }}</strong></td>
+              <td><strong>{{ claim.title }}</strong>
+                <span class="badge-expiry" *ngIf="isExpiringSoon(claim)">⚠ Overdue</span>
+              </td>
               <td class="amount">₹{{ claim.amount.toLocaleString('en-IN') }}</td>
               <td class="mono">
                 {{ claim.created_at | date:'dd MMM' }}
@@ -155,7 +166,7 @@
               </td>
             </tr>
             <tr *ngIf="pendingClaims.length === 0">
-              <td colspan="7" class="empty">All clear — no vouchers to verify ✓</td>
+              <td colspan="8" class="empty">All clear — no vouchers to verify ✓</td>
             </tr>
           </tbody>
         </table>
@@ -342,6 +353,7 @@
                 <td><strong>{{ m.label }}</strong></td>
                 <td class="mono">{{ m.count }} voucher(s)</td>
                 <td class="amount">₹{{ m.amount.toLocaleString('en-IN') }}</td>
+                <td><button class="btn-pdf" (click)="$event.stopPropagation(); exportMonthlyPDF(m.key)">PDF</button></td>
               </tr>
               <tr *ngIf="monthWisePayments.length === 0">
                 <td colspan="3" class="empty">No payments released yet</td>

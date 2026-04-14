@@ -20,6 +20,12 @@
 .btn-reset:disabled { opacity: 0.6; cursor: not-allowed; }
 .btn-logout { width: 100%; padding: 12px; background: transparent; border: 1.5px solid #E8ECF3; border-radius: 8px; font-size: 13px; color: #4A6080; cursor: pointer; }
 .btn-logout:hover { border-color: #A32D2D; color: #A32D2D; }
+.btn-edit-name { background: none; border: none; font-size: 12px; color: #185FA5; cursor: pointer; text-decoration: underline; padding: 0; }
+.name-input { width: 100%; padding: 8px 12px; border: 1.5px solid #B5CDED; border-radius: 8px; font-size: 15px; font-weight: 600; color: #0C1F3D; text-align: center; outline: none; }
+.name-actions { display: flex; gap: 8px; width: 100%; }
+.btn-save-name { flex: 1; padding: 8px; background: #0C1F3D; color: #fff; border: none; border-radius: 7px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.btn-save-name:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn-cancel-name { flex: 1; padding: 8px; background: #F0F3F8; color: #4A6080; border: none; border-radius: 7px; font-size: 13px; cursor: pointer; }
 
 /* ── Tablet (≤900px) ── */
 @media (max-width: 900px) {

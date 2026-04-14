@@ -13,7 +13,19 @@
   <div class="profile-body">
     <div class="profile-card">
       <div class="avatar-large">{{ userInitial }}</div>
-      <div class="profile-name">{{ userName }}</div>
+
+      <ng-container *ngIf="!editingName">
+        <div class="profile-name">{{ userName }}</div>
+        <button class="btn-edit-name" (click)="startEditName()">Edit Name</button>
+      </ng-container>
+      <ng-container *ngIf="editingName">
+        <input class="name-input" [(ngModel)]="editName" placeholder="Your full name" (keyup.enter)="saveName()" />
+        <div class="name-actions">
+          <button class="btn-save-name" (click)="saveName()" [disabled]="savingName">{{ savingName ? 'Saving...' : 'Save' }}</button>
+          <button class="btn-cancel-name" (click)="cancelEditName()">Cancel</button>
+        </div>
+      </ng-container>
+
       <div class="profile-role">{{ userRole }}</div>
       <div class="profile-email">{{ userEmail }}</div>
 

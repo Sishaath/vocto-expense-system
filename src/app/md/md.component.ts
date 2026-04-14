@@ -170,6 +170,38 @@ export class MdComponent implements OnInit {
     return Math.floor((Date.now() - new Date(claim.created_at).getTime()) / 36e5);
   }
 
+  get currentMonthKey() {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  }
+
+  get thisMonthApproved() {
+    return this.allClaims.filter(c => {
+      if (!['MD_APPROVED', 'PAID'].includes(c.status)) return false;
+      const d = new Date(c.created_at);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}` === this.currentMonthKey;
+    });
+  }
+
+  get thisMonthApprovedTotal() {
+    return this.thisMonthApproved.reduce((s, c) => s + c.amount, 0);
+  }
+
+  get topCategories(): { category: string; amount: number }[] {
+    const map = new Map<string, number>();
+    for (const c of this.allClaims.filter(c => ['MD_APPROVED', 'PAID'].includes(c.status))) {
+      map.set(c.category, (map.get(c.category) || 0) + c.amount);
+    }
+    return Array.from(map.entries())
+      .map(([category, amount]) => ({ category, amount }))
+      .sort((a, b) => b.amount - a.amount)
+      .slice(0, 5);
+  }
+
+  get totalPaidAllTime() {
+    return this.allClaims.filter(c => c.status === 'PAID').reduce((s, c) => s + c.amount, 0);
+  }
+
   async approvePO(id: string) {
     const { data: { session } } = await this.supabase.getClient().auth.getSession();
     const po = this.allPOs.find(p => p.id === id);

@@ -61,4 +61,57 @@ export class VendorsComponent implements OnInit {
   goBack() {
     this.router.navigate(['/dashboard']);
   }
+
+  exportVendorSpendReport() {
+    const vendorsWithSpend = this.vendors
+      .map(v => {
+        const spend = v.totalSpend || 0;
+        return { ...v, spend };
+      })
+      .sort((a, b) => b.spend - a.spend);
+
+    const rows = vendorsWithSpend.map(v => `
+      <tr>
+        <td>${v.name}</td>
+        <td>${v.gstin || '—'}</td>
+        <td>${v.city || '—'}</td>
+        <td style="text-align:right">₹${Number(v.spend).toLocaleString('en-IN')}</td>
+        <td style="text-align:center">${v.ratingCount ? v.avgRating + ' ★' : '—'}</td>
+        <td>${v.lastPoNumber || '—'}</td>
+      </tr>`).join('');
+
+    const total = vendorsWithSpend.reduce((s, v) => s + v.spend, 0);
+    const html = `<html><head><title>Vendor Spend Report</title>
+      <style>
+        body { font-family: Arial, sans-serif; padding: 32px; color: #1a1a1a; font-size: 13px; }
+        h2 { color: #0C1F3D; margin-bottom: 4px; }
+        .sub { color: #888; font-size: 12px; margin-bottom: 24px; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #0C1F3D; color: #fff; padding: 8px 10px; text-align: left; font-size: 11px; }
+        td { padding: 8px 10px; border-bottom: 1px solid #eee; }
+        tr:nth-child(even) td { background: #f9f9f9; }
+        .total-row td { font-weight: 700; background: #FEF0E6; border-top: 2px solid #F4721B; }
+        .footer { margin-top: 24px; font-size: 11px; color: #bbb; }
+      </style></head>
+      <body>
+        <h2>Vocto Technologies — Vendor Spend Report</h2>
+        <div class="sub">Generated on ${new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}</div>
+        <table>
+          <thead><tr><th>Vendor</th><th>GSTIN</th><th>City</th><th>Total Spend</th><th>Rating</th><th>Last PO</th></tr></thead>
+          <tbody>${rows}
+            <tr class="total-row">
+              <td colspan="3">Total</td>
+              <td style="text-align:right">₹${total.toLocaleString('en-IN')}</td>
+              <td colspan="2">${vendorsWithSpend.length} vendors</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="footer">Vocto Technologies · vocto-expense-system.vercel.app</div>
+      </body></html>`;
+    const win = window.open('', '_blank');
+    if (!win) return;
+    win.document.write(html);
+    win.document.close();
+    win.print();
+  }
 }

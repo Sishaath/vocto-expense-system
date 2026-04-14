@@ -311,6 +311,12 @@ export class DashboardComponent implements OnInit {
   }
   freqLabel(f: string) { return { monthly: 'Monthly', quarterly: 'Quarterly', yearly: 'Yearly' }[f] || f; }
 
+  isExpiringSoon(claim: any): boolean {
+    if (claim.status !== 'PENDING') return false;
+    const days = (Date.now() - new Date(claim.created_at).getTime()) / 86400000;
+    return days > 3;
+  }
+
   openDetail(claim: any) { this.selectedClaim = claim; }
   closeDetail() { this.selectedClaim = null; }
   editClaim(claim: any) { this.router.navigate(['/edit', claim.id]); }

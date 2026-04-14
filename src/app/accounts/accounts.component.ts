@@ -65,6 +65,22 @@ export class AccountsComponent implements OnInit {
   filterTo = '';
   searchQuery = '';
 
+  // Bulk selection
+  selectedClaimIds: Set<string> = new Set();
+  get allPendingSelected(): boolean {
+    return this.pendingClaims.length > 0 && this.pendingClaims.every(c => this.selectedClaimIds.has(c.id));
+  }
+  toggleSelectAll() {
+    if (this.allPendingSelected) { this.pendingClaims.forEach(c => this.selectedClaimIds.delete(c.id)); }
+    else { this.pendingClaims.forEach(c => this.selectedClaimIds.add(c.id)); }
+    this.selectedClaimIds = new Set(this.selectedClaimIds);
+  }
+  toggleSelect(id: string) {
+    if (this.selectedClaimIds.has(id)) { this.selectedClaimIds.delete(id); }
+    else { this.selectedClaimIds.add(id); }
+    this.selectedClaimIds = new Set(this.selectedClaimIds);
+  }
+
   // Recurring expenses templates
   allTemplates: RecurringTemplate[] = [];
   categories: string[] = [];
@@ -186,6 +202,12 @@ export class AccountsComponent implements OnInit {
   fullName = '';
   get userName() { return this.fullName || this.userEmail.split('@')[0].replace(/\./g, ' ').replace(/\b\w/g, c => c.toUpperCase()); }
   get userInitial() { return this.userName.charAt(0).toUpperCase() || 'A'; }
+
+  isExpiringSoon(claim: any): boolean {
+    if (claim.status !== 'PENDING') return false;
+    const days = (Date.now() - new Date(claim.created_at).getTime()) / 86400000;
+    return days > 3;
+  }
 
   async ngOnInit() {
     this.loading = true;
@@ -538,9 +560,87 @@ export class AccountsComponent implements OnInit {
     await this.ngOnInit();
   }
 
+  async bulkVerify() {
+    if (this.selectedClaimIds.size === 0) return;
+    const { data: { session } } = await this.supabase.getClient().auth.getSession();
+    const ids = Array.from(this.selectedClaimIds);
+    for (const id of ids) {
+      await this.supabase.getClient().from('claims').update({ status: 'VERIFIED', verified_by: session?.user?.email }).eq('id', id).eq('status', 'PENDING');
+    }
+    this.selectedClaimIds = new Set();
+    this.toast.show(`${ids.length} claim(s) verified!`, 'success');
+    await this.ngOnInit();
+  }
+
+  async bulkReject() {
+    if (this.selectedClaimIds.size === 0) return;
+    const reason = prompt('Rejection reason for all selected claims:');
+    if (!reason) return;
+    const ids = Array.from(this.selectedClaimIds);
+    for (const id of ids) {
+      await this.supabase.getClient().from('claims').update({ status: 'REJECTED', rejection_reason: reason }).eq('id', id).eq('status', 'PENDING');
+    }
+    this.selectedClaimIds = new Set();
+    this.toast.show(`${ids.length} claim(s) rejected.`, 'warning');
+    await this.ngOnInit();
+  }
+
   async logout() {
     await this.supabase.signOut();
     this.router.navigate(['/login']);
+  }
+
+  exportMonthlyPDF(monthKey?: string) {
+    const key = monthKey || this.currentMonthKey;
+    const [yr, mo] = key.split('-');
+    const label = new Date(+yr, +mo - 1, 1).toLocaleString('default', { month: 'long', year: 'numeric' });
+    const claims = this.allClaims.filter(c => {
+      const d = new Date(c.payment_date || c.created_at);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}` === key;
+    });
+    const total = claims.reduce((s, c) => s + c.amount, 0);
+    const rows = claims.map(c => `
+      <tr>
+        <td>${c.claim_number}</td>
+        <td>${c.employee_email || '—'}</td>
+        <td>${c.title}</td>
+        <td>${c.category}</td>
+        <td style="text-align:right">₹${Number(c.amount).toLocaleString('en-IN')}</td>
+        <td>${c.status}</td>
+        <td>${new Date(c.created_at).toLocaleDateString('en-IN')}</td>
+      </tr>`).join('');
+    const html = `<html><head><title>Expense Report — ${label}</title>
+      <style>
+        body { font-family: Arial, sans-serif; padding: 32px; color: #1a1a1a; font-size: 13px; }
+        h2 { color: #0C1F3D; margin-bottom: 4px; }
+        .sub { color: #888; font-size: 12px; margin-bottom: 24px; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #0C1F3D; color: #fff; padding: 8px 10px; text-align: left; font-size: 11px; }
+        td { padding: 8px 10px; border-bottom: 1px solid #eee; }
+        tr:nth-child(even) td { background: #f9f9f9; }
+        .total-row td { font-weight: 700; background: #FEF0E6; border-top: 2px solid #F4721B; }
+        .footer { margin-top: 24px; font-size: 11px; color: #bbb; }
+      </style></head>
+      <body>
+        <h2>Vocto Technologies — Monthly Expense Report</h2>
+        <div class="sub">${label} · Generated on ${new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}</div>
+        <table>
+          <thead><tr><th>Voucher ID</th><th>Employee</th><th>Title</th><th>Category</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead>
+          <tbody>${rows}
+            <tr class="total-row">
+              <td colspan="4">Total</td>
+              <td style="text-align:right">₹${total.toLocaleString('en-IN')}</td>
+              <td colspan="2">${claims.length} claims</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="footer">Vocto Technologies · vocto-expense-system.vercel.app</div>
+      </body></html>`;
+    const win = window.open('', '_blank');
+    if (!win) return;
+    win.document.write(html);
+    win.document.close();
+    win.print();
   }
 
   // ── Advance Requisitions ──────────────────────────────────────────────────

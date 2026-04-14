@@ -260,6 +260,10 @@ export class SubmitClaimComponent implements OnInit, OnDestroy {
             method: 'POST', headers: { 'Content-Type': 'application/json', 'x-notify-secret': 'vocto-notify-2024' },
             body: JSON.stringify({ event: 'submitted', claimNumber, claimTitle: this.title, amount: this.amount, employeeEmail, submittedBy: employeeEmail })
           }).catch(() => {});
+          fetch('/api/notify', {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'x-notify-secret': 'vocto-notify-2024' },
+            body: JSON.stringify({ event: 'receipt', claimNumber, claimTitle: this.title, amount: this.amount, employeeEmail })
+          }).catch(() => {});
           setTimeout(() => this.router.navigate(['/dashboard']), 1200);
         }
       }

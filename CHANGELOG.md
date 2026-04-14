@@ -5,6 +5,18 @@ Format: Version · Date · Commit · What changed · Why
 
 ---
 
+## v1.8 · 2026-04-14 · `feature/improvements`
+### Added
+- Employee receives confirmation email after submitting a claim (#2)
+- MD dashboard stats — pending count, approved this month total, all-time paid, top 5 spend categories (#1)
+- Profile: employees can now update their display name (#6)
+- Monthly expense report PDF — download per month from the payments table (#9)
+- Vendor spend report PDF export from vendor directory (#10)
+- Bulk verify/reject on accounts dashboard — select multiple pending claims and act at once (#11)
+- Claim expiry warning — ⚠ Overdue badge on claims pending for more than 3 days (employee & accounts views) (#12)
+
+---
+
 ## v1.7 · 2026-04-14 · `df2b91b`
 ### Security
 - Added `.env` to `.gitignore` — prevents accidental secret commits

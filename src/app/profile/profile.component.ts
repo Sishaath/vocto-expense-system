@@ -1,19 +1,23 @@
 import { Component, OnInit } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { SupabaseService } from '../supabase.service';
 import { ToastService } from '../shared/toast.service';
 
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, FormsModule],
   templateUrl: './profile.component.html',
   styleUrls: ['./profile.component.scss']
 })
 export class ProfileComponent implements OnInit {
   userEmail = '';
   fullName = '';
+  editName = '';
+  editingName = false;
+  savingName = false;
   resetSent = false;
   loading = false;
 
@@ -44,6 +48,23 @@ export class ProfileComponent implements OnInit {
     if (!session) { this.router.navigate(['/login']); return; }
     this.userEmail = session.user.email || '';
     this.fullName = session.user.user_metadata?.['full_name'] || '';
+    this.editName = this.fullName;
+  }
+
+  startEditName() { this.editName = this.fullName; this.editingName = true; }
+  cancelEditName() { this.editingName = false; }
+
+  async saveName() {
+    if (!this.editName.trim()) return;
+    this.savingName = true;
+    const { error } = await this.supabase.getClient().auth.updateUser({
+      data: { full_name: this.editName.trim() }
+    });
+    this.savingName = false;
+    if (error) { this.toast.show(error.message, 'error'); return; }
+    this.fullName = this.editName.trim();
+    this.editingName = false;
+    this.toast.show('Name updated!');
   }
 
   async sendPasswordReset() {

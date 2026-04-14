@@ -133,6 +133,29 @@ export default async function handler(req, res) {
       </div>`;
       break;
 
+    case 'receipt':
+      if (!employeeEmail) return res.status(400).json({ error: 'employeeEmail required for receipt event' });
+      to = employeeEmail;
+      subject = `Voucher Submitted — ${claimNumber}`;
+      html = `<div style="font-family:Inter,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#1a1a1a">
+        <div style="background:#0C1F3D;padding:16px 24px;border-radius:8px 8px 0 0">
+          <span style="color:#fff;font-weight:700;font-size:16px">Vocto Technologies</span>
+          <span style="color:#F4721B;margin-left:8px;font-size:12px">Expense System</span>
+        </div>
+        <div style="background:#fff;border:1px solid #E8ECF3;border-top:none;padding:24px;border-radius:0 0 8px 8px">
+          <h2 style="margin:0 0 16px;font-size:18px;color:#0C1F3D">Voucher Submitted Successfully</h2>
+          <p style="margin:0 0 16px;color:#4A6080">Your expense voucher has been submitted and is awaiting verification by the Accounts team.</p>
+          <table style="width:100%;border-collapse:collapse;margin-bottom:20px">
+            <tr><td style="padding:8px 0;color:#8A9BB0;font-size:13px;width:140px">Claim ID</td><td style="padding:8px 0;font-weight:600;font-size:13px">${claimNumber}</td></tr>
+            <tr><td style="padding:8px 0;color:#8A9BB0;font-size:13px">Title</td><td style="padding:8px 0;font-size:13px">${claimTitle || '—'}</td></tr>
+            <tr><td style="padding:8px 0;color:#8A9BB0;font-size:13px">Amount</td><td style="padding:8px 0;font-weight:700;font-size:14px;color:#F4721B">${amtFormatted}</td></tr>
+          </table>
+          <p style="color:#8A9BB0;font-size:12px">You will be notified once the Accounts team verifies your voucher.</p>
+          <a href="${portalUrl}/dashboard" style="display:inline-block;background:#0C1F3D;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:13px;font-weight:600">View My Claims →</a>
+        </div>
+      </div>`;
+      break;
+
     default:
       return res.status(400).json({ error: 'Unknown event type' });
   }

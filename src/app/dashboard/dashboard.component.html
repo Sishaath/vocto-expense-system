@@ -115,7 +115,10 @@
                 <td><strong>{{ claim.title }}</strong></td>
                 <td class="muted">{{ claim.category }}</td>
                 <td class="amount">₹{{ claim.amount.toLocaleString('en-IN') }}</td>
-                <td><span class="badge" [ngClass]="claim.status.toLowerCase()">{{ claim.status }}</span></td>
+                <td>
+                  <span class="badge" [ngClass]="claim.status.toLowerCase()">{{ claim.status }}</span>
+                  <span class="badge-expiry" *ngIf="isExpiringSoon(claim)" title="Pending for more than 3 days">⚠ Overdue</span>
+                </td>
                 <td class="mono">{{ claim.created_at | date:'dd MMM yyyy' }}</td>
                 <td>
                   <button class="btn-view" *ngIf="claim.file_url" (click)="$event.stopPropagation(); openViewer(claim)">View</button>

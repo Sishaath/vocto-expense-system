@@ -39,6 +39,35 @@
       <div class="page-title">MD <span>Approvals</span></div>
       <div class="page-sub">Review and approve verified vouchers</div>
 
+      <!-- Stats Row -->
+      <div class="md-stats-row">
+        <div class="md-stat-card">
+          <div class="md-stat-label">Pending Approval</div>
+          <div class="md-stat-value">{{ verifiedClaims.length }}</div>
+          <div class="md-stat-sub">claims awaiting you</div>
+        </div>
+        <div class="md-stat-card">
+          <div class="md-stat-label">Approved This Month</div>
+          <div class="md-stat-value">₹{{ thisMonthApprovedTotal.toLocaleString('en-IN') }}</div>
+          <div class="md-stat-sub">{{ thisMonthApproved.length }} claims</div>
+        </div>
+        <div class="md-stat-card">
+          <div class="md-stat-label">Total Paid (All Time)</div>
+          <div class="md-stat-value">₹{{ totalPaidAllTime.toLocaleString('en-IN') }}</div>
+          <div class="md-stat-sub">across all employees</div>
+        </div>
+        <div class="md-stat-card top-cats">
+          <div class="md-stat-label">Top Spend Categories</div>
+          <div class="top-cat-list">
+            <div class="top-cat-item" *ngFor="let c of topCategories">
+              <span class="top-cat-name">{{ c.category }}</span>
+              <span class="top-cat-amt">₹{{ c.amount.toLocaleString('en-IN') }}</span>
+            </div>
+            <div class="top-cat-empty" *ngIf="topCategories.length === 0">No data</div>
+          </div>
+        </div>
+      </div>
+
       <div class="stats" *ngIf="activeSection!=='rejected'">
         <div class="stat s1" [class.active-stat]="activeSection==='pending'" style="cursor:pointer" (click)="activeSection=activeSection==='pending'?'all':'pending'">
           <div class="stat-label">Awaiting Approval</div>
