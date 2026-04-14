@@ -10,6 +10,7 @@
           <span class="badge" [ngClass]="claim.status.toLowerCase()">{{ claim.status }}</span>
         </div>
       </div>
+      <button class="btn-print" (click)="printClaim()" title="Print / Save as PDF">🖨</button>
       <button class="btn-close" (click)="close()">✕</button>
     </div>
 

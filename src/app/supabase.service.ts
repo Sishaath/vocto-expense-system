@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { environment } from '../environments/environment';
 
 export interface Vendor {
   id: string;
@@ -130,8 +131,8 @@ export interface PurchaseOrder {
   vendor_invoice_date?: string;
 }
 
-const SUPABASE_URL = 'https://zbqkcwclcerbfhfinghq.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpicWtjd2NsY2VyYmZoZmluZ2hxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0NTMzNzYsImV4cCI6MjA5MDAyOTM3Nn0.E9rss3zjGnE-r51kXuhx2r9NpBnoPxLky8o6RnAAYS4';
+const SUPABASE_URL = environment.supabaseUrl;
+const SUPABASE_KEY = environment.supabaseKey;
 
 @Injectable({
   providedIn: 'root'

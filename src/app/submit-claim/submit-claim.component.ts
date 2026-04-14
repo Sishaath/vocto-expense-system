@@ -17,6 +17,8 @@ import { SharedSidebarComponent } from '../shared-sidebar/shared-sidebar.compone
 export class SubmitClaimComponent implements OnInit, OnDestroy {
   editMode = false;
   editClaimId = '';
+  editClaimNumber = '';
+  editClaimEmployeeEmail = '';
   existingFileUrl = '';
   existingFileName = '';
   fromTemplateId: string | null = null;
@@ -80,6 +82,8 @@ export class SubmitClaimComponent implements OnInit, OnDestroy {
       this.errorMsg = 'This claim has already been verified and cannot be edited.';
       return;
     }
+    this.editClaimNumber = data.claim_number || '';
+    this.editClaimEmployeeEmail = data.employee_email || '';
     this.title = data.title || '';
     this.category = data.category || 'Travel & Accommodation';
     this.amount = data.amount || null;
@@ -206,6 +210,10 @@ export class SubmitClaimComponent implements OnInit, OnDestroy {
         if (error) { this.errorMsg = error.message; }
         else {
           this.toastService.show('Claim updated successfully!');
+          fetch('/api/notify', {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'x-notify-secret': 'vocto-notify-2024' },
+            body: JSON.stringify({ event: 'submitted', claimNumber: this.editClaimNumber, claimTitle: this.title, amount: this.amount, employeeEmail: this.editClaimEmployeeEmail, submittedBy: this.editClaimEmployeeEmail })
+          }).catch(() => {});
           setTimeout(() => this.router.navigate(['/dashboard']), 1200);
         }
       } else {
@@ -249,7 +257,7 @@ export class SubmitClaimComponent implements OnInit, OnDestroy {
             await this.supabase.advanceTemplateDueDate(this.fromTemplateId, due.toISOString().split('T')[0]);
           }
           fetch('/api/notify', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'x-notify-secret': 'vocto-notify-2024' },
             body: JSON.stringify({ event: 'submitted', claimNumber, claimTitle: this.title, amount: this.amount, employeeEmail, submittedBy: employeeEmail })
           }).catch(() => {});
           setTimeout(() => this.router.navigate(['/dashboard']), 1200);

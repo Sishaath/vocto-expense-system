@@ -6,6 +6,11 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+  const secret = process.env.NOTIFY_SECRET;
+  if (secret && req.headers['x-notify-secret'] !== secret) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
   const { event, claimNumber, claimTitle, amount, employeeEmail, submittedBy } = req.body || {};
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) return res.status(500).json({ error: 'Email service not configured' });

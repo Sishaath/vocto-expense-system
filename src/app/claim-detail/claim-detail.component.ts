@@ -118,6 +118,50 @@ export class ClaimDetailComponent implements OnChanges {
     this.fileViewerUrl = '';
   }
 
+  printClaim() {
+    const c = this.claim;
+    if (!c) return;
+    const statusMap: any = { PENDING: 'Pending', VERIFIED: 'Verified', MD_APPROVED: 'MD Approved', PAID: 'Paid', REJECTED: 'Rejected' };
+    const html = `
+      <html><head><title>Voucher ${c.claim_number}</title>
+      <style>
+        body { font-family: Arial, sans-serif; padding: 32px; color: #1a1a1a; }
+        h2 { color: #0C1F3D; margin-bottom: 4px; }
+        .sub { color: #888; font-size: 13px; margin-bottom: 24px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        td { padding: 10px 0; border-bottom: 1px solid #eee; font-size: 14px; }
+        td:first-child { color: #888; width: 180px; }
+        td:last-child { font-weight: 600; }
+        .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; background: #f0f4ff; color: #0C1F3D; }
+        .amount { font-size: 22px; font-weight: 700; color: #F4721B; }
+        .footer { margin-top: 32px; font-size: 11px; color: #bbb; }
+      </style></head>
+      <body>
+        <h2>Vocto Technologies — Expense Voucher</h2>
+        <div class="sub">Generated on ${new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}</div>
+        <table>
+          <tr><td>Voucher ID</td><td>${c.claim_number}</td></tr>
+          <tr><td>Title</td><td>${c.title}</td></tr>
+          <tr><td>Category</td><td>${c.category}</td></tr>
+          <tr><td>Amount</td><td class="amount">₹${Number(c.amount).toLocaleString('en-IN')}</td></tr>
+          <tr><td>Expense Date</td><td>${c.expense_date ? new Date(c.expense_date).toLocaleDateString('en-IN') : '—'}</td></tr>
+          <tr><td>Vendor</td><td>${c.vendor || '—'}</td></tr>
+          <tr><td>Payment Mode</td><td>${c.pay_mode || '—'}</td></tr>
+          <tr><td>Submitted By</td><td>${c.employee_email || '—'}</td></tr>
+          <tr><td>Submitted On</td><td>${new Date(c.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}</td></tr>
+          <tr><td>Status</td><td><span class="badge">${statusMap[c.status] || c.status}</span></td></tr>
+          ${c.description ? `<tr><td>Description</td><td>${c.description}</td></tr>` : ''}
+          ${c.rejection_reason ? `<tr><td>Rejection Reason</td><td style="color:#c0392b">${c.rejection_reason}</td></tr>` : ''}
+        </table>
+        <div class="footer">Vocto Technologies · vocto-expense-system.vercel.app</div>
+      </body></html>`;
+    const win = window.open('', '_blank');
+    if (!win) return;
+    win.document.write(html);
+    win.document.close();
+    win.print();
+  }
+
   close() {
     this.closed.emit();
   }

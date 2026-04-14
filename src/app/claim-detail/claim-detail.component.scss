@@ -22,6 +22,12 @@
 .dp-header-meta { display: flex; align-items: center; gap: 8px; }
 .dp-number { font-size: 11px; font-family: monospace; color: #8A9BB0; background: #EEF2F8; padding: 2px 8px; border-radius: 4px; }
 
+.btn-print {
+  width: 30px; height: 30px; border: none; background: #F0F3F8;
+  border-radius: 7px; cursor: pointer; font-size: 13px;
+  display: grid; place-items: center; color: #4A6080; flex-shrink: 0; margin-right: 6px;
+}
+.btn-print:hover { background: #E0E5EE; color: #0C1F3D; }
 .btn-close {
   width: 30px; height: 30px; border: none; background: #F0F3F8;
   border-radius: 7px; cursor: pointer; font-size: 13px;

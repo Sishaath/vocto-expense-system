@@ -245,7 +245,7 @@ export class AccountsComponent implements OnInit {
     this.toast.show('Claim verified and sent to MD!', 'success');
     if (claim) {
       fetch('/api/notify', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'x-notify-secret': 'vocto-notify-2024' },
         body: JSON.stringify({ event: 'verified', claimNumber: claim.claim_number, claimTitle: claim.title, amount: claim.amount, submittedBy: claim.employee_email || claim.submitted_by })
       }).catch(() => {});
     }
@@ -284,7 +284,7 @@ export class AccountsComponent implements OnInit {
     this.toast.show('Claim rejected.', 'warning');
     if (claim?.employee_email) {
       fetch('/api/notify', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'x-notify-secret': 'vocto-notify-2024' },
         body: JSON.stringify({ event: 'rejected', claimNumber: claim.claim_number, claimTitle: claim.title, amount: claim.amount, employeeEmail: claim.employee_email })
       }).catch(() => {});
     }
@@ -327,7 +327,7 @@ export class AccountsComponent implements OnInit {
     this.toast.show('Payment released successfully!', 'success');
     if (claim?.employee_email) {
       fetch('/api/notify', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'x-notify-secret': 'vocto-notify-2024' },
         body: JSON.stringify({ event: 'paid', claimNumber: claim.claim_number, claimTitle: claim.title, amount: claim.amount, employeeEmail: claim.employee_email })
       }).catch(() => {});
     }

@@ -202,7 +202,7 @@ export class MdComponent implements OnInit {
     this.toast.show('Claim approved!', 'success');
     if (claim) {
       fetch('/api/notify', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'x-notify-secret': 'vocto-notify-2024' },
         body: JSON.stringify({ event: 'approved', claimNumber: claim.claim_number, claimTitle: claim.title, amount: claim.amount, submittedBy: claim.employee_email || claim.submitted_by })
       }).catch(() => {});
     }
@@ -264,7 +264,7 @@ export class MdComponent implements OnInit {
     this.toast.show('Claim rejected.', 'warning');
     if (claim?.employee_email) {
       fetch('/api/notify', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'x-notify-secret': 'vocto-notify-2024' },
         body: JSON.stringify({ event: 'rejected', claimNumber: claim.claim_number, claimTitle: claim.title, amount: claim.amount, employeeEmail: claim.employee_email })
       }).catch(() => {});
     }
