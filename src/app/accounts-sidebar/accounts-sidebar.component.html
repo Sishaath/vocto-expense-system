@@ -1,0 +1,22 @@
+<div class="sidebar-inner">
+  <div class="nav-label">Vouchers</div>
+  <div class="nav-item nav-sub" [class.active]="activeSection==='all'" (click)="go('all')">All Vouchers</div>
+  <div class="nav-item nav-sub" [class.active]="activeSection==='paid'" (click)="go('paid')">Paid History</div>
+  <div class="nav-item nav-sub" [class.active]="activeSection==='rejected'" (click)="go('rejected')">Rejected</div>
+  <a class="nav-item" [class.active]="is('/submit')" routerLink="/submit">+ Submit My Voucher</a>
+
+  <div class="nav-label" style="margin-top:8px;">Advance Requisitions</div>
+  <div class="nav-item nav-sub" [class.active]="activeSection==='advance-req'" (click)="go('advance-req')">Requisitions</div>
+
+  <div class="nav-label" style="margin-top:8px;">Purchase Orders</div>
+  <div class="nav-item nav-sub" [class.active]="activeSection==='my-pos'" (click)="go('my-pos')">All POs</div>
+  <a class="nav-item" [class.active]="is('/po/create')" routerLink="/po/create">+ Create PO</a>
+
+  <div class="nav-label" style="margin-top:8px;">Management</div>
+  <div class="nav-item nav-sub" [class.active]="activeSection==='recurring'" (click)="go('recurring')">Recurring</div>
+  <a class="nav-item nav-sub" [class.active]="is('/vendors')" routerLink="/vendors">Vendor Directory</a>
+
+  <div class="nav-label" style="margin-top:8px;">Sales Invoices</div>
+  <a class="nav-item nav-sub" [class.active]="is('/invoice/export')" routerLink="/invoice/export/create">Export Invoice</a>
+  <a class="nav-item nav-sub" [class.active]="is('/invoice/dta')" routerLink="/invoice/dta/create">DTA Invoice</a>
+</div>

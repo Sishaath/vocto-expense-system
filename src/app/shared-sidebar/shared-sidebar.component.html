@@ -1,0 +1,17 @@
+<div class="sidebar">
+  <div class="nav-label">Vouchers</div>
+  <a class="nav-item nav-sub" [class.active]="is('/dashboard') && activeView==='claims' && activeStatus==='all'" routerLink="/dashboard" [queryParams]="{view:'claims'}">All Vouchers</a>
+  <a class="nav-item nav-sub" [class.active]="is('/dashboard') && activeView==='claims' && activeStatus==='PAID'" routerLink="/dashboard" [queryParams]="{view:'claims',status:'PAID'}">Paid History</a>
+  <a class="nav-item nav-sub" [class.active]="is('/dashboard') && activeView==='claims' && activeStatus==='REJECTED'" routerLink="/dashboard" [queryParams]="{view:'claims',status:'REJECTED'}">Rejected</a>
+  <a class="nav-item" [class.active]="is('/submit') || is('/edit')" routerLink="/submit">+ Submit Voucher</a>
+  <a class="nav-item nav-sub" [class.active]="is('/advance-requisition')" routerLink="/advance-requisition">Advance Requisition</a>
+
+  <div class="nav-label" style="margin-top:8px;">Purchase Orders</div>
+  <a class="nav-item nav-sub" [class.active]="is('/dashboard') && activeView==='pos'" routerLink="/dashboard" [queryParams]="{view:'pos'}">My POs</a>
+  <a class="nav-item" [class.active]="is('/po/create') || is('/po/edit')" routerLink="/po/create">+ Create PO</a>
+
+  <div class="nav-label" style="margin-top:8px;">More</div>
+  <a class="nav-item" [class.active]="is('/vendors')" routerLink="/vendors">Vendors</a>
+  <a class="nav-item" [class.active]="is('/invoice/export')" routerLink="/invoice/export/create">Export Sales Invoice</a>
+  <a class="nav-item" [class.active]="is('/invoice/dta')" routerLink="/invoice/dta/create">DTA Sales Invoice</a>
+</div>

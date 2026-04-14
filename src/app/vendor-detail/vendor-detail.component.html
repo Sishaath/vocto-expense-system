@@ -1,0 +1,110 @@
+<div class="app-wrap">
+  <div class="topbar">
+    <div class="topbar-accent"></div>
+    <div class="topbar-main">
+      <div class="logo">
+        <img src="/vocto-logo.png" alt="Vocto" class="logo-img" />
+        <div class="logo-divider"></div>
+        <div class="logo-text-block">
+          <div class="logo-company">Vocto Technologies Private Limited</div>
+        </div>
+      </div>
+      <div class="tb-section">VENDOR DETAIL</div>
+      <div class="tb-right">
+        <button class="btn-back" (click)="router.navigate(['/vendors'])">← Vendors</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="main-content" *ngIf="!loading && vendor">
+    <div class="vendor-header">
+      <div class="vendor-avatar">{{ vendor.name.charAt(0).toUpperCase() }}</div>
+      <div class="vendor-info">
+        <div class="vendor-name">{{ vendor.name }}</div>
+        <div class="vendor-meta">
+          <span *ngIf="vendor.gstin">GSTIN: {{ vendor.gstin }}</span>
+          <span *ngIf="vendor.city"> · {{ vendor.city }}, {{ vendor.state }}</span>
+        </div>
+        <div class="vendor-rating" *ngIf="ratings.length">
+          <span class="stars">
+            <span *ngFor="let s of stars(avgRating)" [class.filled]="s">★</span>
+          </span>
+          <span class="rating-val">{{ avgRating }}/5 from {{ ratings.length }} review(s)</span>
+        </div>
+        <div class="muted" *ngIf="!ratings.length">No ratings yet</div>
+      </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="tabs">
+      <button class="tab" [class.active]="activeTab==='price'" (click)="activeTab='price'">Price History</button>
+      <button class="tab" [class.active]="activeTab==='ratings'" (click)="activeTab='ratings'">Ratings & Notes</button>
+    </div>
+
+    <!-- PRICE HISTORY TAB -->
+    <ng-container *ngIf="activeTab==='price'">
+      <!-- Item Summary -->
+      <div class="section-head">Item Price Summary</div>
+      <div class="table-wrap" style="margin-bottom:24px;">
+        <table>
+          <thead><tr><th>Item Description</th><th>Min Price</th><th>Avg Price</th><th>Max Price</th><th>Purchases</th></tr></thead>
+          <tbody>
+            <tr *ngFor="let item of uniqueItems">
+              <td><strong>{{ item.desc }}</strong></td>
+              <td class="amount">₹{{ item.min.toLocaleString('en-IN', {minimumFractionDigits:2}) }}</td>
+              <td class="amount">₹{{ item.avg.toLocaleString('en-IN', {minimumFractionDigits:2}) }}</td>
+              <td class="amount">₹{{ item.max.toLocaleString('en-IN', {minimumFractionDigits:2}) }}</td>
+              <td class="muted">{{ item.prices.length }}</td>
+            </tr>
+            <tr *ngIf="uniqueItems.length === 0"><td colspan="5" class="empty">No price history yet</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Full History -->
+      <div class="section-head">
+        All Transactions
+        <input class="search-inline" [(ngModel)]="searchItem" placeholder="Search item..." />
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>PO Number</th><th>Date</th><th>Item</th><th>Qty</th><th>Unit Price (INR)</th><th>Amount</th></tr></thead>
+          <tbody>
+            <tr *ngFor="let p of filteredHistory">
+              <td class="mono">{{ p.po_number }}</td>
+              <td class="mono">{{ p.po_date | date:'dd MMM yyyy' }}</td>
+              <td>{{ p.item_description }}</td>
+              <td>{{ p.quantity }} {{ p.unit }}</td>
+              <td class="amount">₹{{ (p.inr_unit_price || p.unit_price).toLocaleString('en-IN', {minimumFractionDigits:2}) }}</td>
+              <td class="amount">₹{{ p.amount?.toLocaleString('en-IN', {minimumFractionDigits:2}) || '—' }}</td>
+            </tr>
+            <tr *ngIf="filteredHistory.length === 0"><td colspan="6" class="empty">No records</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </ng-container>
+
+    <!-- RATINGS TAB -->
+    <ng-container *ngIf="activeTab==='ratings'">
+      <div class="ratings-list">
+        <div class="rating-card" *ngFor="let r of ratings">
+          <div class="rc-header">
+            <span class="stars">
+              <span *ngFor="let s of stars(r.rating)" [class.filled]="s">★</span>
+            </span>
+            <span class="rc-po">{{ r.po_number }}</span>
+            <span class="rc-by">{{ r.rated_by }}</span>
+            <span class="rc-date">{{ r.rated_at | date:'dd MMM yyyy' }}</span>
+          </div>
+          <div class="rc-notes" *ngIf="r.notes">{{ r.notes }}</div>
+        </div>
+        <div class="empty" *ngIf="ratings.length === 0">No ratings yet</div>
+      </div>
+    </ng-container>
+  </div>
+
+  <div class="loading-overlay" *ngIf="loading">
+    <div class="spinner"></div>
+    <div class="loading-text">Loading...</div>
+  </div>
+</div>

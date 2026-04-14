@@ -5,11 +5,12 @@ import { CommonModule } from '@angular/common';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { SupabaseService } from '../supabase.service';
 import { ToastService } from '../shared/toast.service';
+import { SharedSidebarComponent } from '../shared-sidebar/shared-sidebar.component';
 
 @Component({
   selector: 'app-submit-claim',
   standalone: true,
-  imports: [FormsModule, CommonModule, RouterLink],
+  imports: [FormsModule, CommonModule, RouterLink, SharedSidebarComponent],
   templateUrl: './submit-claim.component.html',
   styleUrls: ['./submit-claim.component.scss']
 })
@@ -18,10 +19,14 @@ export class SubmitClaimComponent implements OnInit, OnDestroy {
   editClaimId = '';
   existingFileUrl = '';
   existingFileName = '';
+  fromTemplateId: string | null = null;
+  private templateData: any = null;
+
+  categories: string[] = ['Travel & Accommodation', 'Meals & Entertainment', 'Office Supplies', 'Software / Subscriptions', 'Training & Conference', 'Vendor Invoice', 'Miscellaneous'];
 
   title = '';
-  category = 'Travel & Transport';
-  amount = 0;
+  category = 'Travel & Accommodation';
+  amount: number | null = null;
   expenseDate = '';
   vendor = '';
   payMode = 'Company Card';
@@ -32,6 +37,7 @@ export class SubmitClaimComponent implements OnInit, OnDestroy {
   isDragging = false;
   loading = false;
   errorMsg = '';
+  formSubmitted = false;
   private objectUrls: string[] = [];
 
   constructor(
@@ -43,11 +49,27 @@ export class SubmitClaimComponent implements OnInit, OnDestroy {
   ) {}
 
   async ngOnInit() {
+    const cats = await this.supabase.getActiveCategories();
+    if (cats.length) this.categories = cats;
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
       this.editMode = true;
       this.editClaimId = id;
       await this.loadClaim(id);
+    }
+
+    // Pre-fill from recurring template if navigated with state
+    const nav = this.router.getCurrentNavigation?.() ?? null;
+    const templateData = history.state?.templateData;
+    if (templateData && !this.editMode) {
+      this.title = templateData.title || '';
+      this.category = templateData.category || 'Travel & Transport';
+      this.amount = templateData.amount || null;
+      this.vendor = templateData.vendor || '';
+      this.payMode = templateData.pay_mode || 'Company Card';
+      this.description = templateData.description || '';
+      this.fromTemplateId = templateData.id || null;
+      this.templateData = templateData;
     }
   }
 
@@ -59,8 +81,8 @@ export class SubmitClaimComponent implements OnInit, OnDestroy {
       return;
     }
     this.title = data.title || '';
-    this.category = data.category || 'Travel & Transport';
-    this.amount = data.amount || 0;
+    this.category = data.category || 'Travel & Accommodation';
+    this.amount = data.amount || null;
     this.expenseDate = data.expense_date || '';
     this.vendor = data.vendor || '';
     this.payMode = data.pay_mode || 'Company Card';
@@ -106,6 +128,10 @@ export class SubmitClaimComponent implements OnInit, OnDestroy {
     const allowed = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
     for (const file of files) {
       if (!allowed.includes(file.type)) { this.toastService.show(`${file.name}: unsupported type`, 'error'); continue; }
+      if (file.size > 10 * 1024 * 1024) {
+        this.toastService.show(`${file.name} exceeds the 10MB file size limit`, 'error');
+        continue;
+      }
       this.selectedFiles.push(file);
       const objUrl = URL.createObjectURL(file);
       this.objectUrls.push(objUrl);
@@ -135,8 +161,11 @@ export class SubmitClaimComponent implements OnInit, OnDestroy {
   }
 
   async submitClaim() {
-    if (!this.title || !this.amount || !this.category) {
-      this.errorMsg = 'Please fill in title, amount and category.';
+    this.formSubmitted = true;
+    const hasFile = this.previews.length > 0 || (this.editMode && !!this.existingFileUrl);
+    if (!this.title.trim() || !this.amount || this.amount <= 0 || !this.category ||
+        !this.expenseDate || !this.vendor.trim() || !this.description.trim() || !hasFile) {
+      this.errorMsg = 'All fields and at least one supporting document are required.';
       return;
     }
     this.loading = true;
@@ -165,8 +194,8 @@ export class SubmitClaimComponent implements OnInit, OnDestroy {
         if (data) { uploadedPaths.push(data.path); uploadedNames.push(file.name); }
       }
 
-      const fileUrl = uploadedPaths.length === 1 ? uploadedPaths[0] : JSON.stringify(uploadedPaths);
-      const fileName = uploadedNames.length === 1 ? uploadedNames[0] : JSON.stringify(uploadedNames);
+      const fileUrl = uploadedPaths.length === 0 ? '' : uploadedPaths.length === 1 ? uploadedPaths[0] : JSON.stringify(uploadedPaths);
+      const fileName = uploadedNames.length === 0 ? '' : uploadedNames.length === 1 ? uploadedNames[0] : JSON.stringify(uploadedNames);
 
       if (this.editMode) {
         const { error } = await this.supabase.updateClaimDetails(this.editClaimId, {
@@ -181,17 +210,48 @@ export class SubmitClaimComponent implements OnInit, OnDestroy {
         }
       } else {
         const user = await this.supabase.getClient().auth.getUser();
-        const claimNumber = 'VCT-' + Date.now().toString().slice(-6);
+        const year = new Date().getFullYear();
+        const { data: lastClaims } = await this.supabase.getClient()
+          .from('claims')
+          .select('claim_number')
+          .like('claim_number', `VT${year}%`)
+          .order('claim_number', { ascending: false })
+          .limit(1);
+        let seq = 1;
+        if (lastClaims && lastClaims.length > 0) {
+          const num = parseInt(lastClaims[0].claim_number.replace(`VT${year}`, ''));
+          if (!isNaN(num)) seq = num + 1;
+        }
+        const claimNumber = `VT${year}${String(seq).padStart(3, '0')}`;
+        const employeeEmail = user.data.user?.email || '';
         const { error } = await this.supabase.submitClaim({
           claim_number: claimNumber, title: this.title, category: this.category,
           amount: this.amount, expense_date: this.expenseDate, vendor: this.vendor,
           pay_mode: this.payMode, description: this.description,
           file_url: fileUrl, file_name: fileName,
-          submitted_by: user.data.user?.id, status: 'PENDING'
+          submitted_by: user.data.user?.id, employee_email: employeeEmail, status: 'PENDING'
         });
         if (error) { this.errorMsg = error.message; }
         else {
           this.toastService.show('Claim submitted successfully!');
+          await this.supabase.logAudit({ entity_type: 'claim', entity_id: claimNumber, entity_ref: claimNumber, action: 'submitted', performed_by: employeeEmail, new_values: { title: this.title, amount: this.amount, category: this.category } });
+          await this.supabase.createNotifications(
+            ['yogeshwari@voctotechnologies.com', 'accounts@voctotechnologies.com'],
+            { title: `New voucher submitted — ${claimNumber}`, body: `${this.title} · ₹${Number(this.amount).toLocaleString('en-IN')} by ${employeeEmail}`, entity_type: 'claim', entity_id: claimNumber, entity_ref: claimNumber }
+          );
+          // Advance recurring template due date
+          if (this.fromTemplateId) {
+            const freq = this.templateData?.frequency || 'monthly';
+            const due = new Date(this.templateData?.next_due_date || new Date());
+            if (freq === 'monthly') due.setMonth(due.getMonth() + 1);
+            else if (freq === 'quarterly') due.setMonth(due.getMonth() + 3);
+            else due.setFullYear(due.getFullYear() + 1);
+            await this.supabase.advanceTemplateDueDate(this.fromTemplateId, due.toISOString().split('T')[0]);
+          }
+          fetch('/api/notify', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ event: 'submitted', claimNumber, claimTitle: this.title, amount: this.amount, employeeEmail, submittedBy: employeeEmail })
+          }).catch(() => {});
           setTimeout(() => this.router.navigate(['/dashboard']), 1200);
         }
       }

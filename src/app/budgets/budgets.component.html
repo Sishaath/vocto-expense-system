@@ -1,0 +1,92 @@
+<div class="app-wrap">
+  <div class="topbar">
+    <div class="topbar-accent"></div>
+    <div class="topbar-main">
+      <div class="logo">
+        <img src="/vocto-logo.png" alt="Vocto" class="logo-img" />
+        <div class="logo-divider"></div>
+        <div class="logo-text-block">
+          <div class="logo-company">Vocto Technologies Private Limited</div>
+        </div>
+      </div>
+      <div class="tb-section">BUDGET MANAGEMENT</div>
+      <div class="tb-right">
+        <button class="btn-back" routerLink="/accounts">← Accounts</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="main-content">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Budget <span>vs Actual</span></div>
+        <div class="page-sub">Set monthly budgets per expense category</div>
+      </div>
+      <button class="btn-save" (click)="saveAll()" [disabled]="saving">
+        {{ saving ? 'Saving...' : '💾 Save Budgets' }}
+      </button>
+    </div>
+
+    <!-- Month Picker -->
+    <div class="month-picker">
+      <select [(ngModel)]="selectedMonth" (change)="onMonthChange()">
+        <option *ngFor="let m of months" [value]="m.v">{{ m.l }}</option>
+      </select>
+      <select [(ngModel)]="selectedYear" (change)="onMonthChange()">
+        <option *ngFor="let y of years" [value]="y">{{ y }}</option>
+      </select>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="summary-stats" *ngIf="!loading">
+      <div class="stat-card">
+        <div class="stat-label">Total Budget</div>
+        <div class="stat-value">₹{{ totalBudget.toLocaleString('en-IN') }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Total Spent</div>
+        <div class="stat-value" [class.over]="totalActual > totalBudget">₹{{ totalActual.toLocaleString('en-IN') }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Remaining</div>
+        <div class="stat-value">₹{{ (totalBudget - totalActual).toLocaleString('en-IN') }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Utilisation</div>
+        <div class="stat-value">{{ totalBudget ? (totalActual / totalBudget * 100).toFixed(1) : 0 }}%</div>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div class="loading-overlay" *ngIf="loading">
+      <div class="spinner"></div><div class="loading-text">Loading...</div>
+    </div>
+
+    <!-- Budget Table -->
+    <div class="budget-table" *ngIf="!loading">
+      <div class="budget-row" *ngFor="let cat of categories" [class.over-budget]="isOverBudget(cat)">
+        <div class="cat-name">{{ cat }}</div>
+        <div class="budget-input-wrap">
+          <span class="currency-prefix">₹</span>
+          <input type="number" class="budget-input" [(ngModel)]="budgetMap[cat]" placeholder="0" min="0" />
+        </div>
+        <div class="actual-wrap">
+          <div class="actual-label">Spent</div>
+          <div class="actual-val" [class.over]="isOverBudget(cat)">₹{{ actualMap[cat].toLocaleString('en-IN') }}</div>
+        </div>
+        <div class="remaining-wrap">
+          <div class="actual-label">Remaining</div>
+          <div class="remaining-val" [class.over]="isOverBudget(cat)">
+            {{ isOverBudget(cat) ? '▲ Over by ₹' + (actualMap[cat] - budgetMap[cat]).toLocaleString('en-IN') : '₹' + remaining(cat).toLocaleString('en-IN') }}
+          </div>
+        </div>
+        <div class="bar-wrap">
+          <div class="bar-track">
+            <div class="bar-fill" [class.bar-over]="isOverBudget(cat)" [style.width.%]="pct(cat)"></div>
+          </div>
+          <span class="bar-pct">{{ pct(cat) }}%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

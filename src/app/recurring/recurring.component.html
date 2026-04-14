@@ -1,0 +1,143 @@
+<div class="app-wrap">
+  <div class="topbar">
+    <div class="topbar-accent"></div>
+    <div class="topbar-main">
+      <div class="logo">
+        <img src="/vocto-logo.png" alt="Vocto" class="logo-img" />
+        <div class="logo-divider"></div>
+        <div class="logo-text-block">
+          <div class="logo-company">Vocto Technologies Private Limited</div>
+        </div>
+      </div>
+      <div class="tb-section">RECURRING EXPENSES</div>
+      <div class="tb-right">
+        <button class="btn-add" (click)="showForm=true" *ngIf="!showForm">+ New Template</button>
+        <button class="btn-back" routerLink="/dashboard">← Dashboard</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="main-content">
+    <div class="page-title">Recurring <span>Expenses</span></div>
+    <div class="page-sub">Set up templates for regular expenses and submit them in one click</div>
+
+    <!-- New Template Form -->
+    <div class="form-card" *ngIf="showForm">
+      <div class="form-card-title">New Recurring Template</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Title *</label>
+          <input type="text" [(ngModel)]="form.title" placeholder="e.g. Office Rent" />
+        </div>
+        <div class="form-group">
+          <label>Category *</label>
+          <select [(ngModel)]="form.category">
+            <option *ngFor="let c of categories" [value]="c">{{ c }}</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Amount (₹) *</label>
+          <input type="number" [(ngModel)]="form.amount" placeholder="0" min="0" />
+        </div>
+        <div class="form-group">
+          <label>Frequency *</label>
+          <select [(ngModel)]="form.frequency">
+            <option value="monthly">Monthly</option>
+            <option value="quarterly">Quarterly</option>
+            <option value="yearly">Yearly</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>First / Next Due Date *</label>
+          <input type="date" [(ngModel)]="form.next_due_date" />
+        </div>
+        <div class="form-group">
+          <label>Vendor</label>
+          <input type="text" [(ngModel)]="form.vendor" placeholder="Vendor name (optional)" />
+        </div>
+        <div class="form-group">
+          <label>Payment Mode</label>
+          <select [(ngModel)]="form.pay_mode">
+            <option>Company Card</option>
+            <option>Personal (Reimbursement)</option>
+            <option>Bank Transfer</option>
+            <option>Cash</option>
+          </select>
+        </div>
+        <div class="form-group full-span">
+          <label>Description</label>
+          <textarea [(ngModel)]="form.description" rows="2" placeholder="Optional notes..."></textarea>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn-cancel" (click)="cancelForm()">Cancel</button>
+        <button class="btn-save" (click)="saveTemplate()" [disabled]="saving">{{ saving ? 'Saving...' : 'Save Template' }}</button>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div class="loading-overlay" *ngIf="loading">
+      <div class="spinner"></div><div class="loading-text">Loading...</div>
+    </div>
+
+    <!-- Due Now Banner -->
+    <div class="due-banner" *ngIf="!loading && activeTemplates.length > 0">
+      <div *ngFor="let t of activeTemplates">
+        <div class="due-item" *ngIf="isDue(t)">
+          <div class="due-item-info">
+            <span class="due-badge">DUE</span>
+            <strong>{{ t.title }}</strong>
+            <span class="muted">₹{{ t.amount.toLocaleString('en-IN') }} · {{ freqLabel(t.frequency) }}</span>
+          </div>
+          <button class="btn-submit-now" (click)="submitFromTemplate(t)">Submit Now →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Templates -->
+    <div class="section-label" *ngIf="!loading">Active Templates</div>
+    <div class="templates-grid" *ngIf="!loading">
+      <div class="template-card" *ngFor="let t of activeTemplates" [class.due]="isDue(t)">
+        <div class="tc-header">
+          <div class="tc-title">{{ t.title }}</div>
+          <span class="freq-badge">{{ freqLabel(t.frequency) }}</span>
+        </div>
+        <div class="tc-amount">₹{{ t.amount.toLocaleString('en-IN') }}</div>
+        <div class="tc-meta">{{ t.category }}</div>
+        <div class="tc-meta" *ngIf="t.vendor">Vendor: {{ t.vendor }}</div>
+        <div class="tc-due" [class.overdue]="isDue(t)">
+          Next due: {{ t.next_due_date | date:'dd MMM yyyy' }}
+          <span class="overdue-tag" *ngIf="isDue(t)">● Due</span>
+        </div>
+        <div class="tc-actions">
+          <button class="btn-submit" (click)="submitFromTemplate(t)">Submit Now</button>
+          <button class="btn-deactivate" (click)="toggleActive(t)">Deactivate</button>
+          <button class="btn-delete-tmpl" (click)="deleteTemplate(t)">Delete</button>
+        </div>
+      </div>
+      <div class="empty-card" *ngIf="activeTemplates.length === 0">
+        <div>No recurring templates yet.</div>
+        <button class="btn-add-inline" (click)="showForm=true">+ Add your first template</button>
+      </div>
+    </div>
+
+    <!-- Inactive Templates -->
+    <ng-container *ngIf="!loading && inactiveTemplates.length > 0">
+      <div class="section-label" style="margin-top:24px;">Inactive Templates</div>
+      <div class="templates-grid">
+        <div class="template-card inactive" *ngFor="let t of inactiveTemplates">
+          <div class="tc-header">
+            <div class="tc-title">{{ t.title }}</div>
+            <span class="freq-badge inactive-badge">{{ freqLabel(t.frequency) }}</span>
+          </div>
+          <div class="tc-amount muted">₹{{ t.amount.toLocaleString('en-IN') }}</div>
+          <div class="tc-meta">{{ t.category }}</div>
+          <div class="tc-actions">
+            <button class="btn-activate" (click)="toggleActive(t)">Reactivate</button>
+            <button class="btn-delete-tmpl" (click)="deleteTemplate(t)">Delete</button>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+  </div>
+</div>

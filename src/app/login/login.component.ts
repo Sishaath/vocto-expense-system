@@ -1,5 +1,5 @@
-import { Component } from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, OnInit } from '@angular/core';
+import { Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { SupabaseService } from '../supabase.service';
@@ -11,49 +11,44 @@ import { SupabaseService } from '../supabase.service';
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss']
 })
-export class LoginComponent {
-  email = 'admin@voctotechnologies.com';
+export class LoginComponent implements OnInit {
+  email = '';
   password = '';
   errorMsg = '';
   loading = false;
-  selectedRole = 'employee';
+  forgotMode = false;
+  resetSent = false;
+  timeoutMsg = false;
 
   constructor(
     private supabase: SupabaseService,
-    private router: Router
+    private router: Router,
+    private route: ActivatedRoute
   ) {}
 
-  setRole(role: string) {
-    this.selectedRole = role;
-    if (role === 'employee') this.email = 'admin@voctotechnologies.com';
-    if (role === 'accounts') this.email = 'accounts@voctotechnologies.com';
-    if (role === 'md') this.email = 'md@voctotechnologies.com';
-    this.password = '';
-    this.errorMsg = '';
+  ngOnInit() {
+    this.timeoutMsg = this.route.snapshot.queryParamMap.get('reason') === 'timeout';
   }
 
   async login() {
+    if (!this.email || !this.password) { this.errorMsg = 'Please enter your email and password.'; return; }
     this.loading = true;
     this.errorMsg = '';
-
-    const { data, error } = await this.supabase.signIn(
-      this.email,
-      this.password
-    );
-
-    if (error) {
-      this.errorMsg = error.message;
-      this.loading = false;
-      return;
-    }
-
-    if (this.selectedRole === 'accounts') {
-      this.router.navigate(['/accounts']);
-    } else if (this.selectedRole === 'md') {
-      this.router.navigate(['/md']);
-    } else {
-      this.router.navigate(['/dashboard']);
-    }
-
+    const { data, error } = await this.supabase.signIn(this.email.trim(), this.password);
+    if (error) { this.errorMsg = error.message; this.loading = false; return; }
+    this.router.navigate(['/dashboard']);
     this.loading = false;
-  }}
+  }
+
+  async sendReset() {
+    if (!this.email) { this.errorMsg = 'Please enter your email.'; return; }
+    this.loading = true;
+    this.errorMsg = '';
+    const { error } = await this.supabase.getClient().auth.resetPasswordForEmail(this.email.trim(), {
+      redirectTo: `${window.location.origin}/portal/set-password`
+    });
+    this.loading = false;
+    if (error) { this.errorMsg = error.message; return; }
+    this.resetSent = true;
+  }
+}

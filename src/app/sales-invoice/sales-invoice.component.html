@@ -1,0 +1,236 @@
+<div class="app-wrap no-print">
+  <div class="topbar">
+    <div class="topbar-accent"></div>
+    <div class="topbar-main">
+      <div class="logo">
+        <img src="/vocto-logo.png" alt="Vocto" class="logo-img" />
+        <div class="logo-divider"></div>
+        <div class="logo-text-block">
+          <div class="logo-company">Vocto Technologies Private Limited</div>
+        </div>
+      </div>
+      <div class="tb-section">{{ invoiceTypeLabel | uppercase }}</div>
+      <div class="tb-right">
+        <button class="btn-print" (click)="printInvoice()">Download PDF</button>
+        <button class="btn-save" (click)="saveDraft()" [disabled]="saving">{{ saving ? 'Saving...' : 'Save' }}</button>
+      </div>
+    </div>
+  </div>
+  <div class="shell">
+    <div class="sidebar">
+      <app-shared-sidebar></app-shared-sidebar>
+    </div>
+    <div class="inv-main">
+
+<div class="loading-state" *ngIf="loading">Loading…</div>
+
+<!-- INVOICE FORM -->
+<div class="inv-form-wrap" *ngIf="!loading">
+  <div class="error-msg" *ngIf="errorMsg">{{ errorMsg }}</div>
+
+  <div class="form-row">
+    <div class="form-card half">
+      <div class="form-card-title">Invoice Details</div>
+      <div class="form-group">
+        <label>Invoice Date</label>
+        <input type="date" [(ngModel)]="invoice_date" />
+      </div>
+      <div class="form-group" *ngIf="invoiceType === 'dta'">
+        <label>Customer GSTIN</label>
+        <input type="text" [(ngModel)]="customer_gstin" placeholder="e.g. 29AAAAA0000A1Z5" style="text-transform:uppercase" />
+      </div>
+      <div class="form-group" *ngIf="invoiceType === 'export'">
+        <label>Country</label>
+        <input type="text" [(ngModel)]="customer_country" placeholder="e.g. Germany, USA" />
+      </div>
+      <div class="form-group">
+        <label>Payment Terms</label>
+        <input type="text" [(ngModel)]="payment_terms" placeholder="e.g. 30 days net" />
+      </div>
+      <div class="form-group">
+        <label>Delivery Terms</label>
+        <input type="text" [(ngModel)]="delivery_terms" placeholder="e.g. FOB Chennai" />
+      </div>
+    </div>
+    <div class="form-card half">
+      <div class="form-card-title">Customer Details</div>
+      <div class="form-group">
+        <label>Customer Name *</label>
+        <input type="text" [(ngModel)]="customer_name" placeholder="Company / Individual name" />
+      </div>
+      <div class="form-group">
+        <label>Address</label>
+        <textarea [(ngModel)]="customer_address" placeholder="Full address..."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- LINE ITEMS -->
+  <div class="form-card">
+    <div class="form-card-title">
+      Line Items
+      <button class="btn-add-item" (click)="addItem()">+ Add Item</button>
+    </div>
+    <div class="items-scroll">
+      <table class="items-form-table">
+        <thead>
+          <tr>
+            <th>Description</th>
+            <th>HSN / SAC</th>
+            <th>Qty</th>
+            <th>Unit</th>
+            <th>Unit Price</th>
+            <th *ngIf="invoiceType === 'dta'">GST %</th>
+            <th>Amount</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of items; let i = index">
+            <td><input type="text" [(ngModel)]="item.description" placeholder="Item description" /></td>
+            <td><input type="text" [(ngModel)]="item.hsn_code" placeholder="8471" style="width:80px" /></td>
+            <td><input type="number" [(ngModel)]="item.quantity" min="0" style="width:60px" (ngModelChange)="calcItemAmount(item)" /></td>
+            <td><input type="text" [(ngModel)]="item.unit" style="width:60px" placeholder="Nos" /></td>
+            <td><input type="number" [(ngModel)]="item.unit_price" min="0" (ngModelChange)="calcItemAmount(item)" /></td>
+            <td *ngIf="invoiceType === 'dta'">
+              <select [(ngModel)]="item.gst_rate" (ngModelChange)="recalc()">
+                <option [value]="0">0%</option>
+                <option [value]="5">5%</option>
+                <option [value]="12">12%</option>
+                <option [value]="18">18%</option>
+                <option [value]="28">28%</option>
+              </select>
+            </td>
+            <td class="amount">Rs. {{ item.amount.toLocaleString('en-IN') }}</td>
+            <td><button class="btn-remove" (click)="removeItem(i)">Remove</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="totals-row">
+      <div class="total-item">Subtotal: <strong>Rs. {{ subtotal.toLocaleString('en-IN') }}</strong></div>
+      <ng-container *ngIf="invoiceType === 'dta'">
+        <div class="total-item">CGST: <strong>Rs. {{ cgst.toLocaleString('en-IN') }}</strong></div>
+        <div class="total-item">SGST: <strong>Rs. {{ sgst.toLocaleString('en-IN') }}</strong></div>
+      </ng-container>
+      <div class="total-item grand">Total: <strong>Rs. {{ total.toLocaleString('en-IN') }}</strong></div>
+    </div>
+  </div>
+
+  <div class="form-card">
+    <div class="form-card-title">Notes</div>
+    <div class="form-group">
+      <textarea [(ngModel)]="notes" placeholder="Additional terms, bank details, notes..."></textarea>
+    </div>
+  </div>
+</div>
+
+<!-- PRINTABLE INVOICE DOCUMENT -->
+<div class="inv-document print-only">
+
+  <!-- HEADER -->
+  <div class="inv-header">
+    <div class="inv-company">
+      <img src="/vocto-logo.png" alt="Vocto" class="company-logo" />
+      <div class="company-info">
+        <div class="company-name">Vocto Technologies Pvt. Ltd.</div>
+        <div class="company-addr">B4, Phase II, MEPZ SEZ, Tambaram, Chennai - 600 045, Tamil Nadu</div>
+        <div class="company-addr">GSTIN: 33AAACO0420H1ZH &nbsp;|&nbsp; CIN: U32509TN1994PTC029202</div>
+        <div class="company-addr">Email: admin&#64;voctotechnologies.com</div>
+      </div>
+    </div>
+    <div class="inv-title-block">
+      <div class="inv-title-text">{{ invoiceTypeLabel | uppercase }}</div>
+      <div class="inv-number-badge">{{ invoice?.invoice_number || 'DRAFT' }}</div>
+    </div>
+  </div>
+
+  <!-- META STRIP -->
+  <div class="inv-meta-strip">
+    <div class="meta-item"><div class="mi-label">Invoice Date</div><div class="mi-val">{{ invoice_date | date:'dd MMM yyyy' }}</div></div>
+    <div class="meta-item" *ngIf="payment_terms"><div class="mi-label">Payment Terms</div><div class="mi-val">{{ payment_terms }}</div></div>
+    <div class="meta-item" *ngIf="delivery_terms"><div class="mi-label">Delivery Terms</div><div class="mi-val">{{ delivery_terms }}</div></div>
+    <div class="meta-item" *ngIf="invoiceType === 'export' && customer_country">
+      <div class="mi-label">Country</div><div class="mi-val">{{ customer_country }}</div>
+    </div>
+  </div>
+
+  <!-- PARTIES -->
+  <div class="inv-parties">
+    <div class="party-box">
+      <div class="party-label">Bill To / Customer</div>
+      <div class="party-name">{{ customer_name }}</div>
+      <div class="party-gstin" *ngIf="customer_gstin && invoiceType === 'dta'">GSTIN: {{ customer_gstin }}</div>
+      <div class="party-addr" *ngFor="let line of (customer_address || '').split('\n')">{{ line }}</div>
+    </div>
+    <div class="party-box">
+      <div class="party-label">Shipped From</div>
+      <div class="party-name">Vocto Technologies Pvt. Ltd.</div>
+      <div class="party-addr">B4, Phase II, MEPZ SEZ, Tambaram</div>
+      <div class="party-addr">Chennai - 600 045, Tamil Nadu</div>
+    </div>
+  </div>
+
+  <!-- LINE ITEMS TABLE -->
+  <table class="items-table">
+    <thead>
+      <tr>
+        <th class="col-sno">S.No</th>
+        <th class="col-desc">Description</th>
+        <th class="col-hsn">HSN / SAC</th>
+        <th class="col-qty">Qty</th>
+        <th class="col-unit">Unit</th>
+        <th class="col-price">Unit Price</th>
+        <th *ngIf="invoiceType === 'dta'" class="col-gst">GST%</th>
+        <th class="col-amt">Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let item of items; let i = index">
+        <td class="center">{{ i + 1 }}</td>
+        <td>{{ item.description }}</td>
+        <td class="center">{{ item.hsn_code }}</td>
+        <td class="center">{{ item.quantity }}</td>
+        <td class="center">{{ item.unit }}</td>
+        <td class="right">Rs. {{ item.unit_price.toLocaleString('en-IN') }}</td>
+        <td class="center" *ngIf="invoiceType === 'dta'">{{ item.gst_rate }}%</td>
+        <td class="right">Rs. {{ item.amount.toLocaleString('en-IN') }}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- TOTALS -->
+  <div class="inv-totals">
+    <div class="inv-totals-inner">
+      <div class="tot-row"><span>Subtotal</span><span>Rs. {{ subtotal.toLocaleString('en-IN') }}</span></div>
+      <ng-container *ngIf="invoiceType === 'dta'">
+        <div class="tot-row"><span>CGST</span><span>Rs. {{ cgst.toLocaleString('en-IN') }}</span></div>
+        <div class="tot-row"><span>SGST</span><span>Rs. {{ sgst.toLocaleString('en-IN') }}</span></div>
+      </ng-container>
+      <ng-container *ngIf="invoiceType === 'export'">
+        <div class="tot-row"><span>GST (Export - Zero Rated)</span><span>Rs. 0.00</span></div>
+      </ng-container>
+      <div class="tot-row grand"><span>Total</span><span>Rs. {{ total.toLocaleString('en-IN') }}</span></div>
+    </div>
+  </div>
+
+  <!-- NOTES -->
+  <div class="inv-notes" *ngIf="notes">
+    <div class="notes-label">Notes / Terms</div>
+    <div class="notes-body">{{ notes }}</div>
+  </div>
+
+  <!-- SIGNATURE -->
+  <div class="inv-footer">
+    <div class="sig-box">
+      <div class="sig-line"></div>
+      <div class="sig-name">For Vocto Technologies Pvt. Ltd.</div>
+      <div class="sig-title">Authorised Signatory</div>
+    </div>
+  </div>
+
+</div>
+
+    </div><!-- /inv-main -->
+  </div><!-- /shell -->
+</div><!-- /app-wrap -->

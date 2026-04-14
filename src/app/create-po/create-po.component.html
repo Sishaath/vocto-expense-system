@@ -1,0 +1,440 @@
+<div class="app-wrap">
+  <div class="topbar">
+    <div class="topbar-accent"></div>
+    <div class="topbar-main">
+      <div class="logo">
+        <img src="/vocto-logo.png" alt="Vocto" class="logo-img" />
+        <div class="logo-divider"></div>
+        <div class="logo-text-block">
+          <div class="logo-company">Vocto Technologies Private Limited</div>
+        </div>
+      </div>
+      <div class="tb-section">{{ isEdit ? 'EDIT PURCHASE ORDER' : 'NEW PURCHASE ORDER' }}</div>
+      <div class="tb-right">
+        <button class="btn-back" (click)="back()">← Back</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="po-layout">
+    <div class="sidebar">
+      <app-shared-sidebar></app-shared-sidebar>
+    </div>
+    <div class="po-content">
+    <div class="po-form">
+
+      <!-- SECTION: ORDER DETAILS -->
+      <div class="form-card">
+        <div class="card-header">
+          <div class="card-title">Order Details</div>
+          <div class="card-badge">Auto-numbered on save</div>
+        </div>
+        <div class="form-row cols-3">
+          <div class="form-group">
+            <label>Date Issued On <span class="req">*</span></label>
+            <input type="date" [(ngModel)]="date" />
+          </div>
+          <div class="form-group">
+            <label>Valid Till <span class="req">*</span></label>
+            <input type="date" [(ngModel)]="validTill" />
+          </div>
+          <div class="form-group">
+            <label>Expected Delivery / Deadline</label>
+            <input type="date" [(ngModel)]="deadlineDate" />
+          </div>
+        </div>
+        <div class="form-row cols-3">
+          <div class="form-group">
+            <label>Payment Terms</label>
+            <select [(ngModel)]="paymentTerms">
+              <option>Advance 100%</option>
+              <option>Advance 50%</option>
+              <option>Net 15 days</option>
+              <option>Net 30 days</option>
+              <option>Net 45 days</option>
+              <option>Net 60 days</option>
+              <option>Against Delivery</option>
+              <option>Letter of Credit</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row cols-2">
+          <div class="form-group">
+            <label>Delivery Terms (Incoterms)</label>
+            <select [(ngModel)]="deliveryTerms">
+              <option>Ex-Works</option>
+              <option>FOB</option>
+              <option>CIF</option>
+              <option>DDP</option>
+              <option>DAP</option>
+              <option>Door Delivery</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row cols-2">
+          <div class="form-group">
+            <label>Currency</label>
+            <select [(ngModel)]="currency" (change)="recalcAllItems()">
+              <option *ngFor="let c of CURRENCIES" [value]="c">{{ c }}</option>
+            </select>
+          </div>
+          <div class="form-group" *ngIf="currency !== 'INR'">
+            <label>Exchange Rate (1 {{ currency }} = ? INR)</label>
+            <input type="number" [(ngModel)]="exchangeRate" placeholder="e.g. 84.50" min="0.001" step="0.01"
+              (change)="recalcAllItems()" />
+          </div>
+        </div>
+        <div class="form-row" *ngIf="currency !== 'INR'">
+          <div class="currency-note">
+            💱 Prices entered in {{ currency }}. Amounts stored as INR equivalent (× {{ exchangeRate }}). GST calculated in INR.
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION: VENDOR / SUPPLIER -->
+      <div class="form-card">
+        <div class="card-header">
+          <div class="card-title">Vendor / Supplier Details</div>
+          <div class="card-badge gst-badge" *ngIf="gstLookupDone">✓ Auto-fetched</div>
+          <div class="card-badge warn-badge" *ngIf="gstLookupFailed">Fill manually</div>
+        </div>
+
+        <div class="gst-lookup-row">
+          <div class="form-group flex-1">
+            <label>Vendor GSTIN</label>
+            <input type="text" [(ngModel)]="vendorGstin" placeholder="e.g. 29AAAAA0000A1Z5" maxlength="15"
+              style="text-transform: uppercase;" (input)="vendorGstin=$any($event.target).value.toUpperCase()" />
+          </div>
+          <button class="btn-gst-fetch" (click)="lookupGSTIN()" [disabled]="gstLookupLoading || !vendorGstin.trim()">
+            <span *ngIf="!gstLookupLoading">Fetch Details</span>
+            <span *ngIf="gstLookupLoading">Fetching…</span>
+          </button>
+        </div>
+
+        <div *ngIf="vendorStateCode" class="state-chip">
+          📍 {{ vendorState }} (State Code: {{ vendorStateCode }})
+          <span *ngIf="isInterState" class="igst-flag">→ IGST applicable (Inter-state)</span>
+          <span *ngIf="!isInterState && vendorStateCode" class="cgst-flag">→ CGST + SGST applicable (Intra-state)</span>
+        </div>
+
+        <div class="form-row cols-2">
+          <div class="form-group">
+            <label>Vendor / Supplier Name <span class="req">*</span></label>
+            <input type="text" [(ngModel)]="vendorName" placeholder="Company or individual name" (change)="syncAddresses()" />
+          </div>
+          <div class="form-group">
+            <label>Vendor PAN</label>
+            <input type="text" [(ngModel)]="vendorPan" placeholder="e.g. AAFCE4723L" maxlength="10"
+              style="text-transform:uppercase;" (input)="vendorPan=$any($event.target).value.toUpperCase()" />
+          </div>
+        </div>
+        <div class="form-row cols-2">
+          <div class="form-group">
+            <label>City</label>
+            <input type="text" [(ngModel)]="vendorCity" placeholder="City" (change)="syncAddresses()" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Registered Address</label>
+          <textarea [(ngModel)]="vendorAddress" rows="3" placeholder="Full registered address…" (change)="syncAddresses()"></textarea>
+        </div>
+        <div class="form-row cols-2">
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" [(ngModel)]="vendorEmail" placeholder="vendor@example.com" />
+          </div>
+          <div class="form-group">
+            <label>Phone</label>
+            <input type="tel" [(ngModel)]="vendorPhone" placeholder="+91 98765 43210" />
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION: BILL TO / SHIP TO -->
+      <div class="form-card">
+        <div class="card-header">
+          <div class="card-title">Bill To &amp; Ship To</div>
+          <div class="card-badge">Auto-filled from vendor — editable</div>
+        </div>
+        <div class="form-row cols-2">
+          <div class="form-group">
+            <label>Bill To Address</label>
+            <textarea [(ngModel)]="billToAddress" rows="4" placeholder="Billing address (vendor)…"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Ship To Address</label>
+            <textarea [(ngModel)]="shipToAddress" rows="4" placeholder="Shipping / delivery address…"></textarea>
+          </div>
+        </div>
+        <div class="sync-hint">
+          <button class="btn-sync" type="button" (click)="syncAddresses()">↻ Re-sync from vendor details</button>
+        </div>
+      </div>
+
+      <!-- SECTION: SHIPMENT DETAILS -->
+      <div class="form-card">
+        <div class="card-header">
+          <div class="card-title">Shipment Details</div>
+        </div>
+        <div class="form-row cols-2">
+          <div class="form-group">
+            <label>Mode of Shipment</label>
+            <select [(ngModel)]="modeOfShipment">
+              <option>Road</option>
+              <option>Air</option>
+              <option>Sea</option>
+              <option>Courier</option>
+              <option>Rail</option>
+              <option>Hand Delivery</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Carrier / Courier</label>
+            <select [(ngModel)]="carrier">
+              <option value="">— Select carrier —</option>
+              <option>BlueDart</option>
+              <option>DHL</option>
+              <option>FedEx</option>
+              <option>Professional Courier</option>
+              <option>DTDC</option>
+              <option>FranEx</option>
+              <option>Delhivery</option>
+              <option>Ekart</option>
+              <option>Own Vehicle</option>
+              <option>Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row cols-2">
+          <div class="form-group">
+            <label>Shipment Terms</label>
+            <input type="text" [(ngModel)]="shipmentTerms" placeholder="e.g. Prepaid, To Pay, Freight Extra…" />
+          </div>
+          <div class="form-group">
+            <label>Port of Dispatch</label>
+            <input type="text" [(ngModel)]="portOfDispatch" placeholder="e.g. Chennai, Mumbai Port…" />
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION: LINE ITEMS -->
+      <div class="form-card">
+        <div class="card-header">
+          <div class="card-title">Line Items</div>
+          <button class="btn-add-item" (click)="addItem()">+ Add Item</button>
+        </div>
+
+        <div class="items-table-wrap">
+          <table class="items-table">
+            <thead>
+              <tr>
+                <th class="th-sno">#</th>
+                <th class="th-desc">Description of Goods / Services</th>
+                <th class="th-hsn">HSN / SAC</th>
+                <th class="th-qty">Qty</th>
+                <th class="th-unit">Unit</th>
+                <th class="th-price">Unit Price ({{ currency }})</th>
+                <th class="th-gst">GST %</th>
+                <th class="th-amt">Amount (₹)</th>
+                <th class="th-del"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of items; let i = index">
+                <td class="td-sno">{{ i + 1 }}</td>
+                <td class="td-desc">
+                  <input type="text" [(ngModel)]="item.description" placeholder="Item description…" class="cell-input wide" />
+                </td>
+                <td class="td-hsn">
+                  <input type="text" [(ngModel)]="item.hsn_code" placeholder="HSN" class="cell-input" />
+                </td>
+                <td class="td-qty">
+                  <input type="number" [(ngModel)]="item.quantity" min="0" class="cell-input num" (ngModelChange)="calcItemAmount(i)" />
+                </td>
+                <td class="td-unit">
+                  <select [(ngModel)]="item.unit" class="cell-select">
+                    <option>Nos</option>
+                    <option>Kg</option>
+                    <option>Mtrs</option>
+                    <option>Ltrs</option>
+                    <option>Boxes</option>
+                    <option>Sets</option>
+                    <option>Hrs</option>
+                    <option>Days</option>
+                    <option>Job</option>
+                    <option>Pcs</option>
+                  </select>
+                </td>
+                <td class="td-price">
+                  <div style="display:flex;align-items:center;gap:3px;">
+                    <span style="font-size:12px;color:#4A6080;">{{ currencySymbol }}</span>
+                    <input type="number" [(ngModel)]="item.unit_price" min="0" class="cell-input num" (ngModelChange)="calcItemAmount(i)" />
+                  </div>
+                </td>
+                <td class="td-gst">
+                  <select [(ngModel)]="item.gst_rate" class="cell-select">
+                    <option [value]="0">0%</option>
+                    <option [value]="5">5%</option>
+                    <option [value]="12">12%</option>
+                    <option [value]="18">18%</option>
+                    <option [value]="28">28%</option>
+                  </select>
+                </td>
+                <td class="td-amt">₹{{ item.amount.toLocaleString('en-IN', {minimumFractionDigits:2}) }}</td>
+                <td class="td-del">
+                  <button class="btn-del-item" (click)="removeItem(i)" [disabled]="items.length === 1" title="Remove">✕</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- CHARGES + TAX BOX + TOTALS -->
+        <div class="totals-section">
+
+          <!-- Freight & Packing charges -->
+          <div class="charges-row">
+            <div class="charge-group">
+              <label>Freight Charges (%)</label>
+              <div class="pct-input-wrap">
+                <input type="number" [(ngModel)]="freightPct" min="0" max="100" step="0.1" class="charge-input" />
+                <span class="pct-calc" *ngIf="freightPct > 0">= ₹{{ freightAmount.toLocaleString('en-IN', {minimumFractionDigits:2}) }}</span>
+              </div>
+            </div>
+            <div class="charge-group">
+              <label>Packing Charges (%)</label>
+              <div class="pct-input-wrap">
+                <input type="number" [(ngModel)]="packingPct" min="0" max="100" step="0.1" class="charge-input" />
+                <span class="pct-calc" *ngIf="packingPct > 0">= ₹{{ packingAmount.toLocaleString('en-IN', {minimumFractionDigits:2}) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="totals-and-tax">
+            <!-- TAX DETAILS BOX -->
+            <div class="tax-box">
+              <div class="tax-box-title">Tax Summary</div>
+              <div class="tax-row"><span>Taxable Value</span><span>₹{{ subtotal.toLocaleString('en-IN', {minimumFractionDigits:2}) }}</span></div>
+              <ng-container *ngIf="!isInterState">
+                <div class="tax-row" *ngFor="let item of items">
+                  <span class="tax-item-label">{{ item.description || 'Item' }} ({{ item.gst_rate }}%)</span>
+                  <span></span>
+                </div>
+                <div class="tax-row tax-sub">
+                  <span>CGST (avg rate)</span>
+                  <span>₹{{ cgst.toLocaleString('en-IN', {minimumFractionDigits:2}) }}</span>
+                </div>
+                <div class="tax-row tax-sub">
+                  <span>SGST (avg rate)</span>
+                  <span>₹{{ sgst.toLocaleString('en-IN', {minimumFractionDigits:2}) }}</span>
+                </div>
+              </ng-container>
+              <div class="tax-row tax-sub" *ngIf="isInterState">
+                <span>IGST (avg rate)</span>
+                <span>₹{{ igst.toLocaleString('en-IN', {minimumFractionDigits:2}) }}</span>
+              </div>
+              <div class="tax-row tax-total">
+                <span>Total Tax</span>
+                <span>₹{{ taxTotal.toLocaleString('en-IN', {minimumFractionDigits:2}) }}</span>
+              </div>
+            </div>
+
+            <!-- TOTALS TABLE -->
+            <div class="totals-table">
+              <div class="total-row"><span>Subtotal</span><span>₹{{ subtotal.toLocaleString('en-IN', {minimumFractionDigits:2}) }}</span></div>
+              <ng-container *ngIf="!isInterState">
+                <div class="total-row"><span>CGST</span><span>₹{{ cgst.toLocaleString('en-IN', {minimumFractionDigits:2}) }}</span></div>
+                <div class="total-row"><span>SGST</span><span>₹{{ sgst.toLocaleString('en-IN', {minimumFractionDigits:2}) }}</span></div>
+              </ng-container>
+              <div class="total-row" *ngIf="isInterState"><span>IGST</span><span>₹{{ igst.toLocaleString('en-IN', {minimumFractionDigits:2}) }}</span></div>
+              <div class="total-row" *ngIf="freightPct > 0"><span>Freight ({{ freightPct }}%)</span><span>₹{{ freightAmount.toLocaleString('en-IN', {minimumFractionDigits:2}) }}</span></div>
+              <div class="total-row" *ngIf="packingPct > 0"><span>Packing ({{ packingPct }}%)</span><span>₹{{ packingAmount.toLocaleString('en-IN', {minimumFractionDigits:2}) }}</span></div>
+              <div class="total-row grand"><span>Grand Total</span><span>₹{{ total.toLocaleString('en-IN', {minimumFractionDigits:2}) }}</span></div>
+              <div class="foreign-total" *ngIf="currency !== 'INR'">
+                ≈ {{ currencySymbol }}{{ foreignTotal?.toLocaleString('en-IN', {minimumFractionDigits:2}) }} {{ currency }}
+              </div>
+            </div>
+          </div>
+
+          <div class="amount-words" *ngIf="total > 0">
+            <span class="aw-label">Amount in Words:</span>
+            <span class="aw-value">{{ amountToWords(total) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION: TERMS & NOTES -->
+      <div class="form-card">
+        <div class="card-header"><div class="card-title">Terms &amp; Conditions</div></div>
+        <div class="form-group">
+          <textarea [(ngModel)]="terms" rows="6"></textarea>
+        </div>
+      </div>
+
+      <div class="form-card">
+        <div class="card-header"><div class="card-title">Notes / Special Instructions</div></div>
+        <div class="form-group">
+          <textarea [(ngModel)]="notes" rows="3" placeholder="Any special instructions, packing requirements, documentation needed…"></textarea>
+        </div>
+      </div>
+
+      <div class="form-card">
+        <div class="card-header"><div class="card-title">Internal Comments</div><div class="card-badge">Not printed on PO document</div></div>
+        <div class="form-group">
+          <textarea [(ngModel)]="comments" rows="3" placeholder="Internal remarks, follow-up notes, approver comments…"></textarea>
+        </div>
+      </div>
+
+      <!-- ACTION BUTTONS -->
+      <div class="form-actions">
+        <button class="btn-cancel" (click)="back()">Cancel</button>
+        <button class="btn-draft" (click)="saveDraft()" [disabled]="saving">
+          <span *ngIf="!saving">Save as Draft</span>
+          <span *ngIf="saving">Saving…</span>
+        </button>
+        <button class="btn-send" (click)="submitForReview()" [disabled]="saving">
+          <span *ngIf="!saving">Submit for Review</span>
+          <span *ngIf="saving">Saving…</span>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- STICKY PREVIEW PANEL -->
+    <div class="preview-panel">
+      <div class="preview-title">Live Summary</div>
+      <div class="preview-vendor">
+        <div class="pv-label">Vendor</div>
+        <div class="pv-name">{{ vendorName || '—' }}</div>
+        <div class="pv-sub" *ngIf="vendorGstin">{{ vendorGstin }}</div>
+        <div class="pv-sub" *ngIf="vendorState">{{ vendorCity ? vendorCity + ', ' : '' }}{{ vendorState }}</div>
+      </div>
+      <div class="preview-vendor" *ngIf="modeOfShipment">
+        <div class="pv-label">Shipment</div>
+        <div class="pv-name">{{ modeOfShipment }}</div>
+        <div class="pv-sub" *ngIf="carrier">via {{ carrier }}</div>
+        <div class="pv-sub" *ngIf="portOfDispatch">from {{ portOfDispatch }}</div>
+      </div>
+      <div class="preview-items">
+        <div class="pv-label">Items ({{ items.length }})</div>
+        <div class="pv-item" *ngFor="let item of items">
+          <span>{{ item.description || '(unnamed)' }}</span>
+          <span>₹{{ item.amount.toLocaleString('en-IN') }}</span>
+        </div>
+      </div>
+      <div class="preview-totals">
+        <div class="pt-row"><span>Subtotal</span><span>₹{{ subtotal.toLocaleString('en-IN') }}</span></div>
+        <div class="pt-row" *ngIf="!isInterState && subtotal > 0"><span>CGST + SGST</span><span>₹{{ (cgst + sgst).toLocaleString('en-IN') }}</span></div>
+        <div class="pt-row" *ngIf="isInterState"><span>IGST</span><span>₹{{ igst.toLocaleString('en-IN') }}</span></div>
+        <div class="pt-row" *ngIf="freightPct > 0"><span>Freight ({{ freightPct }}%)</span><span>₹{{ freightAmount.toLocaleString('en-IN') }}</span></div>
+        <div class="pt-row" *ngIf="packingPct > 0"><span>Packing ({{ packingPct }}%)</span><span>₹{{ packingAmount.toLocaleString('en-IN') }}</span></div>
+        <div class="pt-row grand"><span>Total</span><span>₹{{ total.toLocaleString('en-IN') }}</span></div>
+      </div>
+      <div class="gst-note" *ngIf="vendorStateCode">
+        <span *ngIf="isInterState">Inter-state — IGST</span>
+        <span *ngIf="!isInterState">Intra-state — CGST + SGST</span>
+      </div>
+    </div>
+    </div>
+  </div>
+</div>

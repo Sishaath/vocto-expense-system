@@ -1,0 +1,36 @@
+<div class="page-wrap">
+  <div class="page-header">
+    <button class="btn-back" (click)="router.navigate(['/accounts'])">← Back</button>
+    <div class="page-title">Category Management</div>
+  </div>
+
+  <div class="cat-card">
+    <div class="add-row">
+      <input type="text" [(ngModel)]="newName" placeholder="New category name..." (keydown.enter)="addCategory()" />
+      <button class="btn-add" (click)="addCategory()" [disabled]="saving || !newName.trim()">+ Add</button>
+    </div>
+
+    <div class="cat-list">
+      <div class="cat-item" *ngFor="let cat of categories" [class.inactive]="!cat.active">
+        <div class="cat-left">
+          <span class="drag-handle">⋮⋮</span>
+          <ng-container *ngIf="!cat._editing">
+            <span class="cat-name">{{ cat.name }}</span>
+            <button class="btn-icon" (click)="startEdit(cat)" title="Rename">Rename</button>
+          </ng-container>
+          <ng-container *ngIf="cat._editing">
+            <input class="rename-input" [(ngModel)]="cat._editName" (keydown.enter)="rename(cat)" (keydown.escape)="cancelEdit(cat)" />
+            <button class="btn-icon" (click)="rename(cat)">✓</button>
+            <button class="btn-icon" (click)="cancelEdit(cat)">✕</button>
+          </ng-container>
+        </div>
+        <div class="cat-right">
+          <span class="status-pill" [class.active]="cat.active">{{ cat.active ? 'Active' : 'Disabled' }}</span>
+          <button class="btn-toggle" (click)="toggleActive(cat)">
+            {{ cat.active ? 'Disable' : 'Enable' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

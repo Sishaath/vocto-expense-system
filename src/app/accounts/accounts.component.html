@@ -1,85 +1,148 @@
 <div class="app-wrap">
   <div class="topbar">
+    <div class="topbar-accent"></div>
+    <div class="topbar-main">
     <div class="logo">
-      <div class="logo-mark">V</div>
-      <div class="logo-text">Voc<span>to</span></div>
+      <img src="/vocto-logo.png" alt="Vocto" class="logo-img" />
+      <div class="logo-divider"></div>
+      <div class="logo-text-block">
+        <div class="logo-company">Vocto Technologies Private Limited</div>
+      </div>
     </div>
-    <div class="tb-divider"></div>
     <div class="tb-section">ACCOUNTS DASHBOARD</div>
     <div class="tb-right">
-      <div class="user-chip">
-        <div class="user-av">AC</div>
-        <div class="user-name">Accounts Team</div>
+      <button class="burger-btn" (click)="toggleSidebar()">
+        <span></span><span></span><span></span>
+      </button>
+      <app-notif-bell [userEmail]="userEmail"></app-notif-bell>
+      <div class="user-chip" routerLink="/profile" style="cursor:pointer">
+        <div class="user-av">{{ userInitial }}</div>
+        <div class="user-name">{{ userName }}</div>
       </div>
       <button class="btn-logout" (click)="logout()">Logout</button>
+    </div>
     </div>
   </div>
 
   <div class="shell">
-    <div class="sidebar">
-      <div class="nav-label">Navigation</div>
-      <div class="nav-item active">Dashboard</div>
-      <div class="nav-item" routerLink="/submit">Submit My Claim</div>
-      <div class="nav-label" style="margin-top:16px;">Filter</div>
-      <div class="nav-item" [class.active]="selectedMonth === 'all' && !showRejected"
-        (click)="selectedMonth='all'; showRejected=false">All Claims</div>
-      <div class="nav-item" [class.active]="showRejected"
-        (click)="showRejected=true; selectedMonth='all'">Rejected</div>
-      <div class="nav-item"
-        *ngFor="let m of availableMonths"
-        [class.active]="selectedMonth === m.key && !showRejected"
-        (click)="selectedMonth=m.key; showRejected=false">
-        {{ m.label }}
-      </div>
+    <div class="sidebar-overlay" *ngIf="sidebarOpen" (click)="closeSidebar()"></div>
+    <div class="sidebar" [class.open]="sidebarOpen">
+      <button class="sidebar-close" (click)="closeSidebar()">✕</button>
+      <app-accounts-sidebar [activeSection]="activeSection" (sectionChange)="activeSection=$event; closeSidebar()"></app-accounts-sidebar>
     </div>
 
     <div class="main">
+      <div class="loading-overlay" *ngIf="loading">
+        <div class="spinner"></div>
+        <div class="loading-text">Loading...</div>
+      </div>
       <div class="page-title">Accounts <span>Dashboard</span></div>
-      <div class="page-sub">Verify claims and manage the approval pipeline</div>
+      <div class="page-sub">Verify vouchers and manage the approval pipeline</div>
 
-      <div class="stats">
-        <div class="stat s1">
-          <div class="stat-label">Needs Verification</div>
+      <div class="stats" *ngIf="activeSection!=='rejected' && activeSection!=='paid'">
+        <div class="stat s1" [class.active-stat]="activeSection==='pending'" style="cursor:pointer" (click)="activeSection=activeSection==='pending'?'all':'pending'">
+          <div class="stat-label">Vouchers — Needs Verification</div>
           <div class="stat-value">{{ pendingClaims.length }}</div>
           <div class="stat-sub">Action required</div>
         </div>
-        <div class="stat s2">
+        <div class="stat s2" [class.active-stat]="activeSection==='verified'" style="cursor:pointer" (click)="activeSection=activeSection==='verified'?'all':'verified'">
           <div class="stat-label">With MD</div>
           <div class="stat-value">{{ verifiedClaims.length }}</div>
           <div class="stat-sub">Awaiting approval</div>
         </div>
-        <div class="stat s3">
+        <div class="stat s3" [class.active-stat]="activeSection==='approved'" style="cursor:pointer" (click)="activeSection=activeSection==='approved'?'all':'approved'">
           <div class="stat-label">Ready to Pay</div>
           <div class="stat-value">{{ approvedClaims.length }}</div>
           <div class="stat-sub">MD approved</div>
         </div>
-        <div class="stat s4">
-          <div class="stat-label">Total Released</div>
-          <div class="stat-value">₹{{ totalPaid.toLocaleString('en-IN') }}</div>
-          <div class="stat-sub">{{ paidClaims.length }} paid</div>
+        <div class="stat s4" style="cursor:pointer" (click)="activeSection=activeSection==='monthly'?'all':'monthly'">
+          <div class="stat-label">Total Released — {{ currentMonthLabel }}</div>
+          <div class="stat-value">₹{{ totalReleasedThisMonth.toLocaleString('en-IN') }}</div>
+          <div class="stat-sub">{{ thisMonthPaidClaims.length }} vouchers + advances</div>
         </div>
       </div>
 
+      <!-- FILTER BAR -->
+      <div class="filter-bar">
+        <div class="search-wrap">
+          <span class="search-icon">Search:</span>
+          <input class="search-input" [(ngModel)]="searchQuery" placeholder="Search by employee, voucher..." />
+        </div>
+        <select class="filter-select" [(ngModel)]="selectedMonth">
+          <option value="all">All Months</option>
+          <option *ngFor="let m of availableMonths" [value]="m.key">{{ m.label }}</option>
+        </select>
+        <select class="filter-select" [(ngModel)]="activeSection">
+          <option value="all">All Statuses</option>
+          <option value="pending">Pending</option>
+          <option value="verified">Verified</option>
+          <option value="approved">MD Approved</option>
+          <option value="paid">Paid</option>
+          <option value="rejected">Rejected</option>
+        </select>
+        <input class="filter-date" type="date" [(ngModel)]="filterFrom" title="From date" />
+        <input class="filter-date" type="date" [(ngModel)]="filterTo" title="To date" />
+        <button class="btn-export" (click)="exportDateRange()">CSV</button>
+        <button class="btn-export-xl" (click)="exportDateRangeExcel()">Excel</button>
+        <button class="btn-export-pdf" (click)="printReport()">PDF</button>
+      </div>
+
+      <!-- PURCHASE ORDERS SECTION -->
+      <div class="section-head" *ngIf="show('pending')">
+        <div class="section-title">Purchase Orders — Vouchers — Needs Verification</div>
+      </div>
+      <div class="table-wrap" style="margin-bottom: 20px;" *ngIf="show('pending')">
+        <table>
+          <thead>
+            <tr>
+              <th>PO Number</th><th>Vendor</th><th>Amount</th><th>Submitted By</th><th>Date</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let po of pendingPOs">
+              <td class="mono">{{ po.po_number || '—' }}</td>
+              <td><strong>{{ po.vendor_name }}</strong></td>
+              <td class="amount">₹{{ po.total.toLocaleString('en-IN') }}</td>
+              <td>{{ po.submitted_by_email || po.submitted_by }}</td>
+              <td class="mono">{{ po.created_at | date:'dd MMM' }}</td>
+              <td>
+                <div class="action-btns">
+                  <button class="btn-view" [routerLink]="['/po/view', po.id]">View</button>
+                  <button class="btn-verify" (click)="verifyPO(po.id)">✓ Verify</button>
+                  <button class="btn-reject" (click)="openPORejectModal(po.id)">✕ Reject</button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="pendingPOs.length === 0">
+              <td colspan="6" class="empty">No POs pending verification ✓</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
       <!-- NEEDS VERIFICATION -->
-      <ng-container *ngIf="!showRejected">
+      <ng-container *ngIf="show('pending')">
       <div class="section-head">
-        <div class="section-title">🔴 Needs Verification</div>
+        <div class="section-title">Vouchers — Needs Verification</div>
       </div>
       <div class="table-wrap" style="margin-bottom: 20px;">
         <table>
           <thead>
             <tr>
-              <th>Claim ID</th><th>Employee</th><th>Title</th>
+              <th>Voucher ID</th><th>Employee</th><th>Title</th>
               <th>Amount</th><th>Date</th><th>Attachment</th><th>Actions</th>
             </tr>
           </thead>
           <tbody>
             <tr *ngFor="let claim of pendingClaims" class="clickable-row" (click)="openDetail(claim)">
               <td class="mono">{{ claim.claim_number }}</td>
-              <td>{{ claim.submitted_by }}</td>
+              <td>{{ claim.employee_email || '—' }}</td>
               <td><strong>{{ claim.title }}</strong></td>
               <td class="amount">₹{{ claim.amount.toLocaleString('en-IN') }}</td>
-              <td class="mono">{{ claim.created_at | date:'dd MMM' }}</td>
+              <td class="mono">
+                {{ claim.created_at | date:'dd MMM' }}
+                <span class="sla-badge" *ngIf="slaHours(claim) >= 48">⚠ {{ slaHours(claim) >= 24 ? (slaHours(claim) / 24 | number:'1.0-0') + 'd' : slaHours(claim) + 'h' }}</span>
+              </td>
               <td>
                 <button class="btn-view" *ngIf="claim.file_url" (click)="$event.stopPropagation(); openViewer(claim)">View</button>
                 <span class="muted" *ngIf="!claim.file_url">—</span>
@@ -92,28 +155,29 @@
               </td>
             </tr>
             <tr *ngIf="pendingClaims.length === 0">
-              <td colspan="7" class="empty">All clear — no claims to verify ✓</td>
+              <td colspan="7" class="empty">All clear — no vouchers to verify ✓</td>
             </tr>
           </tbody>
         </table>
       </div>
+      </ng-container>
 
       <!-- AWAITING MD -->
-      <div class="section-head">
-        <div class="section-title">🔵 Awaiting MD Approval</div>
+      <div class="section-head" *ngIf="show('verified')">
+        <div class="section-title">Awaiting MD Approval</div>
       </div>
-      <div class="table-wrap" style="margin-bottom: 20px;">
+      <div class="table-wrap" style="margin-bottom: 20px;" *ngIf="show('verified')">
         <table>
           <thead>
             <tr>
-              <th>Claim ID</th><th>Employee</th><th>Title</th>
+              <th>Voucher ID</th><th>Employee</th><th>Title</th>
               <th>Amount</th><th>Attachment</th><th>Status</th>
             </tr>
           </thead>
           <tbody>
             <tr *ngFor="let claim of verifiedClaims" class="clickable-row" (click)="openDetail(claim)">
               <td class="mono">{{ claim.claim_number }}</td>
-              <td>{{ claim.submitted_by }}</td>
+              <td>{{ claim.employee_email || '—' }}</td>
               <td><strong>{{ claim.title }}</strong></td>
               <td class="amount">₹{{ claim.amount.toLocaleString('en-IN') }}</td>
               <td>
@@ -123,64 +187,96 @@
               <td><span class="badge verified">VERIFIED</span></td>
             </tr>
             <tr *ngIf="verifiedClaims.length === 0">
-              <td colspan="6" class="empty">No claims with MD right now</td>
+              <td colspan="6" class="empty">No vouchers with MD right now</td>
             </tr>
           </tbody>
         </table>
       </div>
 
       <!-- READY TO PAY -->
-      <div class="section-head">
-        <div class="section-title">💚 Ready for Payment</div>
+      <div class="section-head" *ngIf="show('approved')">
+        <div class="section-title">Ready for Payment</div>
       </div>
-      <div class="table-wrap">
+      <div class="table-wrap" *ngIf="show('approved')">
         <table>
           <thead>
             <tr>
-              <th>Claim ID</th><th>Employee</th><th>Title</th>
-              <th>Amount</th><th>Attachment</th><th>Action</th>
+              <th>Voucher ID</th><th>Employee</th><th>Title</th>
+              <th>Amount</th><th>Verified by</th><th>Attachment</th><th>Action</th>
             </tr>
           </thead>
           <tbody>
             <tr *ngFor="let claim of approvedClaims" class="clickable-row" (click)="openDetail(claim)">
               <td class="mono">{{ claim.claim_number }}</td>
-              <td>{{ claim.submitted_by }}</td>
+              <td>{{ claim.employee_email || '—' }}</td>
               <td><strong>{{ claim.title }}</strong></td>
               <td class="amount">₹{{ claim.amount.toLocaleString('en-IN') }}</td>
+              <td class="verifier">{{ claim.verified_by_name || claim.verified_by || '—' }}</td>
               <td>
                 <button class="btn-view" *ngIf="claim.file_url" (click)="$event.stopPropagation(); openViewer(claim)">View</button>
                 <span class="muted" *ngIf="!claim.file_url">—</span>
               </td>
               <td>
-                <button class="btn-pay" (click)="$event.stopPropagation(); releasePay(claim.id)">💳 Release Payment</button>
+                <button class="btn-pay" (click)="$event.stopPropagation(); openPayConfirm(claim.id)">Release Payment</button>
               </td>
             </tr>
             <tr *ngIf="approvedClaims.length === 0">
-              <td colspan="6" class="empty">No payments pending</td>
+              <td colspan="7" class="empty">No vouchers pending payment</td>
             </tr>
           </tbody>
         </table>
       </div>
 
-      </ng-container>
-
-      <!-- REJECTED (shown when filter active) -->
-      <ng-container *ngIf="showRejected">
+      <!-- PAID HISTORY -->
+      <ng-container *ngIf="activeSection==='paid'">
         <div class="section-head">
-          <div class="section-title">❌ Rejected Claims</div>
+          <div class="section-title">Paid History</div>
         </div>
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>Claim ID</th><th>Employee</th><th>Title</th>
+                <th>Voucher ID</th><th>Employee</th><th>Title</th>
+                <th>Amount</th><th>Verified By</th><th>Pay Mode</th><th>Ref No.</th><th>Pay Date</th><th>Paid By</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let claim of paidClaims" class="clickable-row" (click)="openDetail(claim)">
+                <td class="mono">{{ claim.claim_number }}</td>
+                <td>{{ claim.employee_email || '—' }}</td>
+                <td><strong>{{ claim.title }}</strong></td>
+                <td class="amount">₹{{ claim.amount.toLocaleString('en-IN') }}</td>
+                <td class="verifier">{{ claim.verified_by_name || claim.verified_by || '—' }}</td>
+                <td>{{ claim.payment_mode || '—' }}</td>
+                <td class="mono">{{ claim.payment_ref || '—' }}</td>
+                <td class="mono">{{ claim.payment_date ? (claim.payment_date | date:'dd MMM yyyy') : '—' }}</td>
+                <td class="verifier">{{ claim.paid_by_name || claim.paid_by || '—' }}</td>
+              </tr>
+              <tr *ngIf="paidClaims.length === 0">
+                <td colspan="9" class="empty">No payments released yet</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </ng-container>
+
+      <!-- REJECTED (shown when filter active) -->
+      <ng-container *ngIf="activeSection==='rejected'">
+        <div class="section-head">
+          <div class="section-title">Rejected Vouchers</div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Voucher ID</th><th>Employee</th><th>Title</th>
                 <th>Amount</th><th>Reason</th><th>Attachment</th><th>Date</th>
               </tr>
             </thead>
             <tbody>
               <tr *ngFor="let claim of rejectedClaims" class="clickable-row" (click)="openDetail(claim)">
                 <td class="mono">{{ claim.claim_number }}</td>
-                <td>{{ claim.submitted_by }}</td>
+                <td>{{ claim.employee_email || '—' }}</td>
                 <td><strong>{{ claim.title }}</strong></td>
                 <td class="amount">₹{{ claim.amount.toLocaleString('en-IN') }}</td>
                 <td class="rejection-reason">{{ claim.rejection_reason || '—' }}</td>
@@ -191,13 +287,243 @@
                 <td class="mono">{{ claim.created_at | date:'dd MMM' }}</td>
               </tr>
               <tr *ngIf="rejectedClaims.length === 0">
-                <td colspan="7" class="empty">No rejected claims</td>
+                <td colspan="7" class="empty">No rejected vouchers</td>
               </tr>
             </tbody>
           </table>
         </div>
       </ng-container>
 
+      <!-- MY POs SECTION -->
+      <ng-container *ngIf="activeSection==='my-pos'">
+        <div class="section-head">
+          <div class="section-title">Purchase Orders</div>
+        </div>
+        <div class="table-wrap" style="margin-bottom:20px;">
+          <table>
+            <thead>
+              <tr><th>PO Number</th><th>Vendor</th><th>Amount</th><th>Date</th><th>Status</th><th>Action</th></tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let po of allPOs" class="clickable-row">
+                <td class="mono">{{ po.po_number || '—' }}</td>
+                <td><strong>{{ po.vendor_name }}</strong></td>
+                <td class="amount">₹{{ (po.total || 0).toLocaleString('en-IN') }}</td>
+                <td class="mono">{{ po.created_at | date:'dd MMM yyyy' }}</td>
+                <td><span class="badge" [ngClass]="po.status">{{ poStatusLabel(po.status) }}</span></td>
+                <td>
+                  <div class="action-btns">
+                    <button class="btn-view" [routerLink]="['/po/view', po.id]">View</button>
+                    <button class="btn-verify" *ngIf="po.status==='pending'" (click)="verifyPO(po.id)">Verify</button>
+                    <button class="btn-reject" *ngIf="po.status==='pending'" (click)="openPORejectModal(po.id)">Reject</button>
+                  </div>
+                </td>
+              </tr>
+              <tr *ngIf="allPOs.length === 0">
+                <td colspan="6" class="empty">No purchase orders yet</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </ng-container>
+
+      <!-- MONTHLY PAYMENTS SECTION -->
+      <ng-container *ngIf="activeSection==='monthly'">
+        <div class="section-head">
+          <div class="section-title">Month-wise Payments Released</div>
+        </div>
+        <div class="table-wrap" style="margin-bottom:20px;">
+          <table>
+            <thead>
+              <tr><th>Month</th><th>Vouchers Paid</th><th>Total Amount</th></tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let m of monthWisePayments" style="cursor:pointer" (click)="activeSection='paid'; selectedMonth=m.key">
+                <td><strong>{{ m.label }}</strong></td>
+                <td class="mono">{{ m.count }} voucher(s)</td>
+                <td class="amount">₹{{ m.amount.toLocaleString('en-IN') }}</td>
+              </tr>
+              <tr *ngIf="monthWisePayments.length === 0">
+                <td colspan="3" class="empty">No payments released yet</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </ng-container>
+
+      <!-- ADVANCE REQUISITIONS SECTION -->
+      <ng-container *ngIf="activeSection==='advance-req'">
+        <div class="section-head">
+          <div class="section-title">Advance Requisitions</div>
+        </div>
+        <div class="table-wrap" style="margin-bottom:20px;">
+          <table>
+            <thead>
+              <tr>
+                <th>Req Number</th><th>Purpose</th><th>Amount</th><th>Submitted By</th>
+                <th>Expected Date</th><th>Pay Mode</th><th>Status</th><th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let req of allRequisitions">
+                <td class="mono">{{ req.req_number || '—' }}</td>
+                <td><strong>{{ req.purpose }}</strong></td>
+                <td class="amount">₹{{ req.advance_amount.toLocaleString('en-IN') }}</td>
+                <td>{{ req.submitted_by }}</td>
+                <td class="mono">{{ req.expected_date ? (req.expected_date | date:'dd MMM yyyy') : '—' }}</td>
+                <td>
+                  <span *ngIf="req.payment_mode">{{ req.payment_mode }}<br><span class="muted" style="font-size:10px;">{{ req.payment_ref || '' }}</span></span>
+                  <span *ngIf="!req.payment_mode" class="muted">—</span>
+                </td>
+                <td><span class="badge req-status-{{ req.status | lowercase }}">{{ reqStatusLabel(req.status) }}</span></td>
+                <td>
+                  <div class="action-btns">
+                    <button class="btn-verify" *ngIf="req.status==='PENDING'" (click)="approveRequisition(req.id)">Approve & Send to MD</button>
+                    <button class="btn-view" *ngIf="req.status==='MD_APPROVED'" (click)="openAdvanceGiveModal(req.id)">Mark Advance Given</button>
+                    <button class="btn-pay" *ngIf="req.status==='ADVANCE_GIVEN' && req.actual_amount" (click)="verifySettlement(req.id)">Verify Settlement</button>
+                    <button class="btn-reject" *ngIf="req.status==='PENDING' || req.status==='ACCOUNTS_APPROVED'" (click)="rejectRequisition(req.id)">Reject</button>
+                  </div>
+                </td>
+              </tr>
+              <tr *ngIf="allRequisitions.length === 0">
+                <td colspan="7" class="empty">No advance requisitions yet.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </ng-container>
+
+      <!-- FIXED RECURRING EXPENSES SECTION -->
+      <ng-container *ngIf="activeSection==='fixed-recurring'">
+        <div class="section-head recurring-head">
+          <div class="section-title">Fixed / Recurring Expenses</div>
+          <button class="btn-add-recurring" (click)="showAddRecurring=true">+ Add Entry</button>
+        </div>
+        <div class="table-wrap" style="margin-bottom:20px;">
+          <table>
+            <thead>
+              <tr>
+                <th>Category</th><th>Amount</th><th>Month</th><th>Reference</th><th>Notes</th><th>Added By</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let r of recurringExpenses">
+                <td><strong>{{ r.category }}</strong></td>
+                <td class="amount">₹{{ r.amount.toLocaleString('en-IN') }}</td>
+                <td class="mono">{{ r.month | date:'MMM yyyy' }}</td>
+                <td>{{ r.reference || '—' }}</td>
+                <td>{{ r.notes || '—' }}</td>
+                <td>{{ r.added_by || '—' }}</td>
+              </tr>
+              <tr *ngIf="recurringExpenses.length === 0">
+                <td colspan="6" class="empty">No fixed recurring expenses added yet.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </ng-container>
+
+      <!-- RECURRING EXPENSES SECTION -->
+      <ng-container *ngIf="activeSection==='recurring'">
+        <div class="section-head recurring-head">
+          <div class="section-title">Recurring Expenses</div>
+          <button class="btn-add-recurring" (click)="openTemplateModal()">+ Add Recurring</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Title</th><th>Category</th><th>Amount</th><th>Frequency</th>
+                <th>Next Due</th><th>Status</th><th>Last Generated</th><th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let t of allTemplates" [class.inactive-row]="!t.active">
+                <td><strong>{{ t.title }}</strong><div class="rec-vendor" *ngIf="t.vendor">{{ t.vendor }}</div></td>
+                <td>{{ t.category }}</td>
+                <td class="amount">₹{{ t.amount.toLocaleString('en-IN') }}</td>
+                <td class="mono">{{ t.frequency }}</td>
+                <td class="mono">{{ t.next_due_date | date:'dd MMM yyyy' }}</td>
+                <td>
+                  <span class="due-badge" [ngClass]="dueStatus(t)" *ngIf="t.active">
+                    <ng-container *ngIf="dueStatus(t)==='overdue'">Overdue {{ daysUntilDue(t) * -1 }}d</ng-container>
+                    <ng-container *ngIf="dueStatus(t)==='today'">Due Today</ng-container>
+                    <ng-container *ngIf="dueStatus(t)==='soon'">Due in {{ daysUntilDue(t) }}d</ng-container>
+                    <ng-container *ngIf="dueStatus(t)==='upcoming'">Upcoming</ng-container>
+                  </span>
+                  <span class="due-badge inactive" *ngIf="!t.active">Inactive</span>
+                </td>
+                <td class="mono muted">{{ t.last_generated_at ? (t.last_generated_at | date:'dd MMM yyyy') : '—' }}</td>
+                <td>
+                  <div class="action-btns">
+                    <button class="btn-gen" (click)="generateVoucher(t)" [disabled]="generatingId === t.id || !t.active" *ngIf="t.active">
+                      {{ generatingId === t.id ? '...' : 'Generate' }}
+                    </button>
+                    <button class="btn-view" (click)="openTemplateModal(t)">Edit</button>
+                    <button class="btn-toggle" (click)="toggleTemplate(t)">{{ t.active ? 'Disable' : 'Enable' }}</button>
+                    <button class="btn-reject" (click)="deleteTemplate(t)">Delete</button>
+                  </div>
+                </td>
+              </tr>
+              <tr *ngIf="allTemplates.length === 0">
+                <td colspan="8" class="empty">No recurring expenses set up yet. Click "+ Add Recurring" to get started.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </ng-container>
+
+    </div>
+  </div>
+</div>
+
+<!-- Payment Details Modal -->
+<div class="reject-overlay" *ngIf="payConfirmOpen" (click)="cancelPayConfirm()">
+  <div class="reject-modal pay-modal" (click)="$event.stopPropagation()">
+    <div class="reject-modal-header">
+      <div class="reject-modal-title">Release Payment</div>
+      <button class="btn-close" (click)="cancelPayConfirm()">✕</button>
+    </div>
+    <div class="reject-modal-body">
+      <div class="pay-form">
+        <div class="pay-field">
+          <label>Payment Mode</label>
+          <select [(ngModel)]="payMode">
+            <option *ngFor="let m of PAY_MODES" [value]="m">{{ m }}</option>
+          </select>
+        </div>
+        <div class="pay-field" *ngIf="payMode !== 'Cash'">
+          <label>Transaction / Reference No. <span class="req">*</span></label>
+          <input type="text" [(ngModel)]="payRef" placeholder="e.g. UTR123456789" />
+        </div>
+        <div class="pay-field">
+          <label>Payment Date</label>
+          <input type="date" [(ngModel)]="payDate" />
+        </div>
+      </div>
+    </div>
+    <div class="reject-modal-footer">
+      <button class="btn-cancel-reject" (click)="cancelPayConfirm()">Cancel</button>
+      <button class="btn-pay" (click)="confirmPay()">✓ Release Payment</button>
+    </div>
+  </div>
+</div>
+
+<!-- PO Rejection Modal -->
+<div class="reject-overlay" *ngIf="poRejectModalOpen" (click)="cancelPOReject()">
+  <div class="reject-modal" (click)="$event.stopPropagation()">
+    <div class="reject-modal-header">
+      <div class="reject-modal-title">Reason for PO Rejection</div>
+      <button class="btn-close" (click)="cancelPOReject()">✕</button>
+    </div>
+    <div class="reject-modal-body">
+      <p class="reject-hint">Please provide a reason so the PO can be corrected and resubmitted.</p>
+      <textarea class="reject-textarea" [(ngModel)]="poRejectionReason"
+        placeholder="e.g. Wrong vendor details, amount exceeds budget..." rows="4"></textarea>
+    </div>
+    <div class="reject-modal-footer">
+      <button class="btn-cancel-reject" (click)="cancelPOReject()">Cancel</button>
+      <button class="btn-confirm-reject" (click)="confirmPOReject()" [disabled]="!poRejectionReason.trim()">✕ Confirm Reject</button>
     </div>
   </div>
 </div>
@@ -225,6 +551,96 @@
   </div>
 </div>
 
+<!-- Advance Given Payment Modal -->
+<div class="reject-overlay" *ngIf="advanceGiveModalOpen" (click)="cancelAdvanceGive()">
+  <div class="reject-modal pay-modal" (click)="$event.stopPropagation()">
+    <div class="reject-modal-header">
+      <div class="reject-modal-title">Mark Advance Given</div>
+      <button class="btn-close" (click)="cancelAdvanceGive()">✕</button>
+    </div>
+    <div class="reject-modal-body">
+      <div class="pay-form">
+        <div class="pay-field">
+          <label>Payment Mode <span class="req">*</span></label>
+          <select [(ngModel)]="advancePayMode">
+            <option *ngFor="let m of PAY_MODES" [value]="m">{{ m }}</option>
+          </select>
+        </div>
+        <div class="pay-field" *ngIf="advancePayMode !== 'Cash'">
+          <label>Transaction / Reference No. <span class="req">*</span></label>
+          <input type="text" [(ngModel)]="advancePayRef" placeholder="e.g. UTR123456789" />
+        </div>
+        <div class="pay-field">
+          <label>Payment Date</label>
+          <input type="date" [(ngModel)]="advancePayDate" />
+        </div>
+      </div>
+    </div>
+    <div class="reject-modal-footer">
+      <button class="btn-cancel-reject" (click)="cancelAdvanceGive()">Cancel</button>
+      <button class="btn-pay" (click)="confirmAdvanceGiven()">Confirm Advance Given</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Recurring Template Modal -->
+<div class="reject-overlay" *ngIf="templateModalOpen" (click)="closeTemplateModal()">
+  <div class="reject-modal recurring-modal" (click)="$event.stopPropagation()">
+    <div class="reject-modal-header">
+      <div class="reject-modal-title">{{ editingTemplate?.id ? 'Edit' : 'Add' }} Recurring Expense</div>
+      <button class="btn-close" (click)="closeTemplateModal()">✕</button>
+    </div>
+    <div class="reject-modal-body">
+      <div class="pay-form">
+        <div class="pay-field full-width">
+          <label>Title <span class="req">*</span></label>
+          <input type="text" [(ngModel)]="templateForm.title" placeholder="e.g. Office Rent, Internet Bill" />
+        </div>
+        <div class="pay-field">
+          <label>Category <span class="req">*</span></label>
+          <select [(ngModel)]="templateForm.category">
+            <option *ngFor="let c of categories" [value]="c">{{ c }}</option>
+          </select>
+        </div>
+        <div class="pay-field">
+          <label>Amount (₹) <span class="req">*</span></label>
+          <input type="number" [(ngModel)]="templateForm.amount" placeholder="0" min="0" />
+        </div>
+        <div class="pay-field">
+          <label>Vendor / Payee</label>
+          <input type="text" [(ngModel)]="templateForm.vendor" placeholder="e.g. Tata Communications" />
+        </div>
+        <div class="pay-field">
+          <label>Payment Mode</label>
+          <select [(ngModel)]="templateForm.pay_mode">
+            <option *ngFor="let m of PAY_MODES" [value]="m">{{ m }}</option>
+          </select>
+        </div>
+        <div class="pay-field">
+          <label>Frequency</label>
+          <select [(ngModel)]="templateForm.frequency">
+            <option *ngFor="let f of FREQUENCIES" [value]="f.value">{{ f.label }}</option>
+          </select>
+        </div>
+        <div class="pay-field">
+          <label>Next Due Date</label>
+          <input type="date" [(ngModel)]="templateForm.next_due_date" />
+        </div>
+        <div class="pay-field full-width">
+          <label>Notes</label>
+          <input type="text" [(ngModel)]="templateForm.description" placeholder="Optional notes" />
+        </div>
+      </div>
+    </div>
+    <div class="reject-modal-footer">
+      <button class="btn-cancel-reject" (click)="closeTemplateModal()">Cancel</button>
+      <button class="btn-pay" (click)="saveTemplate()" [disabled]="savingTemplate || !templateForm.title.trim() || !templateForm.amount">
+        {{ savingTemplate ? 'Saving...' : (editingTemplate?.id ? 'Update' : 'Add Recurring') }}
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- Claim Detail Modal -->
 <app-claim-detail
   *ngIf="selectedClaim"
@@ -236,12 +652,27 @@
 <div class="file-modal-overlay" *ngIf="viewerOpen" (click)="closeViewer()">
   <div class="file-modal" (click)="$event.stopPropagation()">
     <div class="file-modal-header">
-      <div class="file-modal-title">{{ viewerName }}</div>
+      <div class="file-modal-title">{{ viewerName || 'Documents' }}</div>
       <button class="btn-close" (click)="closeViewer()">✕</button>
     </div>
     <div class="file-modal-body">
-      <iframe *ngIf="viewerIsPdf" [src]="viewerUrl"></iframe>
-      <img *ngIf="!viewerIsPdf" [src]="viewerUrl" [alt]="viewerName" />
+      <!-- Multiple files — show list -->
+      <ng-container *ngIf="!viewerUrl && viewerFiles.length > 1">
+        <div style="display:flex;flex-direction:column;gap:12px;padding:24px;">
+          <div *ngFor="let f of viewerFiles"
+               style="display:flex;align-items:center;gap:10px;padding:14px 16px;border:1px solid #e2e8f0;border-radius:10px;cursor:pointer;background:#f8fafc;"
+               (click)="openSingleFile(f)">
+            <span>{{ f.isPdf ? 'PDF' : 'IMG' }}</span>
+            <span style="font-size:13px;color:#0f172a;font-weight:500;">{{ f.name }}</span>
+            <span style="margin-left:auto;font-size:12px;color:#1e40af;">Open →</span>
+          </div>
+        </div>
+      </ng-container>
+      <!-- Single file — show inline -->
+      <ng-container *ngIf="viewerUrl">
+        <iframe *ngIf="viewerIsPdf" [src]="viewerUrl"></iframe>
+        <img *ngIf="!viewerIsPdf" [src]="viewerUrl" [alt]="viewerName" />
+      </ng-container>
     </div>
   </div>
 </div>

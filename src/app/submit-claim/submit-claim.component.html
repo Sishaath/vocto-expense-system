@@ -1,61 +1,61 @@
 <div class="app-wrap">
   <div class="topbar">
-    <div class="logo"><div class="logo-mark">V</div><div class="logo-text">Voc<span>to</span></div></div>
-    <div class="tb-divider"></div>
-    <div class="tb-section">{{ editMode ? 'EDIT CLAIM' : 'NEW CLAIM' }}</div>
-    <div class="tb-right"><button class="btn-back" routerLink="/dashboard">← Back</button></div>
+    <div class="topbar-accent"></div>
+    <div class="topbar-main">
+      <div class="logo">
+        <img src="/vocto-logo.png" alt="Vocto" class="logo-img" />
+        <div class="logo-divider"></div>
+        <div class="logo-text-block">
+          <div class="logo-company">Vocto Technologies Private Limited</div>
+        </div>
+      </div>
+      <div class="tb-section">{{ editMode ? 'EDIT VOUCHER' : 'NEW VOUCHER' }}</div>
+      <div class="tb-right"><button class="btn-back" routerLink="/dashboard">← Back</button></div>
+    </div>
   </div>
 
   <div class="shell">
     <div class="sidebar">
-      <div class="nav-label">Navigation</div>
-      <div class="nav-item" routerLink="/dashboard">Dashboard</div>
-      <div class="nav-item active">{{ editMode ? 'Edit Claim' : 'New Claim' }}</div>
+      <app-shared-sidebar activeView="claims" activeStatus="all"></app-shared-sidebar>
     </div>
 
     <div class="main">
-      <div class="page-title">{{ editMode ? 'Edit' : 'Submit' }} <span>{{ editMode ? 'Claim' : 'New Claim' }}</span></div>
+      <div class="page-title">{{ editMode ? 'Edit' : 'Submit' }} <span>{{ editMode ? 'Voucher' : 'New Voucher' }}</span></div>
       <div class="page-sub">{{ editMode ? 'Update details — only editable while Pending' : 'Fill all fields and attach supporting documents' }}</div>
 
       <div class="locked-banner" *ngIf="editMode && errorMsg && errorMsg.includes('verified')">
-        🔒 {{ errorMsg }}
+        {{ errorMsg }}
       </div>
 
       <ng-container *ngIf="!errorMsg || !errorMsg.includes('verified')">
         <div class="form-card">
-          <div class="form-card-title">Claim details</div>
+          <div class="form-card-title">Voucher details</div>
           <div class="form-grid">
             <div class="form-group">
-              <label>Claim Title</label>
-              <input type="text" [(ngModel)]="title" placeholder="e.g. Client Meeting Travel" />
+              <label>Voucher Title <span class="req">*</span></label>
+              <input type="text" [(ngModel)]="title" placeholder="e.g. Client Meeting Travel" [class.field-error]="formSubmitted && !title.trim()" />
             </div>
             <div class="form-group">
-              <label>Category</label>
-              <select [(ngModel)]="category">
-                <option>Travel & Transport</option>
-                <option>Accommodation</option>
-                <option>Meals & Entertainment</option>
-                <option>Office Supplies</option>
-                <option>Software / Subscriptions</option>
-                <option>Training & Conference</option>
-                <option>Vendor Invoice</option>
-                <option>Other</option>
+              <label>Category <span class="req">*</span></label>
+              <select [(ngModel)]="category" [class.field-error]="formSubmitted && !category">
+                <option value="">— Select —</option>
+                <option *ngFor="let cat of categories" [value]="cat">{{ cat }}</option>
               </select>
             </div>
             <div class="form-group">
-              <label>Amount (₹)</label>
-              <input type="number" [(ngModel)]="amount" placeholder="5000" />
+              <label>Amount (₹) <span class="req">*</span></label>
+              <input type="number" [(ngModel)]="amount" placeholder="5000" min="1" [class.field-error]="formSubmitted && (!amount || amount <= 0)" (focus)="amount === 0 ? amount = null : null" />
             </div>
             <div class="form-group">
-              <label>Expense Date</label>
-              <input type="date" [(ngModel)]="expenseDate" />
+              <label>Expense Date <span class="req">*</span></label>
+              <input type="date" [(ngModel)]="expenseDate" [class.field-error]="formSubmitted && !expenseDate" />
             </div>
             <div class="form-group">
-              <label>Vendor / Payee</label>
-              <input type="text" [(ngModel)]="vendor" placeholder="Company name" />
+              <label>Vendor / Payee <span class="req">*</span></label>
+              <input type="text" [(ngModel)]="vendor" placeholder="Company name" [class.field-error]="formSubmitted && !vendor.trim()" />
             </div>
             <div class="form-group">
-              <label>Payment Mode</label>
+              <label>Payment Mode <span class="req">*</span></label>
               <select [(ngModel)]="payMode">
                 <option>Company Card</option>
                 <option>Personal Card</option>
@@ -64,23 +64,25 @@
               </select>
             </div>
             <div class="form-group full">
-              <label>Description</label>
-              <textarea [(ngModel)]="description" placeholder="Describe the purpose..."></textarea>
+              <label>Description <span class="req">*</span></label>
+              <textarea [(ngModel)]="description" placeholder="Describe the purpose..." [class.field-error]="formSubmitted && !description.trim()"></textarea>
             </div>
           </div>
         </div>
 
         <div class="form-card">
-          <div class="form-card-title">Supporting documents <span class="file-count-hint" *ngIf="previews.length > 0">({{ previews.length }} file{{ previews.length > 1 ? 's' : '' }})</span></div>
+          <div class="form-card-title">Supporting documents <span class="req">*</span> <span class="file-count-hint" *ngIf="previews.length > 0">({{ previews.length }} file{{ previews.length > 1 ? 's' : '' }})</span></div>
 
-          <div class="upload-area"
+          <div class="upload-area" [class.field-error]="formSubmitted && previews.length === 0 && !existingFileUrl"
             [class.dragging]="isDragging"
             (click)="fileInput.click()"
             (dragover)="onDragOver($event)"
             (dragleave)="onDragLeave($event)"
             (drop)="onDrop($event)">
             <input #fileInput type="file" accept=".pdf,.jpg,.jpeg,.png" multiple (change)="onFileSelected($event)" hidden />
-            <div class="upload-icon">📎</div>
+            <div class="upload-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#8A9BB0" stroke-width="1.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66L9.41 17.41a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+            </div>
             <div class="upload-text">
               <strong>{{ isDragging ? 'Drop files here' : 'Click or drag & drop' }}</strong>
               <span class="upload-hint">PDF, JPG, PNG — multiple files supported</span>
@@ -91,7 +93,7 @@
           <div class="file-list" *ngIf="previews.length > 0">
             <div class="file-item" *ngFor="let p of previews; let i = index">
               <div class="file-item-header">
-                <span class="file-item-icon">{{ p.isPdf ? '📄' : '🖼️' }}</span>
+                <span class="file-item-icon">{{ p.isPdf ? 'PDF' : 'IMG' }}</span>
                 <span class="file-item-name">{{ p.name }}</span>
                 <button class="btn-remove-file" (click)="removeFile(i)" title="Remove">✕</button>
               </div>
@@ -109,7 +111,7 @@
           <button class="btn-cancel" routerLink="/dashboard">Cancel</button>
           <button class="btn-submit" (click)="submitClaim()" [disabled]="loading">
             <span class="spinner" *ngIf="loading"></span>
-            {{ loading ? (editMode ? 'Saving...' : 'Submitting...') : (editMode ? 'Save Changes →' : 'Submit Claim →') }}
+            {{ loading ? (editMode ? 'Saving...' : 'Submitting...') : (editMode ? 'Save Changes →' : 'Submit Voucher →') }}
           </button>
         </div>
       </ng-container>

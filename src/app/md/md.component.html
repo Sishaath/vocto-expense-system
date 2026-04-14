@@ -1,49 +1,51 @@
 <div class="app-wrap">
   <div class="topbar">
-    <div class="logo">
-      <div class="logo-mark">V</div>
-      <div class="logo-text">Voc<span>to</span></div>
-    </div>
-    <div class="tb-divider"></div>
-    <div class="tb-section">MD APPROVALS</div>
-    <div class="tb-right">
-      <div class="user-chip">
-        <div class="user-av">MD</div>
-        <div class="user-name">Managing Director</div>
+    <div class="topbar-accent"></div>
+    <div class="topbar-main">
+      <div class="logo">
+        <img src="/vocto-logo.png" alt="Vocto" class="logo-img" />
+        <div class="logo-divider"></div>
+        <div class="logo-text-block">
+          <div class="logo-company">Vocto Technologies Private Limited</div>
+        </div>
       </div>
-      <button class="btn-logout" (click)="logout()">Logout</button>
+      <div class="tb-section">MD APPROVALS</div>
+      <div class="tb-right">
+        <button class="burger-btn" (click)="toggleSidebar()">
+          <span></span><span></span><span></span>
+        </button>
+        <app-notif-bell [userEmail]="userEmail"></app-notif-bell>
+        <div class="user-chip" routerLink="/profile" style="cursor:pointer">
+          <div class="user-av">{{ userInitial }}</div>
+          <div class="user-name">{{ userName }}</div>
+        </div>
+        <button class="btn-logout" (click)="logout()">Logout</button>
+      </div>
     </div>
   </div>
 
   <div class="shell">
-    <div class="sidebar">
-      <div class="nav-label">Navigation</div>
-      <div class="nav-item active">Approvals</div>
-      <div class="nav-item" routerLink="/submit">Submit My Claim</div>
-      <div class="nav-label" style="margin-top:16px;">Filter</div>
-      <div class="nav-item" [class.active]="selectedMonth === 'all' && !showRejected"
-        (click)="selectedMonth='all'; showRejected=false">All Claims</div>
-      <div class="nav-item" [class.active]="showRejected"
-        (click)="showRejected=true; selectedMonth='all'">Rejected</div>
-      <div class="nav-item"
-        *ngFor="let m of availableMonths"
-        [class.active]="selectedMonth === m.key && !showRejected"
-        (click)="selectedMonth=m.key; showRejected=false">
-        {{ m.label }}
-      </div>
+    <div class="sidebar-overlay" *ngIf="sidebarOpen" (click)="closeSidebar()"></div>
+    <div class="sidebar" [class.open]="sidebarOpen">
+      <button class="sidebar-close" (click)="closeSidebar()">✕</button>
+      <app-md-sidebar [activeSection]="activeSection" (sectionChange)="activeSection=$event; closeSidebar()"></app-md-sidebar>
     </div>
 
     <div class="main">
+      <div class="loading-overlay" *ngIf="loading">
+        <div class="spinner"></div>
+        <div class="loading-text">Loading...</div>
+      </div>
       <div class="page-title">MD <span>Approvals</span></div>
-      <div class="page-sub">Review and approve verified claims</div>
+      <div class="page-sub">Review and approve verified vouchers</div>
 
-      <div class="stats">
-        <div class="stat s1">
+      <div class="stats" *ngIf="activeSection!=='rejected'">
+        <div class="stat s1" [class.active-stat]="activeSection==='pending'" style="cursor:pointer" (click)="activeSection=activeSection==='pending'?'all':'pending'">
           <div class="stat-label">Awaiting Approval</div>
           <div class="stat-value">{{ verifiedClaims.length }}</div>
           <div class="stat-sub">Needs your action</div>
         </div>
-        <div class="stat s2">
+        <div class="stat s2" [class.active-stat]="activeSection==='approved'" style="cursor:pointer" (click)="activeSection=activeSection==='approved'?'all':'approved'">
           <div class="stat-label">Approved</div>
           <div class="stat-value">{{ approvedClaims.length }}</div>
           <div class="stat-sub">Processed</div>
@@ -60,17 +62,77 @@
         </div>
       </div>
 
-      <ng-container *ngIf="!showRejected">
-      <!-- AWAITING APPROVAL -->
-      <div class="section-head">
-        <div class="section-title">Claims Awaiting Your Approval</div>
-        <span class="pending-count">{{ verifiedClaims.length }} pending</span>
+      <!-- FILTER BAR -->
+      <div class="filter-bar">
+        <div class="search-wrap">
+          <span class="search-icon">Search:</span>
+          <input class="search-input" [(ngModel)]="searchQuery" placeholder="Search by employee, voucher..." />
+        </div>
+        <select class="filter-select" [(ngModel)]="selectedMonth">
+          <option value="all">All Months</option>
+          <option *ngFor="let m of availableMonths" [value]="m.key">{{ m.label }}</option>
+        </select>
+        <select class="filter-select" [(ngModel)]="activeSection">
+          <option value="all">All Statuses</option>
+          <option value="pending">Awaiting Approval</option>
+          <option value="approved">Approved</option>
+          <option value="rejected">Rejected</option>
+        </select>
+        <input class="filter-date" type="date" [(ngModel)]="filterFrom" title="From date" />
+        <input class="filter-date" type="date" [(ngModel)]="filterTo" title="To date" />
+        <button class="btn-export" (click)="exportCSV()">CSV</button>
+        <button class="btn-export-xl" (click)="exportExcel()">Excel</button>
+        <button class="btn-export-pdf" (click)="exportPDF()">PDF</button>
       </div>
-      <div class="table-wrap" style="margin-bottom:24px">
+
+      <!-- PURCHASE ORDERS SECTION -->
+      <div class="section-head" *ngIf="show('pending')">
+        <div class="section-title">Purchase Orders — Awaiting Your Approval</div>
+        <span class="pending-count">{{ pendingPOs.length }} pending</span>
+      </div>
+      <div class="table-wrap" style="margin-bottom:24px" *ngIf="show('pending')">
         <table>
           <thead>
             <tr>
-              <th>Claim ID</th>
+              <th>PO Number</th><th>Vendor</th><th>Amount</th><th>Submitted By</th><th>Date</th><th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let po of pendingPOs">
+              <td class="mono">{{ po.po_number || '—' }}</td>
+              <td><strong>{{ po.vendor_name }}</strong></td>
+              <td class="amount">₹{{ po.total.toLocaleString('en-IN') }}</td>
+              <td>{{ po.submitted_by_email || po.submitted_by }}</td>
+              <td class="mono">{{ po.created_at | date:'dd MMM' }}</td>
+              <td>
+                <div class="action-btns">
+                  <button class="btn-view" [routerLink]="['/po/view', po.id]">View</button>
+                  <button class="btn-approve" (click)="approvePO(po.id)">✓ Approve</button>
+                  <button class="btn-reject" (click)="openPORejectModal(po.id)">✕ Reject</button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="pendingPOs.length === 0">
+              <td colspan="6" class="empty">No POs awaiting approval</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- AWAITING APPROVAL -->
+      <div class="filter-bar" style="margin-bottom:16px;" *ngIf="show('pending')">
+        <input class="search-input" [(ngModel)]="searchQuery" placeholder="Search by title, voucher ID or employee..." style="flex:1;padding:8px 12px;border:1.5px solid #E8ECF3;border-radius:7px;font-size:13px;outline:none;" />
+        <button class="btn-cancel" *ngIf="searchQuery" (click)="searchQuery=''" style="padding:8px 14px;">&#10005; Clear</button>
+      </div>
+      <div class="section-head" *ngIf="show('pending')">
+        <div class="section-title">Vouchers Awaiting Your Approval</div>
+        <span class="pending-count">{{ verifiedClaims.length }} pending</span>
+      </div>
+      <div class="table-wrap" style="margin-bottom:24px" *ngIf="show('pending')">
+        <table>
+          <thead>
+            <tr>
+              <th>Voucher ID</th>
               <th>Title</th>
               <th>Category</th>
               <th>Amount</th>
@@ -85,7 +147,10 @@
               <td><strong>{{ claim.title }}</strong></td>
               <td class="muted">{{ claim.category }}</td>
               <td class="amount">₹{{ claim.amount.toLocaleString('en-IN') }}</td>
-              <td class="mono">{{ claim.created_at | date:'dd MMM' }}</td>
+              <td class="mono">
+                {{ claim.created_at | date:'dd MMM' }}
+                <span class="sla-badge" *ngIf="slaHours(claim) >= 48">⚠ {{ slaHours(claim) >= 24 ? (slaHours(claim) / 24 | number:'1.0-0') + 'd' : slaHours(claim) + 'h' }}</span>
+              </td>
               <td>
                 <button class="btn-view" *ngIf="claim.file_url" (click)="$event.stopPropagation(); openViewer(claim)">View</button>
                 <span class="muted" *ngIf="!claim.file_url">—</span>
@@ -98,21 +163,21 @@
               </td>
             </tr>
             <tr *ngIf="verifiedClaims.length === 0">
-              <td colspan="7" class="empty">No claims awaiting approval 🎉</td>
+              <td colspan="7" class="empty">No vouchers awaiting approval 🎉</td>
             </tr>
           </tbody>
         </table>
       </div>
 
       <!-- RECENTLY PROCESSED -->
-      <div class="section-head">
+      <div class="section-head" *ngIf="show('approved')">
         <div class="section-title">Recently Processed</div>
       </div>
-      <div class="table-wrap">
+      <div class="table-wrap" *ngIf="show('approved')">
         <table>
           <thead>
             <tr>
-              <th>Claim ID</th>
+              <th>Voucher ID</th>
               <th>Title</th>
               <th>Amount</th>
               <th>Decision</th>
@@ -138,18 +203,16 @@
         </table>
       </div>
 
-      </ng-container>
-
       <!-- REJECTED VIEW -->
-      <ng-container *ngIf="showRejected">
+      <ng-container *ngIf="activeSection==='rejected'">
         <div class="section-head">
-          <div class="section-title">❌ Rejected Claims</div>
+          <div class="section-title">Rejected Vouchers</div>
         </div>
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>Claim ID</th><th>Title</th><th>Amount</th><th>Reason</th><th>Attachment</th><th>Date</th>
+                <th>Voucher ID</th><th>Title</th><th>Amount</th><th>Reason</th><th>Attachment</th><th>Date</th>
               </tr>
             </thead>
             <tbody>
@@ -165,13 +228,68 @@
                 <td class="mono">{{ claim.approved_at | date:'dd MMM' }}</td>
               </tr>
               <tr *ngIf="rejectedClaims.length === 0">
-                <td colspan="6" class="empty">No rejected claims</td>
+                <td colspan="6" class="empty">No rejected vouchers</td>
               </tr>
             </tbody>
           </table>
         </div>
       </ng-container>
 
+      <!-- ADVANCE REQUISITIONS -->
+      <ng-container *ngIf="activeSection==='advance-req'">
+        <div class="section-head">
+          <div class="section-title">Advance Requisitions — Awaiting Your Approval</div>
+          <span class="pending-count">{{ pendingRequisitions.length }} pending</span>
+        </div>
+        <div class="table-wrap" style="margin-bottom:24px">
+          <table>
+            <thead>
+              <tr>
+                <th>Req Number</th><th>Purpose</th><th>Amount</th><th>Submitted By</th><th>Expected Date</th><th>Description</th><th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let req of pendingRequisitions">
+                <td class="mono">{{ req.req_number || '—' }}</td>
+                <td><strong>{{ req.purpose }}</strong></td>
+                <td class="amount">₹{{ req.advance_amount.toLocaleString('en-IN') }}</td>
+                <td>{{ req.submitted_by }}</td>
+                <td class="mono">{{ req.expected_date ? (req.expected_date | date:'dd MMM yyyy') : '—' }}</td>
+                <td class="muted">{{ req.description || '—' }}</td>
+                <td>
+                  <div class="action-btns">
+                    <button class="btn-approve" (click)="approveRequisition(req.id)">✓ Approve</button>
+                    <button class="btn-reject" (click)="rejectRequisition(req.id)">✕ Reject</button>
+                  </div>
+                </td>
+              </tr>
+              <tr *ngIf="pendingRequisitions.length === 0">
+                <td colspan="7" class="empty">No advance requisitions pending approval</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </ng-container>
+
+    </div>
+  </div>
+</div>
+
+<!-- PO Rejection Modal -->
+<div class="reject-overlay" *ngIf="poRejectModalOpen" (click)="cancelPOReject()">
+  <div class="reject-modal" (click)="$event.stopPropagation()">
+    <div class="reject-modal-header">
+      <div class="reject-modal-title">Reason for PO Rejection</div>
+      <button class="btn-close" (click)="cancelPOReject()">✕</button>
+    </div>
+    <div class="reject-modal-body">
+      <p class="reject-hint">Please provide a reason so the PO can be corrected and resubmitted.</p>
+      <textarea class="reject-textarea" [(ngModel)]="poRejectionReason"
+        placeholder="e.g. Wrong vendor details, amount exceeds budget..." rows="4"></textarea>
+    </div>
+    <div class="reject-modal-footer">
+      <button class="btn-cancel-reject" (click)="cancelPOReject()">Cancel</button>
+      <button class="btn-confirm-reject" (click)="confirmPOReject()" [disabled]="!poRejectionReason.trim()">✕ Confirm Reject</button>
     </div>
   </div>
 </div>

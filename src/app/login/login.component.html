@@ -1,40 +1,54 @@
 <div class="login-wrap">
   <div class="login-box">
     <div class="login-logo">
-      <div class="logo-mark">V</div>
-      <div class="logo-text">Voc<span>to</span></div>
+      <img src="/vocto-logo.png" alt="Vocto" class="login-logo-img" />
+      <div class="login-logo-text">
+        <div class="login-company">Vocto Technologies Private Limited</div>
+      </div>
     </div>
     <div class="login-sub">EXPENSE & APPROVAL SYSTEM</div>
     <div class="orange-bar"></div>
-    <h2>Welcome back</h2>
-    <p class="sub">Sign in to your workspace</p>
+    <div class="timeout-msg" *ngIf="timeoutMsg">⏱ Session expired due to inactivity. Please sign in again.</div>
 
-    <div class="role-tabs">
-      <button [class.active]="selectedRole === 'employee'" (click)="setRole('employee')">Employee</button>
-      <button [class.active]="selectedRole === 'accounts'" (click)="setRole('accounts')">Accounts</button>
-      <button [class.active]="selectedRole === 'md'" (click)="setRole('md')">MD</button>
-    </div>
+    <ng-container *ngIf="!forgotMode">
+      <h2>Welcome</h2>
+      <p class="sub">Sign in with your company email</p>
 
-    <div class="field">
-      <label>Email</label>
-      <input type="email" [(ngModel)]="email" placeholder="you@voctotechnologies.com" />
-    </div>
-    <div class="field">
-      <label>Password</label>
-      <input type="password" [(ngModel)]="password" placeholder="••••••••" />
-    </div>
+      <div class="field">
+        <label>Email</label>
+        <input type="email" [(ngModel)]="email" placeholder="you@voctotechnologies.com" (keyup.enter)="login()" />
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" [(ngModel)]="password" placeholder="••••••••" (keyup.enter)="login()" />
+      </div>
 
-    <div class="error" *ngIf="errorMsg">{{ errorMsg }}</div>
+      <div class="error" *ngIf="errorMsg">{{ errorMsg }}</div>
 
-    <button class="btn-login" (click)="login()" [disabled]="loading">
-      {{ loading ? 'Signing in...' : 'Sign In →' }}
-    </button>
+      <button class="btn-login" (click)="login()" [disabled]="loading">
+        {{ loading ? 'Signing in...' : 'Sign In →' }}
+      </button>
 
-    <div class="demo-hint">
-      <strong>Demo accounts</strong><br>
-      Employee → admin&#64;voctotechnologies.com<br>
-      Accounts → accounts&#64;voctotechnologies.com<br>
-      MD → md&#64;voctotechnologies.com
-    </div>
+      <div class="forgot-link" (click)="forgotMode=true">Forgot password?</div>
+    </ng-container>
+
+    <ng-container *ngIf="forgotMode">
+      <h2>Reset Password</h2>
+      <p class="sub">Enter your email to receive a reset link</p>
+
+      <div class="field">
+        <label>Email</label>
+        <input type="email" [(ngModel)]="email" placeholder="you@voctotechnologies.com" (keyup.enter)="sendReset()" />
+      </div>
+
+      <div class="error" *ngIf="errorMsg">{{ errorMsg }}</div>
+      <div class="success-msg" *ngIf="resetSent">Check your email for a password reset link.</div>
+
+      <button class="btn-login" (click)="sendReset()" [disabled]="loading || resetSent">
+        {{ loading ? 'Sending...' : 'Send Reset Link' }}
+      </button>
+
+      <div class="forgot-link" (click)="forgotMode=false; errorMsg=''; resetSent=false">← Back to sign in</div>
+    </ng-container>
   </div>
 </div>

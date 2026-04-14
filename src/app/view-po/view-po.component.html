@@ -1,0 +1,231 @@
+<!-- APP BAR (no-print) -->
+<div class="app-bar no-print">
+  <div class="ab-left">
+    <img src="/vocto-logo.png" alt="Vocto" style="height:32px;margin-right:6px;" />
+    <button class="btn-back" (click)="router.navigate(['/dashboard'])">← Dashboard</button>
+    <div class="ab-title" *ngIf="po">{{ po.po_number }}</div>
+    <span class="badge status-{{po?.status}}" *ngIf="po">{{ statusLabel(po?.status) }}</span>
+  </div>
+  <div class="ab-right" *ngIf="po">
+    <button class="btn-edit" *ngIf="po.status === 'draft'" (click)="router.navigate(['/po/edit', po.id])">Edit</button>
+    <button class="btn-print" *ngIf="po.status === 'md_approved'" (click)="print()">Download PDF</button>
+  </div>
+</div>
+
+<div class="loading-state no-print" *ngIf="loading">Loading…</div>
+
+<!-- PO DOCUMENT (print-friendly) -->
+<div class="po-document" *ngIf="po">
+
+  <!-- HEADER -->
+  <div class="po-header">
+    <div class="po-company">
+      <img src="/vocto-logo.png" alt="Vocto" class="company-logo" />
+      <div class="company-info">
+        <div class="company-name">Vocto Technologies Pvt. Ltd.</div>
+        <div class="company-addr">B4, Phase II, MEPZ SEZ, Tambaram, Chennai – 600 045, Tamil Nadu</div>
+        <div class="company-addr">GSTIN: 33AAACO0420H1ZH &nbsp;|&nbsp; CIN: U32509TN1994PTC029202</div>
+        <div class="company-addr">Email: admin&#64;voctotechnologies.com</div>
+      </div>
+    </div>
+    <div class="po-title-block">
+      <div class="po-title-text">PURCHASE ORDER</div>
+      <div class="po-number-badge">{{ po.po_number }}</div>
+    </div>
+  </div>
+
+  <!-- META STRIP -->
+  <div class="po-meta-strip">
+    <div class="meta-item"><div class="mi-label">Date Issued On</div><div class="mi-val">{{ po.date | date:'dd MMM yyyy' }}</div></div>
+    <div class="meta-item"><div class="mi-label">Valid Till</div><div class="mi-val">{{ po.valid_till | date:'dd MMM yyyy' }}</div></div>
+    <div class="meta-item" *ngIf="po.deadline_date"><div class="mi-label">Expected Delivery</div><div class="mi-val">{{ po.deadline_date | date:'dd MMM yyyy' }}</div></div>
+    <div class="meta-item"><div class="mi-label">Payment Terms</div><div class="mi-val">{{ po.payment_terms }}</div></div>
+    <div class="meta-item"><div class="mi-label">Delivery Terms</div><div class="mi-val">{{ po.delivery_terms }}</div></div>
+  </div>
+
+  <!-- PARTIES -->
+  <div class="po-parties">
+    <div class="party-box">
+      <div class="party-label">Vendor / Supplier</div>
+      <div class="party-name">{{ po.vendor_name }}</div>
+      <div class="party-gstin" *ngIf="po.vendor_gstin">GSTIN: {{ po.vendor_gstin }}</div>
+      <div class="party-gstin" *ngIf="po.vendor_pan">PAN: {{ po.vendor_pan }}</div>
+      <div class="party-addr" *ngFor="let line of addressLines(po.vendor_address)">{{ line }}</div>
+      <div class="party-addr" *ngIf="po.vendor_city">{{ po.vendor_city }}, {{ po.vendor_state }}</div>
+      <div class="party-contact" *ngIf="po.vendor_email || po.vendor_phone">
+        <span *ngIf="po.vendor_email">{{ po.vendor_email }}</span>
+        <span *ngIf="po.vendor_phone"> | {{ po.vendor_phone }}</span>
+      </div>
+    </div>
+    <div class="party-box ship">
+      <div class="party-label">Ship To / Bill To</div>
+      <div class="party-addr" *ngFor="let line of addressLines(po.ship_to_address || po.delivery_address)">{{ line }}</div>
+    </div>
+  </div>
+
+  <!-- LINE ITEMS TABLE -->
+  <table class="items-table">
+    <thead>
+      <tr>
+        <th class="col-sno">S.No</th>
+        <th class="col-desc">Description of Goods / Services</th>
+        <th class="col-hsn">HSN / SAC</th>
+        <th class="col-qty">Qty</th>
+        <th class="col-unit">Unit</th>
+        <th class="col-price">Unit Price</th>
+        <th class="col-gst">GST%</th>
+        <th class="col-amt">Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let item of po.items; let i = index">
+        <td class="td-sno">{{ i + 1 }}</td>
+        <td class="td-desc">{{ item.description }}</td>
+        <td class="td-hsn">{{ item.hsn_code || '—' }}</td>
+        <td class="td-qty">{{ item.quantity }}</td>
+        <td class="td-unit">{{ item.unit }}</td>
+        <td class="td-price">₹{{ item.unit_price.toLocaleString('en-IN', {minimumFractionDigits:2}) }}</td>
+        <td class="td-gst">{{ item.gst_rate }}%</td>
+        <td class="td-amt">₹{{ item.amount.toLocaleString('en-IN', {minimumFractionDigits:2}) }}</td>
+      </tr>
+      <tr class="pad-row" *ngFor="let x of [1,2,3,4,5].slice(po.items.length < 5 ? 0 : 5)">
+        <td colspan="8">&nbsp;</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- TOTALS + NOTES -->
+  <div class="po-footer-block">
+    <div class="notes-block">
+      <div *ngIf="po.notes" class="notes-section">
+        <div class="ns-label">Notes / Special Instructions</div>
+        <div class="ns-content">{{ po.notes }}</div>
+      </div>
+      <div class="terms-section">
+        <div class="ts-label">Terms &amp; Conditions</div>
+        <div class="ts-content" *ngFor="let line of po.terms?.split('\n') || []">{{ line }}</div>
+      </div>
+    </div>
+
+    <div class="totals-block">
+      <div class="total-row"><span>Subtotal</span><span>₹{{ po.subtotal.toLocaleString('en-IN', {minimumFractionDigits:2}) }}</span></div>
+      <ng-container *ngIf="!isInterState">
+        <div class="total-row"><span>CGST</span><span>₹{{ po.cgst.toLocaleString('en-IN', {minimumFractionDigits:2}) }}</span></div>
+        <div class="total-row"><span>SGST</span><span>₹{{ po.sgst.toLocaleString('en-IN', {minimumFractionDigits:2}) }}</span></div>
+      </ng-container>
+      <div class="total-row" *ngIf="isInterState"><span>IGST</span><span>₹{{ po.igst.toLocaleString('en-IN', {minimumFractionDigits:2}) }}</span></div>
+      <div class="total-row freight" *ngIf="po.freight_charges"><span>Freight ({{ po.freight_charges }}%)</span><span>₹{{ (po.subtotal * po.freight_charges / 100).toLocaleString('en-IN', {minimumFractionDigits:2}) }}</span></div>
+      <div class="total-row freight" *ngIf="po.packing_charges"><span>Packing ({{ po.packing_charges }}%)</span><span>₹{{ (po.subtotal * po.packing_charges / 100).toLocaleString('en-IN', {minimumFractionDigits:2}) }}</span></div>
+      <div class="total-row grand"><span>Grand Total</span><span>₹{{ po.total.toLocaleString('en-IN', {minimumFractionDigits:2}) }}</span></div>
+      <div class="amount-words" *ngIf="po.amount_in_words">
+        <strong>In Words:</strong> {{ po.amount_in_words }}
+      </div>
+
+      <div class="signature-block">
+        <div class="sig-line"></div>
+        <div class="sig-name">Authorised Signatory</div>
+        <div class="sig-company">Vocto Technologies Pvt. Ltd.</div>
+        <div class="sig-note">This is a computer-generated Purchase Order</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- APPROVAL TRAIL (no-print) -->
+  <div class="approval-trail no-print" *ngIf="po.submitted_by || po.acc_verified_by || po.md_approved_by">
+    <div class="at-title">Approval Trail</div>
+    <div class="at-row" *ngIf="po.submitted_by">
+      <span class="at-label">Submitted by</span>
+      <span class="at-val">{{ po.submitted_by }}</span>
+    </div>
+    <div class="at-row" *ngIf="po.acc_verified_by">
+      <span class="at-label">Accounts Verified by</span>
+      <span class="at-val">{{ po.acc_verified_by }}</span>
+    </div>
+    <div class="at-row" *ngIf="po.md_approved_by">
+      <span class="at-label">MD Approved by</span>
+      <span class="at-val">{{ po.md_approved_by }}</span>
+    </div>
+    <div class="at-row" *ngIf="po.comments">
+      <span class="at-label">Internal Comments</span>
+      <span class="at-val">{{ po.comments }}</span>
+    </div>
+  </div>
+
+  <!-- VENDOR INVOICE SECTION (no-print) -->
+  <div class="vendor-invoice-section no-print" *ngIf="po.status === 'md_approved'">
+    <div class="at-title">Vendor Invoice</div>
+
+    <!-- Already uploaded -->
+    <ng-container *ngIf="po.vendor_invoice_url">
+      <div class="at-row"><span class="at-label">Invoice No.</span><span class="at-val">{{ po.vendor_invoice_number || '—' }}</span></div>
+      <div class="at-row"><span class="at-label">Invoice Date</span><span class="at-val">{{ po.vendor_invoice_date | date:'dd MMM yyyy' }}</span></div>
+      <div class="at-row"><span class="at-label">File</span><span class="at-val"><button class="btn-view-inv" (click)="openInvoiceViewer()">View Invoice</button></span></div>
+    </ng-container>
+
+    <!-- Upload form (accounts only) -->
+    <ng-container *ngIf="isAccounts">
+      <div class="inv-upload-form">
+        <div class="inv-row">
+          <div class="inv-field">
+            <label>{{ po.vendor_invoice_url ? 'Update Invoice No.' : 'Invoice No.' }}</label>
+            <input type="text" [(ngModel)]="invoiceNumber" placeholder="e.g. INV/2026/001" />
+          </div>
+          <div class="inv-field">
+            <label>Invoice Date</label>
+            <input type="date" [(ngModel)]="invoiceDate" />
+          </div>
+        </div>
+        <div class="inv-row">
+          <div class="inv-field">
+            <label>{{ po.vendor_invoice_url ? 'Replace PDF (optional)' : 'Upload PDF / Image' }}</label>
+            <input type="file" accept=".pdf,image/*" (change)="onInvoiceFileSelected($event)" />
+            <span class="inv-hint" *ngIf="invoiceFileName">{{ invoiceFileName }}</span>
+          </div>
+          <button class="btn-save-inv" (click)="uploadVendorInvoice()" [disabled]="invoiceUploading">
+            {{ invoiceUploading ? 'Saving...' : po.vendor_invoice_url ? '↻ Update' : '⬆ Save Invoice' }}
+          </button>
+        </div>
+      </div>
+    </ng-container>
+    <p class="inv-hint" *ngIf="!po.vendor_invoice_url && !isAccounts">No vendor invoice uploaded yet.</p>
+  </div>
+
+  <!-- VENDOR RATING (no-print, accounts and MD only, md_approved POs) -->
+  <div class="vendor-invoice-section no-print" *ngIf="po.status === 'md_approved' && (isAccounts || isMD)">
+    <div class="at-title">Rate this Vendor</div>
+    <div class="rating-stars">
+      <span [class]="starClass(1)" (click)="setRating(1)">★</span>
+      <span [class]="starClass(2)" (click)="setRating(2)">★</span>
+      <span [class]="starClass(3)" (click)="setRating(3)">★</span>
+      <span [class]="starClass(4)" (click)="setRating(4)">★</span>
+      <span [class]="starClass(5)" (click)="setRating(5)">★</span>
+      <span class="rating-label" *ngIf="vendorRating">{{ ['','Poor','Fair','Good','Very Good','Excellent'][vendorRating] }}</span>
+    </div>
+    <textarea class="rating-notes" [(ngModel)]="vendorNotes" placeholder="Notes about this vendor (delivery, quality, communication)..." rows="3"></textarea>
+    <div style="margin-top:12px;">
+      <button class="btn-save-inv" (click)="submitRating()" [disabled]="ratingSubmitting || vendorRating === 0">
+        {{ ratingSubmitting ? 'Saving...' : existingRatingId ? '↻ Update Rating' : '★ Save Rating' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- PO FOOTER STRIP -->
+  <div class="po-doc-footer">
+    <div>{{ po.po_number }} &nbsp;|&nbsp; {{ po.date | date:'dd MMM yyyy' }}</div>
+    <div>Vocto Technologies Pvt. Ltd. &nbsp;|&nbsp; GSTIN: 33AAACO0420H1ZH</div>
+  </div>
+
+</div>
+
+<!-- Invoice Viewer Modal -->
+<div class="file-modal-overlay" *ngIf="invoiceViewerOpen" (click)="invoiceViewerOpen=false">
+  <div class="file-modal" (click)="$event.stopPropagation()">
+    <div class="file-modal-header">
+      <div class="file-modal-title">{{ po?.vendor_invoice_name || 'Vendor Invoice' }}</div>
+      <button class="btn-close" (click)="invoiceViewerOpen=false">✕</button>
+    </div>
+    <div class="file-modal-body">
+      <iframe [src]="invoiceViewerUrl" style="width:100%;height:100%;border:none;"></iframe>
+    </div>
+  </div>
+</div>

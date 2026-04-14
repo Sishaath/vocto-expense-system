@@ -1,0 +1,66 @@
+<div class="app-wrap">
+  <div class="topbar">
+    <div class="topbar-accent"></div>
+    <div class="topbar-main">
+      <div class="logo">
+        <img src="/vocto-logo.png" alt="Vocto" class="logo-img" />
+        <div class="logo-divider"></div>
+        <div class="logo-text-block">
+          <div class="logo-company">Vocto Technologies Private Limited</div>
+        </div>
+      </div>
+      <div class="tb-section">VENDOR DIRECTORY</div>
+      <div class="tb-right">
+        <button class="btn-back" (click)="goBack()">← Back</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="main-content">
+    <div class="page-title">Vendor <span>Directory</span></div>
+    <div class="page-sub">Price history and ratings for all vendors</div>
+
+    <div class="filter-bar">
+      <input class="search-input" [(ngModel)]="search" placeholder="Search by name, GSTIN or city..." />
+    </div>
+
+    <div class="loading-overlay" *ngIf="loading">
+      <div class="spinner"></div>
+      <div class="loading-text">Loading...</div>
+    </div>
+
+    <div class="table-wrap" *ngIf="!loading">
+      <table>
+        <thead>
+          <tr>
+            <th>Vendor Name</th>
+            <th>GSTIN</th>
+            <th>City</th>
+            <th>Avg Rating</th>
+            <th>Last PO</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let v of filtered" class="clickable-row" (click)="router.navigate(['/vendors', v.id])">
+            <td><strong>{{ v.name }}</strong></td>
+            <td class="mono">{{ v.gstin || '—' }}</td>
+            <td>{{ v.city || '—' }}</td>
+            <td>
+              <span class="stars">
+                <span *ngFor="let s of stars(v.avgRating)" [class.filled]="s">★</span>
+              </span>
+              <span class="rating-count" *ngIf="v.ratingCount">{{ v.avgRating }}/5 ({{ v.ratingCount }})</span>
+              <span class="muted" *ngIf="!v.ratingCount">No ratings</span>
+            </td>
+            <td class="mono">{{ v.lastPoDate ? (v.lastPoDate | date:'dd MMM yyyy') : '—' }}</td>
+            <td><button class="btn-view">View →</button></td>
+          </tr>
+          <tr *ngIf="filtered.length === 0">
+            <td colspan="6" class="empty">No vendors found</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

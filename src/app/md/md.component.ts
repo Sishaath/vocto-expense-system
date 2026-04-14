@@ -1,31 +1,46 @@
 import { Component, OnInit } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router, RouterLink, RouterModule, ActivatedRoute } from '@angular/router';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { SupabaseService } from '../supabase.service';
 import { ClaimDetailComponent } from '../claim-detail/claim-detail.component';
 import { ToastService } from '../shared/toast.service';
+import { NotifBellComponent } from '../notif-bell/notif-bell.component';
+import { MdSidebarComponent } from '../md-sidebar/md-sidebar.component';
 
 @Component({
   selector: 'app-md',
   standalone: true,
-  imports: [CommonModule, RouterLink, DatePipe, ClaimDetailComponent, FormsModule],
+  imports: [CommonModule, RouterLink, RouterModule, DatePipe, ClaimDetailComponent, FormsModule, NotifBellComponent, MdSidebarComponent],
   templateUrl: './md.component.html',
   styleUrls: ['./md.component.scss']
 })
 export class MdComponent implements OnInit {
   allClaims: any[] = [];
+  allPOs: any[] = [];
+  allRequisitions: any[] = [];
+  sidebarOpen = false;
+
+  toggleSidebar() { this.sidebarOpen = !this.sidebarOpen; }
+  closeSidebar() { this.sidebarOpen = false; }
   selectedClaim: any = null;
   selectedMonth = 'all';
-  showRejected = false;
+  activeSection: string = 'all';
   rejectModalOpen = false;
   rejectingClaimId: string | null = null;
   rejectionReason = '';
+  poRejectModalOpen = false;
+  rejectingPOId: string | null = null;
+  poRejectionReason = '';
   viewerOpen = false;
   viewerUrl: SafeResourceUrl | string = '';
   viewerName = '';
   viewerIsPdf = false;
+  loading = true;
+  searchQuery = '';
+  filterFrom = '';
+  filterTo = '';
 
   get availableMonths(): { key: string; label: string }[] {
     const seen = new Set<string>();
@@ -48,7 +63,15 @@ export class MdComponent implements OnInit {
   }
 
   get verifiedClaims() {
-    return this.allClaims.filter(c => c.status === 'VERIFIED' && this.matchesMonth(c));
+    return this.allClaims.filter(c => {
+      if (c.status !== 'VERIFIED') return false;
+      if (!this.matchesMonth(c)) return false;
+      if (this.searchQuery) {
+        const q = this.searchQuery.toLowerCase();
+        return c.title?.toLowerCase().includes(q) || c.claim_number?.toLowerCase().includes(q) || c.employee_email?.toLowerCase().includes(q);
+      }
+      return true;
+    });
   }
 
   get approvedClaims() {
@@ -75,29 +98,114 @@ export class MdComponent implements OnInit {
       .reduce((sum, c) => sum + c.amount, 0);
   }
 
+  get pendingPOs() {
+    return this.allPOs.filter(p => p.status === 'acc_verified');
+  }
+
+  get approvedPOs() {
+    return this.allPOs.filter(p => p.status === 'md_approved');
+  }
+
+  get pendingRequisitions() {
+    return this.allRequisitions.filter(r => r.status === 'ACCOUNTS_APPROVED');
+  }
+
+  async approveRequisition(id: string) {
+    const { data: { session } } = await this.supabase.getClient().auth.getSession();
+    const { error } = await this.supabase.getClient()
+      .from('advance_requisitions')
+      .update({ status: 'MD_APPROVED', approved_by: session?.user?.email, approved_at: new Date().toISOString() })
+      .eq('id', id);
+    if (error) { this.toast.show(error.message, 'error'); return; }
+    this.toast.show('Advance requisition approved!', 'success');
+    await this.ngOnInit();
+  }
+
+  async rejectRequisition(id: string) {
+    const reason = prompt('Reason for rejection:');
+    if (reason === null) return;
+    const { error } = await this.supabase.getClient()
+      .from('advance_requisitions')
+      .update({ status: 'REJECTED', rejection_reason: reason })
+      .eq('id', id);
+    if (error) { this.toast.show(error.message, 'error'); return; }
+    this.toast.show('Requisition rejected.', 'warning');
+    await this.ngOnInit();
+  }
+
   constructor(
     private supabase: SupabaseService,
     private router: Router,
+    private route: ActivatedRoute,
     private sanitizer: DomSanitizer,
     private toast: ToastService
   ) {}
 
+  userEmail = '';
+  fullName = '';
+  get userName() { return this.fullName || this.userEmail.split('@')[0].replace(/\./g, ' ').replace(/\b\w/g, c => c.toUpperCase()); }
+  get userInitial() { return this.userName.charAt(0).toUpperCase() || 'M'; }
+
   async ngOnInit() {
+    this.loading = true;
+    const { data: { session } } = await this.supabase.getClient().auth.getSession();
+    this.userEmail = session?.user?.email || '';
+    this.fullName = session?.user?.user_metadata?.['full_name'] || '';
     const { data } = await this.supabase.getClaims();
     if (data) this.allClaims = data;
+    const { data: poData } = await this.supabase.getPurchaseOrders();
+    if (poData) this.allPOs = poData;
+    const { data: reqData } = await this.supabase.getClient()
+      .from('advance_requisitions').select('*').order('created_at', { ascending: false });
+    if (reqData) this.allRequisitions = reqData;
+    this.loading = false;
+    const openRef = this.route.snapshot.queryParamMap.get('open');
+    if (openRef) {
+      const claim = this.allClaims.find(c => c.claim_number === openRef || c.id === openRef);
+      if (claim) this.selectedClaim = claim;
+    }
+  }
+
+  slaHours(claim: any): number {
+    return Math.floor((Date.now() - new Date(claim.created_at).getTime()) / 36e5);
+  }
+
+  async approvePO(id: string) {
+    const { data: { session } } = await this.supabase.getClient().auth.getSession();
+    const po = this.allPOs.find(p => p.id === id);
+    await this.supabase.getClient()
+      .from('purchase_orders')
+      .update({ status: 'md_approved', md_approved_by: session?.user?.email || '' })
+      .eq('id', id);
+    await this.supabase.logAudit({ entity_type: 'purchase_order', entity_id: id, entity_ref: po?.po_number, action: 'md_approved', performed_by: session?.user?.email || '', old_values: { status: po?.status }, new_values: { status: 'md_approved' } });
+    this.toast.show('PO approved!', 'success');
+    await this.ngOnInit();
   }
 
   async approveClaim(id: string) {
-    const user = await this.supabase.getClient().auth.getUser();
-    await this.supabase.getClient()
+    const { data: { session } } = await this.supabase.getClient().auth.getSession();
+    const claim = this.allClaims.find(c => c.id === id);
+    const approvedByName = session?.user?.user_metadata?.['full_name'] || session?.user?.email || '';
+    const { error } = await this.supabase.getClient()
       .from('claims')
-      .update({
-        status: 'MD_APPROVED',
-        approved_by: user.data.user?.id,
-        approved_at: new Date()
-      })
+      .update({ status: 'MD_APPROVED', approved_by: session?.user?.email || '', approved_by_name: approvedByName })
       .eq('id', id);
-    this.toast.show('Claim approved!');
+    if (error) { this.toast.show(error.message, 'error'); return; }
+    await this.supabase.logAudit({ entity_type: 'claim', entity_id: id, entity_ref: claim?.claim_number, action: 'md_approved', performed_by: session?.user?.email || '', old_values: { status: 'VERIFIED' }, new_values: { status: 'MD_APPROVED' } });
+    // Auto-clear the "ready for approval" notification from MD inbox
+    await this.supabase.markNotificationsReadForEntity(session?.user?.email || '', claim?.id || id);
+    // Notify accounts to release payment
+    await this.supabase.createNotifications(
+      ['yogeshwari@voctotechnologies.com', 'accounts@voctotechnologies.com'],
+      { title: `MD approved — release payment — ${claim?.claim_number}`, body: `${claim?.title} · ₹${Number(claim?.amount).toLocaleString('en-IN')}`, entity_type: 'claim', entity_id: claim?.id, entity_ref: claim?.claim_number }
+    );
+    this.toast.show('Claim approved!', 'success');
+    if (claim) {
+      fetch('/api/notify', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ event: 'approved', claimNumber: claim.claim_number, claimTitle: claim.title, amount: claim.amount, submittedBy: claim.employee_email || claim.submitted_by })
+      }).catch(() => {});
+    }
     await this.ngOnInit();
   }
 
@@ -119,12 +227,47 @@ export class MdComponent implements OnInit {
     this.cancelReject();
   }
 
-  async rejectClaim(id: string, reason: string) {
+  show(section: string): boolean { return this.activeSection === 'all' || this.activeSection === section; }
+
+  openPORejectModal(id: string) {
+    this.rejectingPOId = id;
+    this.poRejectionReason = '';
+    this.poRejectModalOpen = true;
+  }
+
+  cancelPOReject() {
+    this.poRejectModalOpen = false;
+    this.rejectingPOId = null;
+    this.poRejectionReason = '';
+  }
+
+  async confirmPOReject() {
+    if (!this.rejectingPOId || !this.poRejectionReason.trim()) return;
     await this.supabase.getClient()
+      .from('purchase_orders')
+      .update({ status: 'rejected', rejection_reason: this.poRejectionReason.trim() })
+      .eq('id', this.rejectingPOId);
+    this.toast.show('PO rejected.', 'warning');
+    this.cancelPOReject();
+    await this.ngOnInit();
+  }
+
+  async rejectClaim(id: string, reason: string) {
+    const { data: { session } } = await this.supabase.getClient().auth.getSession();
+    const claim = this.allClaims.find(c => c.id === id);
+    const { error } = await this.supabase.getClient()
       .from('claims')
       .update({ status: 'REJECTED', rejection_reason: reason })
       .eq('id', id);
+    if (error) { this.toast.show(error.message, 'error'); return; }
+    await this.supabase.logAudit({ entity_type: 'claim', entity_id: id, entity_ref: claim?.claim_number, action: 'rejected', performed_by: session?.user?.email || '', old_values: { status: claim?.status }, new_values: { status: 'REJECTED', rejection_reason: reason } });
     this.toast.show('Claim rejected.', 'warning');
+    if (claim?.employee_email) {
+      fetch('/api/notify', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ event: 'rejected', claimNumber: claim.claim_number, claimTitle: claim.title, amount: claim.amount, employeeEmail: claim.employee_email })
+      }).catch(() => {});
+    }
     await this.ngOnInit();
   }
 
@@ -138,10 +281,22 @@ export class MdComponent implements OnInit {
 
   async openViewer(claim: any) {
     if (!claim.file_url) return;
-    const url = this.supabase.getFileUrl(claim.file_url);
-    const ext = claim.file_name?.split('.').pop()?.toLowerCase() || '';
+    let fileUrl = claim.file_url;
+    let fileName = claim.file_name;
+    // file_url may be stored as a JSON array — use the first entry
+    try {
+      const parsed = JSON.parse(fileUrl);
+      if (Array.isArray(parsed)) {
+        if (parsed.length === 0) return; // empty array — no file
+        fileUrl = parsed[0];
+        const names = JSON.parse(fileName);
+        fileName = Array.isArray(names) ? names[0] : fileName;
+      }
+    } catch {}
+    const url = this.supabase.getFileUrl(fileUrl);
+    const ext = fileName?.split('.').pop()?.toLowerCase() || '';
     this.viewerIsPdf = ext === 'pdf';
-    this.viewerName = claim.file_name || 'Attachment';
+    this.viewerName = fileName || 'Attachment';
     this.viewerUrl = this.viewerIsPdf
       ? this.sanitizer.bypassSecurityTrustResourceUrl(url)
       : url;
@@ -151,6 +306,60 @@ export class MdComponent implements OnInit {
   closeViewer() {
     this.viewerOpen = false;
     this.viewerUrl = '';
+  }
+
+  get filteredForExport(): any[] {
+    const statusMap: any = { pending: 'VERIFIED', approved: 'MD_APPROVED', rejected: 'REJECTED' };
+    let claims = this.allClaims;
+    if (this.searchQuery) {
+      const q = this.searchQuery.toLowerCase();
+      claims = claims.filter(c => c.title?.toLowerCase().includes(q) || c.claim_number?.toLowerCase().includes(q) || c.employee_email?.toLowerCase().includes(q));
+    }
+    if (this.selectedMonth !== 'all') claims = claims.filter(c => this.matchesMonth(c));
+    if (this.activeSection !== 'all' && statusMap[this.activeSection]) claims = claims.filter(c => c.status === statusMap[this.activeSection]);
+    if (this.filterFrom) claims = claims.filter(c => c.created_at >= this.filterFrom);
+    if (this.filterTo) claims = claims.filter(c => c.created_at <= this.filterTo + 'T23:59:59');
+    return claims;
+  }
+
+  exportCSV() {
+    const claims = this.filteredForExport;
+    const headers = ['Voucher ID', 'Title', 'Category', 'Amount', 'Submitted By', 'Status', 'Date'];
+    const rows = claims.map(c => [
+      c.claim_number, `"${(c.title || '').replace(/"/g, '""')}"`, c.category, c.amount,
+      c.submitted_by || c.employee_email || '', c.status,
+      new Date(c.created_at).toLocaleDateString('en-IN')
+    ]);
+    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `approvals-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click(); URL.revokeObjectURL(url);
+    this.toast.show('Exported to CSV!');
+  }
+
+  exportExcel() {
+    const claims = this.filteredForExport;
+    const headers = ['Voucher ID', 'Title', 'Category', 'Amount (Rs.)', 'Submitted By', 'Status', 'Date'];
+    const rows = claims.map(c => [
+      c.claim_number, c.title, c.category, c.amount,
+      c.submitted_by || c.employee_email || '', c.status,
+      new Date(c.created_at).toLocaleDateString('en-IN')
+    ]);
+    let html = `<table><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>`;
+    rows.forEach(r => { html += `<tr>${r.map(v => `<td>${v}</td>`).join('')}</tr>`; });
+    html += '</table>';
+    const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `approvals-${new Date().toISOString().slice(0,10)}.xls`;
+    a.click(); URL.revokeObjectURL(url);
+    this.toast.show('Exported to Excel!');
+  }
+
+  exportPDF() {
+    window.print();
   }
 
   async logout() {

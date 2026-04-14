@@ -1,0 +1,18 @@
+<div class="sidebar-inner">
+  <div class="nav-label">Approvals</div>
+  <div class="nav-item nav-sub" [class.active]="activeSection==='all'" (click)="go('all')">All Vouchers</div>
+  <div class="nav-item nav-sub" [class.active]="activeSection==='pending'" (click)="go('pending')">Awaiting Approval</div>
+  <div class="nav-item nav-sub" [class.active]="activeSection==='approved'" (click)="go('approved')">Approved</div>
+  <div class="nav-item nav-sub" [class.active]="activeSection==='rejected'" (click)="go('rejected')">Rejected</div>
+  <a class="nav-item" [class.active]="is('/submit')" routerLink="/submit">+ Submit My Voucher</a>
+
+  <div class="nav-label" style="margin-top:8px;">Advance Requisitions</div>
+  <div class="nav-item nav-sub" [class.active]="activeSection==='advance-req'" (click)="go('advance-req')">Requisitions</div>
+
+  <div class="nav-label" style="margin-top:8px;">Purchase Orders</div>
+  <div class="nav-item nav-sub" [class.active]="activeSection==='pos'" (click)="go('pos')">All POs</div>
+  <a class="nav-item" [class.active]="is('/po/create')" routerLink="/po/create">+ Create PO</a>
+
+  <div class="nav-label" style="margin-top:8px;">Tools</div>
+  <a class="nav-item nav-sub" [class.active]="is('/vendors')" routerLink="/vendors">Vendor Directory</a>
+</div>

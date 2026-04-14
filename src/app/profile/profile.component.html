@@ -1,0 +1,30 @@
+<div class="profile-wrap">
+  <div class="profile-topbar">
+    <div class="logo">
+      <img src="/vocto-logo.png" alt="Vocto" class="logo-img" />
+      <div class="logo-divider"></div>
+      <div class="logo-company">Vocto Technologies Private Limited</div>
+    </div>
+    <div class="tb-right">
+      <button class="btn-back" [routerLink]="backRoute">← Back</button>
+    </div>
+  </div>
+
+  <div class="profile-body">
+    <div class="profile-card">
+      <div class="avatar-large">{{ userInitial }}</div>
+      <div class="profile-name">{{ userName }}</div>
+      <div class="profile-role">{{ userRole }}</div>
+      <div class="profile-email">{{ userEmail }}</div>
+
+      <div class="profile-divider"></div>
+
+      <div class="profile-actions">
+        <button class="btn-reset" (click)="sendPasswordReset()" [disabled]="loading || resetSent">
+          {{ resetSent ? '✓ Reset link sent to your email' : loading ? 'Sending...' : 'Change Password' }}
+        </button>
+        <button class="btn-logout" (click)="logout()">Logout</button>
+      </div>
+    </div>
+  </div>
+</div>

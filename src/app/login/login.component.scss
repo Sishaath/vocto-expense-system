@@ -30,26 +30,22 @@
   margin-bottom: 6px;
 }
 
-.logo-mark {
-  width: 44px;
-  height: 44px;
-  background: #F4721B;
-  border-radius: 12px;
-  display: grid;
-  place-items: center;
-  color: white;
-  font-size: 20px;
-  font-weight: 700;
+.login-logo-img {
+  height: 52px;
+  width: auto;
+  object-fit: contain;
 }
 
-.logo-text {
-  font-size: 26px;
-  font-weight: 700;
-  color: #0C2D5E;
+.login-logo-text {
+  display: flex;
+  flex-direction: column;
 }
 
-.logo-text span {
-  color: #F4721B;
+.login-company {
+  font-size: 22px;
+  font-weight: 800;
+  color: #0C1F3D;
+  letter-spacing: -0.5px;
 }
 
 /* Sub text */
@@ -146,56 +142,37 @@ h2 {
   cursor: not-allowed;
 }
 
-.role-tabs {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
-  background: #E6E9EE;
-  padding: 5px;
-  border-radius: 10px;
-  margin-bottom: 20px;
-}
-
-.role-tabs button {
-  padding: 10px;
-  border: none;
-  background: transparent;
-  border-radius: 7px;
-  color: #4A6080;
+.forgot-link {
+  text-align: center;
+  margin-top: 14px;
   font-size: 13px;
-  cursor: pointer;
-  transition: all 0.15s;
-  font-family: 'Inter', sans-serif;
-  font-weight: 500;
-}
-
-.role-tabs button.active {
-  background: #0C2D5E;
-  color: #fff;
-}
-
-.demo-hint {
-  margin-top: 18px;
-  padding: 12px;
-  background: #E6E9EE;
-  border-radius: 8px;
-  font-size: 12px;
   color: #4A6080;
-  font-family: monospace;
-  line-height: 1.8;
+  cursor: pointer;
+  text-decoration: underline;
 }
 
-.demo-hint strong {
-  color: #F4721B;
+.forgot-link:hover { color: #F4721B; }
+
+.success-msg {
+  color: #0F6E56;
+  font-size: 12px;
+  margin-bottom: 10px;
+  background: #E1F5EE;
+  padding: 10px 14px;
+  border-radius: 8px;
 }
 
-/* ── Mobile ── */
+/* ── Mobile (≤600px) ── */
 @media (max-width: 600px) {
   .login-wrap { align-items: flex-start; padding: 0; }
   .login-box {
     width: 100%; min-height: 100vh;
-    border-radius: 0; padding: 40px 24px;
+    border-radius: 0; padding: 32px 20px;
   }
   h2 { font-size: 26px; }
   .sub { font-size: 14px; }
+  .login-company { font-size: 16px; }
+  .field input { font-size: 16px; /* prevent iOS zoom on focus */ }
+  .btn-login { font-size: 15px; padding: 14px; }
 }
+.timeout-msg { background: #FEF3C7; color: #B45309; font-size: 13px; padding: 10px 14px; border-radius: 6px; margin-bottom: 12px; text-align: center; }

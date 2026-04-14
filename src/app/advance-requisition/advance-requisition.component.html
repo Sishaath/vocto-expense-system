@@ -1,0 +1,135 @@
+<div class="app-wrap">
+  <div class="topbar">
+    <div class="topbar-accent"></div>
+    <div class="topbar-main">
+      <div class="logo">
+        <img src="/vocto-logo.png" alt="Vocto" class="logo-img" />
+        <div class="logo-divider"></div>
+        <div class="logo-text-block">
+          <div class="logo-company">Vocto Technologies Private Limited</div>
+        </div>
+      </div>
+      <div class="tb-section">{{ viewMode === 'new' ? 'NEW ADVANCE REQUISITION' : 'ADVANCE REQUISITION' }}</div>
+      <div class="tb-right"><button class="btn-back" routerLink="/dashboard">← Back</button></div>
+    </div>
+  </div>
+
+  <div class="shell">
+    <div class="sidebar">
+      <app-shared-sidebar></app-shared-sidebar>
+    </div>
+
+    <div class="main">
+      <div class="loading-overlay" *ngIf="loading">
+        <div class="spinner"></div>
+      </div>
+
+      <!-- NEW REQUISITION FORM -->
+      <ng-container *ngIf="viewMode === 'new'">
+        <div class="page-title">New <span>Advance Requisition</span></div>
+        <div class="page-sub">Request advance payment for upcoming expenses</div>
+
+        <div class="form-card">
+          <div class="form-card-title">Requisition Details</div>
+          <div class="form-grid">
+            <div class="form-group full">
+              <label>Purpose <span class="req">*</span></label>
+              <input type="text" [(ngModel)]="purpose" placeholder="e.g. Client visit to Mumbai, Equipment purchase" />
+            </div>
+            <div class="form-group">
+              <label>Advance Amount (Rs.) <span class="req">*</span></label>
+              <input type="number" [(ngModel)]="advance_amount" placeholder="0" min="1" />
+            </div>
+            <div class="form-group">
+              <label>Vendor / Payee</label>
+              <input type="text" [(ngModel)]="vendor_payee" placeholder="e.g. Supplier name, hotel name" />
+            </div>
+            <div class="form-group">
+              <label>Expected Date</label>
+              <input type="date" [(ngModel)]="expected_date" />
+            </div>
+            <div class="form-group full">
+              <label>Description / Notes</label>
+              <textarea [(ngModel)]="description" placeholder="Additional details..."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="error-msg" *ngIf="errorMsg">{{ errorMsg }}</div>
+
+        <div class="form-actions">
+          <button class="btn-cancel" routerLink="/dashboard">Cancel</button>
+          <button class="btn-submit" (click)="submitRequisition()" [disabled]="saving">
+            <span class="spinner" *ngIf="saving"></span>
+            {{ saving ? 'Submitting...' : 'Submit Requisition' }}
+          </button>
+        </div>
+      </ng-container>
+
+      <!-- VIEW EXISTING REQUISITION -->
+      <ng-container *ngIf="viewMode === 'view' && requisition">
+        <div class="page-title">Advance <span>Requisition</span></div>
+        <div class="page-sub">{{ requisition.req_number }}</div>
+
+        <div class="form-card">
+          <div class="form-card-title">
+            Requisition Details
+            <span class="status-badge status-{{ requisition.status | lowercase }}">
+              {{ statusLabel(requisition.status) }}
+            </span>
+          </div>
+          <div class="detail-grid">
+            <div class="detail-row"><span class="detail-label">Purpose</span><span class="detail-val">{{ requisition.purpose }}</span></div>
+            <div class="detail-row"><span class="detail-label">Advance Amount</span><span class="detail-val amount">Rs. {{ requisition.advance_amount.toLocaleString('en-IN') }}</span></div>
+            <div class="detail-row" *ngIf="requisition.vendor_payee"><span class="detail-label">Vendor / Payee</span><span class="detail-val">{{ requisition.vendor_payee }}</span></div>
+            <div class="detail-row" *ngIf="requisition.expected_date"><span class="detail-label">Expected Date</span><span class="detail-val">{{ requisition.expected_date | date:'dd MMM yyyy' }}</span></div>
+            <div class="detail-row" *ngIf="requisition.description"><span class="detail-label">Description</span><span class="detail-val">{{ requisition.description }}</span></div>
+            <div class="detail-row" *ngIf="requisition.actual_amount"><span class="detail-label">Actual Amount</span><span class="detail-val amount">Rs. {{ requisition.actual_amount.toLocaleString('en-IN') }}</span></div>
+            <div class="detail-row" *ngIf="requisition.balance_to_return > 0"><span class="detail-label">Balance to Return</span><span class="detail-val return">Rs. {{ requisition.balance_to_return.toLocaleString('en-IN') }}</span></div>
+            <div class="detail-row" *ngIf="requisition.additional_amount > 0"><span class="detail-label">Additional Needed</span><span class="detail-val extra">Rs. {{ requisition.additional_amount.toLocaleString('en-IN') }}</span></div>
+          </div>
+        </div>
+
+        <!-- UPDATE ACTUALS — only when ADVANCE_GIVEN -->
+        <div class="form-card" *ngIf="requisition.status === 'ADVANCE_GIVEN'">
+          <div class="form-card-title">Update Actual Expenses</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Actual Amount Spent (Rs.) <span class="req">*</span></label>
+              <input type="number" [(ngModel)]="actual_amount" placeholder="0" min="0" (ngModelChange)="onActualChange()" />
+            </div>
+            <div class="form-group">
+              <label>Upload Proof / Receipt</label>
+              <input type="file" accept=".pdf,.jpg,.jpeg,.png" (change)="onProofSelected($event)" />
+              <span class="file-hint" *ngIf="proofFileName">Selected: {{ proofFileName }}</span>
+            </div>
+          </div>
+          <!-- Calculated fields -->
+          <div class="calc-row" *ngIf="actual_amount != null">
+            <div class="calc-item balance" *ngIf="balanceToReturn > 0">
+              Balance to return: <strong>Rs. {{ balanceToReturn.toLocaleString('en-IN') }}</strong>
+            </div>
+            <div class="calc-item extra" *ngIf="additionalAmount > 0">
+              Additional amount needed: <strong>Rs. {{ additionalAmount.toLocaleString('en-IN') }}</strong>
+            </div>
+          </div>
+          <div class="error-msg" *ngIf="errorMsg">{{ errorMsg }}</div>
+          <div class="form-actions">
+            <button class="btn-submit" (click)="updateActuals()" [disabled]="saving">
+              <span class="spinner" *ngIf="saving"></span>
+              {{ saving ? 'Saving...' : 'Submit Actuals' }}
+            </button>
+          </div>
+        </div>
+
+        <div class="rejection-box" *ngIf="requisition.status === 'REJECTED' && requisition.rejection_reason">
+          <strong>Rejection Reason:</strong> {{ requisition.rejection_reason }}
+        </div>
+      </ng-container>
+
+      <div class="loading-overlay" *ngIf="viewMode === 'view' && !requisition && !loading && errorMsg">
+        <div class="error-msg">{{ errorMsg }}</div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -21,7 +21,7 @@
 
         <div class="detail-row">
           <div class="detail-label">Employee</div>
-          <div class="detail-value">Employee</div>
+          <div class="detail-value">{{ claim.employee_email || '—' }}</div>
         </div>
         <div class="detail-row">
           <div class="detail-label">Amount</div>
@@ -47,21 +47,28 @@
           <div class="detail-label">Description</div>
           <div class="detail-value desc">{{ claim.description }}</div>
         </div>
-        <div class="detail-row" *ngIf="claim.file_url">
-          <div class="detail-label">Document</div>
-          <div class="detail-value">
-            <button class="btn-doc" (click)="openFile()">
-              📎 {{ claim.file_name || 'View attachment' }}
+        <div class="detail-row" *ngIf="fileList.length > 0">
+          <div class="detail-label">Documents</div>
+          <div class="detail-value" style="display:flex;flex-direction:column;gap:6px;">
+            <button class="btn-doc" *ngFor="let f of fileList" (click)="openFile(f.path, f.name)">
+              {{ f.name }}
             </button>
           </div>
         </div>
-        <div class="detail-row" *ngIf="!claim.file_url">
+        <div class="detail-row" *ngIf="fileList.length === 0">
           <div class="detail-label">Document</div>
           <div class="detail-value muted">No attachment</div>
         </div>
+        <ng-container *ngIf="claim.status === 'PAID'">
+          <div class="dp-section-label" style="margin-top:16px;">Payment Details</div>
+          <div class="detail-row"><div class="detail-label">Mode</div><div class="detail-value">{{ claim.payment_mode || '—' }}</div></div>
+          <div class="detail-row"><div class="detail-label">Reference</div><div class="detail-value mono">{{ claim.payment_ref || '—' }}</div></div>
+          <div class="detail-row"><div class="detail-label">Pay Date</div><div class="detail-value">{{ claim.payment_date ? (claim.payment_date | date:'dd MMM yyyy') : '—' }}</div></div>
+          <div class="detail-row"><div class="detail-label">Paid By</div><div class="detail-value">{{ claim.paid_by_name || claim.paid_by || '—' }}</div></div>
+        </ng-container>
       </div>
 
-      <!-- Right column: timeline + comments -->
+      <!-- Right column: timeline + tabs -->
       <div class="dp-right">
 
         <!-- Approval timeline -->
@@ -87,32 +94,54 @@
           </div>
         </div>
 
-        <!-- Comments -->
-        <div class="dp-section-label" style="margin-top: 20px;">Comments & activity</div>
-        <div class="comments-list">
-          <div class="comment" *ngFor="let c of comments">
-            <div class="comment-av">{{ avatarInitials(c.user_id) }}</div>
-            <div class="comment-body">
-              <div class="comment-meta">
-                <span class="comment-name">{{ c.user_id | slice:0:8 }}...</span>
-                <span class="comment-date">{{ c.created_at | date:'MMM d, h:mm a' }}</span>
-              </div>
-              <div class="comment-text">{{ c.message }}</div>
-            </div>
-          </div>
-          <div class="no-comments" *ngIf="comments.length === 0">No comments yet.</div>
+        <!-- Tabs: Comments / Audit Log -->
+        <div class="dp-tabs">
+          <button class="dp-tab" [class.active]="activeTab==='details'" (click)="activeTab='details'">Comments</button>
+          <button class="dp-tab" [class.active]="activeTab==='activity'" (click)="activeTab='activity'">Audit Log</button>
         </div>
 
-        <div class="comment-input-row">
-          <textarea
-            [(ngModel)]="newComment"
-            placeholder="Add a comment or query..."
-            rows="2"
-          ></textarea>
-          <button class="btn-send" (click)="sendComment()" [disabled]="sending || !newComment.trim()">
-            {{ sending ? '...' : 'Send' }}
-          </button>
-        </div>
+        <!-- Comments tab -->
+        <ng-container *ngIf="activeTab==='details'">
+          <div class="comments-list">
+            <div class="comment" *ngFor="let c of comments">
+              <div class="comment-av">{{ avatarInitials(c.user_id) }}</div>
+              <div class="comment-body">
+                <div class="comment-meta">
+                  <span class="comment-name">{{ c.user_id | slice:0:8 }}...</span>
+                  <span class="comment-date">{{ c.created_at | date:'MMM d, h:mm a' }}</span>
+                </div>
+                <div class="comment-text">{{ c.message }}</div>
+              </div>
+            </div>
+            <div class="no-comments" *ngIf="comments.length === 0">No comments yet.</div>
+          </div>
+          <div class="comment-input-row">
+            <textarea [(ngModel)]="newComment" placeholder="Add a comment or query..." rows="2"></textarea>
+            <button class="btn-send" (click)="sendComment()" [disabled]="sending || !newComment.trim()">
+              {{ sending ? '...' : 'Send' }}
+            </button>
+          </div>
+        </ng-container>
+
+        <!-- Audit log tab -->
+        <ng-container *ngIf="activeTab==='activity'">
+          <div class="audit-list">
+            <div class="audit-entry" *ngFor="let log of auditLogs">
+              <div class="audit-icon">{{ auditIcon(log.action) }}</div>
+              <div class="audit-body">
+                <div class="audit-action">{{ auditLabel(log.action) }}</div>
+                <div class="audit-by">by {{ log.performed_by }} · {{ log.created_at | date:'MMM d, h:mm a' }}</div>
+                <div class="audit-diff" *ngIf="log.old_values || log.new_values">
+                  <span *ngIf="log.old_values?.status">{{ log.old_values.status }}</span>
+                  <span *ngIf="log.old_values?.status && log.new_values?.status"> → </span>
+                  <span *ngIf="log.new_values?.status" class="audit-new">{{ log.new_values.status }}</span>
+                  <span *ngIf="log.new_values?.rejection_reason" class="audit-reason"> — "{{ log.new_values.rejection_reason }}"</span>
+                </div>
+              </div>
+            </div>
+            <div class="no-comments" *ngIf="auditLogs.length === 0">No audit entries yet.</div>
+          </div>
+        </ng-container>
 
       </div>
     </div>
@@ -123,7 +152,7 @@
 <div class="file-modal-overlay" *ngIf="fileViewerOpen" (click)="closeFileViewer()">
   <div class="file-modal" (click)="$event.stopPropagation()">
     <div class="file-modal-header">
-      <div class="file-modal-title">{{ claim.file_name }}</div>
+      <div class="file-modal-title">{{ fileViewerName }}</div>
       <button class="btn-close" (click)="closeFileViewer()">✕</button>
     </div>
     <div class="file-modal-body">
