@@ -5,7 +5,7 @@ Format: Version · Date · Commit · What changed · Why
 
 ---
 
-## v1.8 · 2026-04-14 · `feature/improvements`
+## v1.8 · 2026-04-14 · `71dbcd7`
 ### Added
 - Employee receives confirmation email after submitting a claim (#2)
 - MD dashboard stats — pending count, approved this month total, all-time paid, top 5 spend categories (#1)
