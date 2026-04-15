@@ -24,34 +24,8 @@ export default async function handler(req, res) {
   const appUrl = process.env.APP_URL || 'https://vocto-expense-system.vercel.app';
 
   try {
-    // 1. Generate invite link — also triggers Supabase to create the user
-    const generateRes = await fetch(`${supabaseUrl}/auth/v1/admin/generate_link`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': serviceRoleKey,
-        'Authorization': `Bearer ${serviceRoleKey}`
-      },
-      body: JSON.stringify({
-        type: 'invite',
-        email,
-        data: { role },
-        redirect_to: `${appUrl}/set-password`
-      })
-    });
-
-    const generateText = await generateRes.text();
-    let generateData = {};
-    try { generateData = JSON.parse(generateText); } catch {}
-
-    if (!generateRes.ok && !generateText.toLowerCase().includes('already')) {
-      return res.status(400).json({ error: generateData.msg || generateData.error_description || 'Failed to generate invite link' });
-    }
-
-    const inviteLink = generateData.action_link || `${appUrl}/set-password`;
-
-    // 2. Send invite email via Supabase native invite endpoint
-    await fetch(`${supabaseUrl}/auth/v1/invite`, {
+    // Invite user — Supabase sends the email automatically with a valid token
+    const inviteRes = await fetch(`${supabaseUrl}/auth/v1/invite`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -59,7 +33,17 @@ export default async function handler(req, res) {
         'Authorization': `Bearer ${serviceRoleKey}`
       },
       body: JSON.stringify({ email, data: { role } })
-    }).catch(() => {});
+    });
+
+    const inviteText = await inviteRes.text();
+    let inviteData = {};
+    try { inviteData = JSON.parse(inviteText); } catch {}
+
+    if (!inviteRes.ok && !inviteText.toLowerCase().includes('already')) {
+      return res.status(400).json({ error: inviteData.msg || inviteData.error_description || 'Failed to invite user' });
+    }
+
+    const inviteLink = `${appUrl}/set-password`;
 
     // 3. Upsert role in user_roles table
     const upsertRes = await fetch(`${supabaseUrl}/rest/v1/user_roles`, {
