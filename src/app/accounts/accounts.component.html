@@ -160,8 +160,8 @@
               </td>
               <td>
                 <div class="action-btns">
-                  <button class="btn-verify" (click)="$event.stopPropagation(); verifyClaim(claim.id)">✓ Verify</button>
-                  <button class="btn-reject" (click)="$event.stopPropagation(); openRejectModal(claim.id)">✕ Reject</button>
+                  <button class="btn-verify" (click)="$event.stopPropagation(); verifyClaim(claim.id)" [disabled]="actionLoading">✓ Verify</button>
+                  <button class="btn-reject" (click)="$event.stopPropagation(); openRejectModal(claim.id)" [disabled]="actionLoading">✕ Reject</button>
                 </div>
               </td>
             </tr>

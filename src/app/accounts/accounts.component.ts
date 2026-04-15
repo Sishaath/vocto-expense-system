@@ -29,6 +29,7 @@ export class AccountsComponent implements OnInit {
   rejectModalOpen = false;
   rejectingClaimId: string | null = null;
   rejectionReason = '';
+  actionLoading = false;
   payConfirmOpen = false;
   payConfirmClaimId: string | null = null;
   payMode = 'Bank Transfer';
@@ -251,6 +252,8 @@ export class AccountsComponent implements OnInit {
   }
 
   async verifyClaim(id: string) {
+    if (this.actionLoading) return;
+    this.actionLoading = true;
     const { data: { session } } = await this.supabase.getClient().auth.getSession();
     const claim = this.allClaims.find(c => c.id === id);
     const verifiedByName = session?.user?.user_metadata?.['full_name'] || session?.user?.email || '';
@@ -274,6 +277,7 @@ export class AccountsComponent implements OnInit {
         body: JSON.stringify({ event: 'verified', claimNumber: claim.claim_number, claimTitle: claim.title, amount: claim.amount, submittedBy: claim.employee_email || claim.submitted_by })
       }).catch(() => {});
     }
+    this.actionLoading = false;
     await this.ngOnInit();
   }
 
@@ -298,13 +302,14 @@ export class AccountsComponent implements OnInit {
   show(section: string): boolean { return this.activeSection === 'all' || this.activeSection === section; }
 
   async rejectClaim(id: string, reason: string) {
+    this.actionLoading = true;
     const { data: { session } } = await this.supabase.getClient().auth.getSession();
     const claim = this.allClaims.find(c => c.id === id);
     const { error } = await this.supabase.getClient()
       .from('claims')
       .update({ status: 'REJECTED', rejection_reason: reason })
       .eq('id', id);
-    if (error) { this.toast.show(error.message, 'error'); return; }
+    if (error) { this.toast.show(error.message, 'error'); this.actionLoading = false; return; }
     await this.supabase.logAudit({ entity_type: 'claim', entity_id: id, entity_ref: claim?.claim_number, action: 'rejected', performed_by: session?.user?.email || '', old_values: { status: claim?.status }, new_values: { status: 'REJECTED', rejection_reason: reason } });
     this.toast.show('Claim rejected.', 'warning');
     if (claim?.employee_email) {
@@ -313,6 +318,7 @@ export class AccountsComponent implements OnInit {
         body: JSON.stringify({ event: 'rejected', claimNumber: claim.claim_number, claimTitle: claim.title, amount: claim.amount, employeeEmail: claim.employee_email })
       }).catch(() => {});
     }
+    this.actionLoading = false;
     await this.ngOnInit();
   }
 
@@ -348,7 +354,7 @@ export class AccountsComponent implements OnInit {
       .eq('id', id);
     if (error) { this.toast.show(error.message, 'error'); return; }
     await this.supabase.logAudit({ entity_type: 'claim', entity_id: id, entity_ref: claim?.claim_number, action: 'paid', performed_by: session?.user?.email || '', old_values: { status: 'MD_APPROVED' }, new_values: { status: 'PAID' } });
-    await this.supabase.markNotificationsReadForEntity(session?.user?.email || '', claim?.id || id);
+    await this.supabase.markNotificationsReadForEntity(session?.user?.email || '', claim?.claim_number || id);
     this.toast.show('Payment released successfully!', 'success');
     if (claim?.employee_email) {
       fetch('/api/notify', {

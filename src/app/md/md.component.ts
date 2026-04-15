@@ -66,10 +66,17 @@ export class MdComponent implements OnInit {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}` === this.selectedMonth;
   }
 
+  private matchesDateRange(c: any) {
+    if (this.filterFrom && c.created_at < this.filterFrom) return false;
+    if (this.filterTo && c.created_at > this.filterTo + 'T23:59:59') return false;
+    return true;
+  }
+
   get verifiedClaims() {
     return this.allClaims.filter(c => {
       if (c.status !== 'VERIFIED') return false;
       if (!this.matchesMonth(c)) return false;
+      if (!this.matchesDateRange(c)) return false;
       if (this.searchQuery) {
         const q = this.searchQuery.toLowerCase();
         return c.title?.toLowerCase().includes(q) || c.claim_number?.toLowerCase().includes(q) || c.employee_email?.toLowerCase().includes(q);
@@ -82,6 +89,7 @@ export class MdComponent implements OnInit {
     return this.allClaims.filter(c => {
       if (c.status !== 'MD_APPROVED') return false;
       if (!this.matchesMonth(c)) return false;
+      if (!this.matchesDateRange(c)) return false;
       if (this.searchQuery) {
         const q = this.searchQuery.toLowerCase();
         return c.title?.toLowerCase().includes(q) || c.claim_number?.toLowerCase().includes(q) || c.employee_email?.toLowerCase().includes(q);
@@ -91,12 +99,22 @@ export class MdComponent implements OnInit {
   }
 
   get rejectedClaims() {
-    return this.allClaims.filter(c => c.status === 'REJECTED' && this.matchesMonth(c));
+    return this.allClaims.filter(c => {
+      if (c.status !== 'REJECTED') return false;
+      if (!this.matchesMonth(c)) return false;
+      if (!this.matchesDateRange(c)) return false;
+      if (this.searchQuery) {
+        const q = this.searchQuery.toLowerCase();
+        return c.title?.toLowerCase().includes(q) || c.claim_number?.toLowerCase().includes(q) || c.employee_email?.toLowerCase().includes(q);
+      }
+      return true;
+    });
   }
 
   get processedClaims() {
     return this.allClaims.filter(c =>
-      (c.status === 'MD_APPROVED' || c.status === 'PAID' || c.status === 'REJECTED') && this.matchesMonth(c)
+      (c.status === 'MD_APPROVED' || c.status === 'PAID' || c.status === 'REJECTED') &&
+      this.matchesMonth(c) && this.matchesDateRange(c)
     );
   }
 
@@ -256,7 +274,7 @@ export class MdComponent implements OnInit {
     const approvedByName = session?.user?.user_metadata?.['full_name'] || session?.user?.email || '';
     const { error } = await this.supabase.getClient()
       .from('claims')
-      .update({ status: 'MD_APPROVED', approved_by: session?.user?.email || '', approved_by_name: approvedByName })
+      .update({ status: 'MD_APPROVED', approved_by: session?.user?.email || '', approved_by_name: approvedByName, approved_at: new Date().toISOString() })
       .eq('id', id);
     if (error) { this.toast.show(error.message, 'error'); this.actionLoading = false; return; }
     await this.supabase.logAudit({ entity_type: 'claim', entity_id: id, entity_ref: claim?.claim_number, action: 'md_approved', performed_by: session?.user?.email || '', old_values: { status: 'VERIFIED' }, new_values: { status: 'MD_APPROVED' } });

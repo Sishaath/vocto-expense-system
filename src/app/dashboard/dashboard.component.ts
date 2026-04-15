@@ -64,11 +64,7 @@ export class DashboardComponent implements OnInit {
     private toast: ToastService
   ) {}
 
-  readonly categories = [
-    'Travel & Transport', 'Accommodation', 'Meals & Entertainment',
-    'Office Supplies', 'Software / Subscriptions', 'Training & Conference',
-    'Vendor Invoice', 'Other'
-  ];
+  categories: string[] = [];
 
   // ─── Claims getters ───────────────────────────────────────────────────────
 
@@ -274,6 +270,8 @@ export class DashboardComponent implements OnInit {
     const { data: { session } } = await this.supabase.getClient().auth.getSession();
     this.userEmail = session?.user?.email || '';
     this.fullName = session?.user?.user_metadata?.['full_name'] || '';
+    const cats = await this.supabase.getActiveCategories();
+    if (cats.length) this.categories = cats;
     // Role-based redirect — admin must not see employee dashboard
     try {
       const roleRes = await fetch(`${environment.apiBaseUrl}/api/get-role`, {
