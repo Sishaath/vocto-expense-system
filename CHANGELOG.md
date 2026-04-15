@@ -5,6 +5,49 @@ Format: Version · Date · Commit · What changed · Why
 
 ---
 
+## v2.1 · 2026-04-15 · `4ed968c`
+### Fixed
+- **MD Dashboard:** `approvedClaims` getter now applies search query (was silently ignoring it)
+- **MD Dashboard:** "Total Paid" stat now shows current month only — was showing all-time total
+- **MD Dashboard:** Notification read-mark now uses `claim_number` as entity ref — was using `claim.id`, causing notifications to never clear
+- **MD Dashboard:** `approvePO` now catches and surfaces DB errors (was failing silently)
+- **MD Dashboard:** Approve/Reject buttons disabled during processing — prevents accidental double-submissions
+- **MD Dashboard:** Reject Advance Requisition replaced `prompt()` with a proper modal
+- **Accounts Dashboard:** `bulkVerify` now counts per-claim successes and failures — reports partial failures instead of silent corruption
+- **Accounts Dashboard:** `bulkReject` replaced browser `prompt()` with a proper reject modal
+- **Accounts Dashboard:** Delete Recurring Template replaced `confirm()` with a proper confirm modal
+- **Accounts Dashboard:** `paidClaims` table now respects the selected month filter (was showing all-time paid claims)
+- **Employee Dashboard:** Search now matches category field in addition to title and voucher number
+- **Employee Dashboard:** Hardcoded production API URL replaced with `environment.apiBaseUrl` — was breaking on staging
+- **Employee Dashboard:** File viewer now correctly handles multi-file (JSON array) attachments
+- **Submit Claim:** Validation error now lists exactly which fields are missing instead of generic message
+- **Submit Claim:** Template pre-fill category default fixed (`Travel & Transport` → `Travel & Accommodation`)
+- **All:** Hardcoded recipient emails (`yogeshwari@...`, `rrk@...`, etc.) replaced with dynamic `getUsersByRole()` lookup — notifications now route to whoever holds the role, not a fixed person
+
+### Added
+- `SupabaseService.getUsersByRole(role)` — queries active users by role for dynamic notification routing
+
+---
+
+## v2.0 · 2026-04-15 · `8215fbf`
+### Changed
+- **Admin Panel:** Complete UI redesign — light gray page background, white cards, colored top-border stat cards per role
+- **Admin Panel:** Inline role dropdown per row replaced with "Change Role" modal — shows each role with a description, prevents accidental changes
+- **Admin Panel:** Action buttons redesigned — `Change Role`, `Resend`, `Remove` with clear labels and hover states
+- **Admin Panel:** Invite link panel redesigned as a compact green strip at bottom of invite card
+- **Admin Panel:** `admin` role locked to `/admin` only — removed from `accountsGuard` and `mdGuard`, blocked from all employee routes via `authGuard`
+- **Admin Panel:** `/admin` route now protected by `adminGuard` — non-admins can't navigate to it directly
+
+### Fixed
+- **Invite flow:** Email was sending `/set-password` without a token — switched from `/auth/v1/invite` to `/auth/v1/admin/generate_link` to get the actual Supabase invite token URL
+- **Invite flow:** Invite link returned to frontend so admin can copy and share directly (WhatsApp, email, etc.)
+
+### Added
+- **Admin Panel:** "Pending Invite" badge for users who haven't accepted their invite yet (yellow badge, distinct from Active/Inactive)
+- **Admin Panel:** Copy invite link button — after sending or resending an invite, admin gets a copyable link
+
+---
+
 ## v1.9 · 2026-04-14 · `79039ca`
 ### Added
 - Admin dashboard (`/admin`) — separate portal for admin role, no employee views
