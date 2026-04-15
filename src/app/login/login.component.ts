@@ -60,7 +60,7 @@ export class LoginComponent implements OnInit {
     this.loading = true;
     this.errorMsg = '';
     const { error } = await this.supabase.getClient().auth.resetPasswordForEmail(this.email.trim(), {
-      redirectTo: `${window.location.origin}/portal/set-password`
+      redirectTo: `${window.location.origin}/set-password`
     });
     this.loading = false;
     if (error) { this.errorMsg = error.message; return; }
