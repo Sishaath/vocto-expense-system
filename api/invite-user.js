@@ -24,25 +24,7 @@ export default async function handler(req, res) {
   const appUrl = process.env.APP_URL || 'https://vocto-expense-system.vercel.app';
 
   try {
-    // 1. Invite user via Supabase Admin API — sends email automatically
-    const inviteRes = await fetch(`${supabaseUrl}/auth/v1/admin/invite`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': serviceRoleKey,
-        'Authorization': `Bearer ${serviceRoleKey}`
-      },
-      body: JSON.stringify({ email, data: { role } })
-    });
-
-    const inviteData = await inviteRes.json();
-
-    // If user already exists, that's fine — we still update their role below
-    if (!inviteRes.ok && !inviteData.msg?.toLowerCase().includes('already')) {
-      return res.status(400).json({ error: inviteData.msg || inviteData.error_description || 'Failed to invite user' });
-    }
-
-    // 2. Also generate the link so admin can copy and share it directly
+    // 1. Generate invite link — also triggers Supabase to create the user
     const generateRes = await fetch(`${supabaseUrl}/auth/v1/admin/generate_link`, {
       method: 'POST',
       headers: {
@@ -58,8 +40,26 @@ export default async function handler(req, res) {
       })
     });
 
-    const generateData = await generateRes.json();
+    const generateText = await generateRes.text();
+    let generateData = {};
+    try { generateData = JSON.parse(generateText); } catch {}
+
+    if (!generateRes.ok && !generateText.toLowerCase().includes('already')) {
+      return res.status(400).json({ error: generateData.msg || generateData.error_description || 'Failed to generate invite link' });
+    }
+
     const inviteLink = generateData.action_link || `${appUrl}/set-password`;
+
+    // 2. Send invite email via Supabase native invite endpoint
+    await fetch(`${supabaseUrl}/auth/v1/invite`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': serviceRoleKey,
+        'Authorization': `Bearer ${serviceRoleKey}`
+      },
+      body: JSON.stringify({ email, data: { role } })
+    }).catch(() => {});
 
     // 3. Upsert role in user_roles table
     const upsertRes = await fetch(`${supabaseUrl}/rest/v1/user_roles`, {
