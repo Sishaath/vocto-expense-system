@@ -42,5 +42,5 @@ export const routes: Routes = [
   { path: 'invoice/export/:id', component: SalesInvoiceComponent, canActivate: [authGuard] },
   { path: 'invoice/dta/create', component: SalesInvoiceComponent, canActivate: [authGuard] },
   { path: 'invoice/dta/:id', component: SalesInvoiceComponent, canActivate: [authGuard] },
-  { path: 'admin', component: AdminComponent },
+  { path: 'admin', component: AdminComponent, canActivate: [adminGuard] },
 ];

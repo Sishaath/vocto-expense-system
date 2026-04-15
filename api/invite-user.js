@@ -24,8 +24,8 @@ export default async function handler(req, res) {
   const appUrl = process.env.APP_URL || 'https://vocto-expense-system.vercel.app';
 
   try {
-    // 1. Invite user via Supabase Admin API
-    const inviteRes = await fetch(`${supabaseUrl}/auth/v1/invite`, {
+    // 1. Generate invite link via Supabase Admin API (returns actual token URL)
+    const generateRes = await fetch(`${supabaseUrl}/auth/v1/admin/generate_link`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -33,18 +33,21 @@ export default async function handler(req, res) {
         'Authorization': `Bearer ${serviceRoleKey}`
       },
       body: JSON.stringify({
+        type: 'invite',
         email,
         data: { role },
         redirect_to: `${appUrl}/set-password`
       })
     });
 
-    const inviteData = await inviteRes.json();
+    const generateData = await generateRes.json();
 
     // If user already exists in auth, that's fine — we still update their role below
-    if (!inviteRes.ok && !inviteData.msg?.toLowerCase().includes('already')) {
-      return res.status(400).json({ error: inviteData.msg || inviteData.error_description || 'Failed to invite user' });
+    if (!generateRes.ok && !generateData.msg?.toLowerCase().includes('already')) {
+      return res.status(400).json({ error: generateData.msg || generateData.error_description || 'Failed to generate invite link' });
     }
+
+    const inviteLink = generateData.action_link || `${appUrl}/set-password`;
 
     // 2. Upsert role in user_roles table
     const upsertRes = await fetch(`${supabaseUrl}/rest/v1/user_roles`, {
@@ -88,7 +91,7 @@ export default async function handler(req, res) {
               <h2 style="margin:0 0 16px;font-size:18px;color:#0C1F3D">You have been invited</h2>
               <p style="margin:0 0 16px;color:#4A6080">You have been added to the Vocto Expense System as <strong>${roleLabel}</strong>.</p>
               <p style="margin:0 0 20px;color:#4A6080">Click the button below to set your password and activate your account.</p>
-              <a href="${appUrl}/set-password" style="display:inline-block;background:#F4721B;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:13px;font-weight:600">Set My Password →</a>
+              <a href="${inviteLink}" style="display:inline-block;background:#F4721B;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:13px;font-weight:600">Set My Password →</a>
               <p style="margin-top:20px;color:#8A9BB0;font-size:12px">If you did not expect this invitation, please ignore this email.</p>
             </div>
           </div>`
@@ -96,7 +99,7 @@ export default async function handler(req, res) {
       }).catch(() => {});
     }
 
-    return res.status(200).json({ ok: true });
+    return res.status(200).json({ ok: true, inviteLink });
   } catch (e) {
     return res.status(500).json({ error: 'Internal error: ' + e.message });
   }

@@ -1,167 +1,213 @@
-<div class="app-wrap">
-  <div class="topbar">
-    <div class="topbar-accent"></div>
-    <div class="topbar-main">
+<div class="admin-wrap">
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="topbar-bar"></div>
+    <div class="topbar-inner">
       <div class="logo">
         <img src="/vocto-logo.png" alt="Vocto" class="logo-img" />
-        <div class="logo-divider"></div>
-        <div class="logo-company">Vocto Technologies Private Limited</div>
+        <div class="logo-sep"></div>
+        <span class="logo-name">Vocto Technologies Private Limited</span>
       </div>
-      <div class="tb-section">ADMIN DASHBOARD</div>
-      <div class="tb-right">
-        <span class="admin-email">{{ adminEmail }}</span>
-        <button class="btn-logout" (click)="logout()">Logout</button>
+      <span class="topbar-tag">ADMIN PANEL</span>
+      <div class="topbar-right">
+        <span class="topbar-user">{{ adminEmail }}</span>
+        <button class="btn-logout" (click)="logout()">Sign out</button>
       </div>
     </div>
-  </div>
+  </header>
 
-  <div class="main-content">
-    <div class="page-title">User <span>Management</span></div>
-    <div class="page-sub">Invite users and manage their portal access</div>
+  <main class="main">
 
-    <!-- Stat Cards -->
-    <div class="stat-row" *ngIf="!loading">
+    <!-- Page header -->
+    <div class="page-head">
+      <div class="page-title">User <span>Management</span></div>
+      <div class="page-sub">Manage team access and portal roles</div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats" *ngIf="!loading">
       <div class="stat-card">
-        <div class="stat-num">{{ users.length }}</div>
-        <div class="stat-label">Total Users</div>
+        <div class="stat-val">{{ users.length }}</div>
+        <div class="stat-key">Total Users</div>
       </div>
-      <div class="stat-card role-employee">
-        <div class="stat-num">{{ countByRole('employee') }}</div>
-        <div class="stat-label">Employees</div>
+      <div class="stat-card c-emp">
+        <div class="stat-val">{{ countByRole('employee') }}</div>
+        <div class="stat-key">Employees</div>
       </div>
-      <div class="stat-card role-accounts">
-        <div class="stat-num">{{ countByRole('accounts') }}</div>
-        <div class="stat-label">Accounts</div>
+      <div class="stat-card c-acc">
+        <div class="stat-val">{{ countByRole('accounts') }}</div>
+        <div class="stat-key">Accounts</div>
       </div>
-      <div class="stat-card role-md">
-        <div class="stat-num">{{ countByRole('md') }}</div>
-        <div class="stat-label">MD</div>
+      <div class="stat-card c-md">
+        <div class="stat-val">{{ countByRole('md') }}</div>
+        <div class="stat-key">MD</div>
       </div>
-      <div class="stat-card role-admin">
-        <div class="stat-num">{{ countByRole('admin') }}</div>
-        <div class="stat-label">Admins</div>
+      <div class="stat-card c-admin">
+        <div class="stat-val">{{ countByRole('admin') }}</div>
+        <div class="stat-key">Admins</div>
       </div>
     </div>
 
-    <!-- Invite Card -->
-    <div class="invite-card">
-      <div class="invite-title">Invite New User</div>
+    <!-- Invite card -->
+    <div class="card invite-card">
+      <div class="card-head">
+        <div class="card-title">Invite New User</div>
+        <div class="card-sub">An email with a secure sign-in link will be sent to the user.</div>
+      </div>
       <div class="invite-form">
-        <input class="invite-input" [(ngModel)]="inviteEmail" placeholder="Email address" type="email" />
-        <select class="invite-select" [(ngModel)]="inviteRole">
+        <input class="field" [(ngModel)]="inviteEmail" placeholder="Email address" type="email" [disabled]="inviting" />
+        <select class="field sel" [(ngModel)]="inviteRole" [disabled]="inviting">
           <option value="employee">Employee</option>
           <option value="accounts">Accounts</option>
-          <option value="md">MD</option>
+          <option value="md">Managing Director</option>
           <option value="admin">Admin</option>
         </select>
-        <button class="btn-invite" (click)="inviteUser()" [disabled]="inviting">
-          {{ inviting ? 'Sending...' : 'Send Invite' }}
+        <button class="btn-primary" (click)="inviteUser()" [disabled]="inviting">
+          {{ inviting ? 'Sending…' : 'Send Invite' }}
         </button>
       </div>
-      <div class="invite-error" *ngIf="inviteError">{{ inviteError }}</div>
-      <div class="invite-hint">User will receive an email with a link to set their password.</div>
+      <div class="invite-err" *ngIf="inviteError">{{ inviteError }}</div>
+
+      <!-- Invite link strip -->
+      <div class="link-strip" *ngIf="inviteLink">
+        <span class="link-ok">&#10003; Invite sent.</span>
+        <span class="link-label">You can also share this link directly:</span>
+        <input class="link-field" [value]="inviteLink" readonly (click)="$any($event.target).select()" />
+        <button class="btn-copy" (click)="copyInviteLink()">{{ copied ? 'Copied!' : 'Copy Link' }}</button>
+        <button class="btn-strip-x" (click)="dismissInviteLink()" title="Dismiss">&#10005;</button>
+      </div>
     </div>
 
-    <!-- Filters -->
-    <div class="filter-bar">
-      <input class="search-input" [(ngModel)]="search" placeholder="Search by email..." />
-      <select class="role-filter" [(ngModel)]="filterRole">
-        <option value="">All Roles</option>
-        <option value="employee">Employee</option>
-        <option value="accounts">Accounts</option>
-        <option value="md">MD</option>
-        <option value="admin">Admin</option>
-      </select>
+    <!-- Users table card -->
+    <div class="card">
+      <div class="tbl-hd">
+        <div class="tbl-hd-left">
+          <span class="card-title">Team Members</span>
+          <span class="user-count" *ngIf="!loading">{{ filtered.length }} {{ filtered.length === 1 ? 'user' : 'users' }}</span>
+        </div>
+        <div class="tbl-hd-right">
+          <input class="field search-f" [(ngModel)]="search" placeholder="Search by email…" />
+          <select class="field sel" [(ngModel)]="filterRole">
+            <option value="">All Roles</option>
+            <option value="employee">Employee</option>
+            <option value="accounts">Accounts</option>
+            <option value="md">MD</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Loading -->
+      <div class="loading-box" *ngIf="loading">
+        <div class="spinner"></div>
+        <span>Loading users…</span>
+      </div>
+
+      <!-- Table -->
+      <div class="tbl-wrap" *ngIf="!loading">
+        <table>
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th>Last Login</th>
+              <th>Added On</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let u of filtered"
+              [class.row-self]="u.email === adminEmail"
+              [class.row-inactive]="!u.active && !isPending(u)">
+              <td>
+                <div class="user-cell">
+                  <span class="user-email">{{ u.email }}</span>
+                  <span class="badge-you" *ngIf="u.email === adminEmail">You</span>
+                </div>
+              </td>
+              <td>
+                <span class="role-badge role-{{ u.role }}">{{ ROLE_LABELS[u.role] || u.role }}</span>
+              </td>
+              <td>
+                <span class="status-badge s-pending" *ngIf="isPending(u)">Pending Invite</span>
+                <button class="status-btn"
+                  [class.s-inactive]="!u.active"
+                  *ngIf="!isPending(u)"
+                  [disabled]="u.email === adminEmail"
+                  (click)="toggleActive(u)"
+                  [title]="u.active ? 'Click to deactivate' : 'Click to activate'">
+                  {{ u.active ? 'Active' : 'Inactive' }}
+                </button>
+              </td>
+              <td class="cell-dim">{{ authMap[u.email]?.lastLogin ? formatDate(authMap[u.email].lastLogin) : '—' }}</td>
+              <td class="cell-dim">{{ u.created_at | date:'dd MMM yyyy' }}</td>
+              <td>
+                <div class="row-actions">
+                  <button class="act-btn act-role" (click)="openRolePicker(u)" [disabled]="u.email === adminEmail" title="Change role">
+                    Change Role
+                  </button>
+                  <button class="act-btn act-resend" (click)="resendInvite(u)" title="Resend invite email">
+                    Resend
+                  </button>
+                  <button class="act-btn act-remove" (click)="openDeleteConfirm(u)" [disabled]="u.email === adminEmail" title="Remove user">
+                    Remove
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="filtered.length === 0">
+              <td colspan="6" class="empty-row">No users found</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
-    <!-- Loading -->
-    <div class="loading-overlay" *ngIf="loading">
-      <div class="spinner"></div>
-      <div class="loading-text">Loading users...</div>
-    </div>
-
-    <!-- Users Table -->
-    <div class="table-wrap" *ngIf="!loading">
-      <table>
-        <thead>
-          <tr>
-            <th>Email</th>
-            <th>Role</th>
-            <th>Status</th>
-            <th>Last Login</th>
-            <th>Added On</th>
-            <th>Change Role</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let u of filtered" [class.self-row]="u.email === adminEmail" [class.inactive-row]="!u.active">
-            <td>
-              <span class="email-text">{{ u.email }}</span>
-              <span class="you-badge" *ngIf="u.email === adminEmail">You</span>
-            </td>
-            <td>
-              <span class="role-badge" [class]="'role-' + u.role">{{ ROLE_LABELS[u.role] || u.role }}</span>
-            </td>
-            <td>
-              <button class="btn-status" [class.inactive]="!u.active" (click)="toggleActive(u)"
-                [disabled]="u.email === adminEmail" [title]="u.active ? 'Click to deactivate' : 'Click to activate'">
-                {{ u.active ? 'Active' : 'Inactive' }}
-              </button>
-            </td>
-            <td class="muted">
-              <span *ngIf="authMap[u.email]?.lastLogin">{{ formatDate(authMap[u.email].lastLogin) }}</span>
-              <span *ngIf="!authMap[u.email]?.lastLogin">Never logged in</span>
-            </td>
-            <td class="muted">{{ u.created_at | date:'dd MMM yyyy' }}</td>
-            <td>
-              <select class="role-select" [value]="u.role"
-                (change)="openConfirm(u, $any($event.target).value)"
-                [disabled]="u.email === adminEmail">
-                <option *ngFor="let r of ROLES" [value]="r">{{ ROLE_LABELS[r] }}</option>
-              </select>
-            </td>
-            <td class="actions-cell">
-              <button class="btn-resend" (click)="resendInvite(u)" title="Resend invite email">↺ Resend</button>
-              <button class="btn-delete" (click)="openDeleteConfirm(u)" [disabled]="u.email === adminEmail" title="Delete user">✕</button>
-            </td>
-          </tr>
-          <tr *ngIf="filtered.length === 0">
-            <td colspan="7" class="empty">No users found</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
+  </main>
 </div>
 
-<!-- Role Change Confirm Modal -->
-<div class="modal-overlay" *ngIf="confirmUser" (click)="cancelConfirm()">
+<!-- Role Picker Modal -->
+<div class="overlay" *ngIf="rolePickerUser" (click)="closeRolePicker()">
   <div class="modal" (click)="$event.stopPropagation()">
-    <div class="modal-title">Confirm Role Change</div>
-    <p class="modal-body">
-      Change <strong>{{ confirmUser?.email }}</strong> from
-      <span class="role-badge" [class]="'role-' + confirmUser?.role">{{ ROLE_LABELS[confirmUser?.role] }}</span>
-      to
-      <span class="role-badge" [class]="'role-' + confirmNewRole">{{ ROLE_LABELS[confirmNewRole] }}</span>?
-    </p>
-    <div class="modal-actions">
-      <button class="btn-cancel" (click)="cancelConfirm()">Cancel</button>
-      <button class="btn-confirm" (click)="confirmChange()">Yes, Change</button>
+    <div class="modal-hd">
+      <div class="modal-title">Change Role</div>
+      <button class="modal-x" (click)="closeRolePicker()">&#10005;</button>
+    </div>
+    <div class="modal-user">{{ rolePickerUser?.email }}</div>
+    <div class="role-opts">
+      <button *ngFor="let r of ROLES"
+        class="role-opt"
+        [class.selected]="rolePickerSelected === r"
+        (click)="rolePickerSelected = r">
+        <span class="role-badge role-{{ r }}">{{ ROLE_LABELS[r] }}</span>
+        <span class="opt-desc">{{ r === 'employee' ? 'Submit expense claims and POs' : r === 'accounts' ? 'Review and verify claims' : r === 'md' ? 'Final approval authority' : 'Manage users and access' }}</span>
+        <span class="opt-check" *ngIf="rolePickerSelected === r">&#10003;</span>
+      </button>
+    </div>
+    <div class="modal-ft">
+      <button class="btn-cancel" (click)="closeRolePicker()">Cancel</button>
+      <button class="btn-primary" (click)="saveRoleChange()" [disabled]="rolePickerSelected === rolePickerUser?.role">
+        Save Changes
+      </button>
     </div>
   </div>
 </div>
 
 <!-- Delete Confirm Modal -->
-<div class="modal-overlay" *ngIf="confirmDelete" (click)="cancelDelete()">
-  <div class="modal" (click)="$event.stopPropagation()">
-    <div class="modal-title">Delete User?</div>
-    <p class="modal-body">
-      This will permanently delete <strong>{{ confirmDelete?.email }}</strong> and revoke their access. This cannot be undone.
-    </p>
-    <div class="modal-actions">
+<div class="overlay" *ngIf="confirmDelete" (click)="cancelDelete()">
+  <div class="modal modal-sm" (click)="$event.stopPropagation()">
+    <div class="modal-hd">
+      <div class="modal-title">Remove User</div>
+      <button class="modal-x" (click)="cancelDelete()">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      This will permanently remove <strong>{{ confirmDelete?.email }}</strong> and revoke their access to the portal. This cannot be undone.
+    </div>
+    <div class="modal-ft">
       <button class="btn-cancel" (click)="cancelDelete()">Cancel</button>
-      <button class="btn-delete-confirm" (click)="confirmDeleteUser()">Yes, Delete</button>
+      <button class="btn-danger" (click)="confirmDeleteUser()">Yes, Remove</button>
     </div>
   </div>
 </div>

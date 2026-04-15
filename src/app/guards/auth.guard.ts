@@ -27,8 +27,9 @@ async function getSessionAndRole() {
 
 export const authGuard = async (): Promise<boolean> => {
   const router = inject(Router);
-  const { session } = await getSessionAndRole();
+  const { session, role } = await getSessionAndRole();
   if (!session) { router.navigate(['/login']); return false; }
+  if (role === 'admin') { router.navigate(['/admin']); return false; }
   return true;
 };
 
@@ -36,9 +37,8 @@ export const accountsGuard = async (): Promise<boolean> => {
   const router = inject(Router);
   const { session, role } = await getSessionAndRole();
   if (!session) { router.navigate(['/login']); return false; }
-  if (role !== 'accounts' && role !== 'admin') {
-    router.navigate(['/dashboard']); return false;
-  }
+  if (role === 'admin') { router.navigate(['/admin']); return false; }
+  if (role !== 'accounts') { router.navigate(['/dashboard']); return false; }
   return true;
 };
 
@@ -46,9 +46,8 @@ export const mdGuard = async (): Promise<boolean> => {
   const router = inject(Router);
   const { session, role } = await getSessionAndRole();
   if (!session) { router.navigate(['/login']); return false; }
-  if (role !== 'md' && role !== 'admin') {
-    router.navigate(['/dashboard']); return false;
-  }
+  if (role === 'admin') { router.navigate(['/admin']); return false; }
+  if (role !== 'md') { router.navigate(['/dashboard']); return false; }
   return true;
 };
 

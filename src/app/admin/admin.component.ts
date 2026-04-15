@@ -25,9 +25,12 @@ export class AdminComponent implements OnInit {
   inviteRole = 'employee';
   inviting = false;
   inviteError = '';
+  inviteLink = '';
+  copied = false;
 
-  confirmUser: any = null;
-  confirmNewRole = '';
+  rolePickerUser: any = null;
+  rolePickerSelected = '';
+
   confirmDelete: any = null;
 
   readonly ROLES = ['employee', 'accounts', 'md', 'admin'];
@@ -71,8 +74,14 @@ export class AdminComponent implements OnInit {
 
   countByRole(role: string) { return this.users.filter(u => u.role === role).length; }
 
+  isPending(user: any): boolean {
+    const auth = this.authMap[user.email];
+    return auth !== undefined && !auth.confirmed;
+  }
+
   async inviteUser() {
     this.inviteError = '';
+    this.inviteLink = '';
     if (!this.inviteEmail.trim()) { this.inviteError = 'Enter an email address.'; return; }
     if (this.inviteEmail.trim().toLowerCase() === this.adminEmail.toLowerCase()) {
       this.inviteError = 'You cannot add yourself.'; return;
@@ -87,6 +96,7 @@ export class AdminComponent implements OnInit {
       const json = await res.json();
       if (!res.ok) { this.inviteError = json.error || 'Failed to invite user.'; }
       else {
+        this.inviteLink = json.inviteLink || '';
         this.toast.show(`Invite sent to ${this.inviteEmail.trim()}`);
         this.inviteEmail = '';
         this.inviteRole = 'employee';
@@ -102,9 +112,27 @@ export class AdminComponent implements OnInit {
       headers: { 'Content-Type': 'application/json', 'x-notify-secret': 'vocto-notify-2024' },
       body: JSON.stringify({ email: user.email, role: user.role, invitedBy: this.adminEmail })
     });
-    if (res.ok) this.toast.show(`Invite resent to ${user.email}`);
-    else this.toast.show('Failed to resend invite.', 'error');
+    const json = await res.json().catch(() => ({}));
+    if (res.ok) {
+      if (json.inviteLink) { this.inviteLink = json.inviteLink; this.copied = false; }
+      this.toast.show(`Invite resent to ${user.email}`);
+    } else {
+      this.toast.show('Failed to resend invite.', 'error');
+    }
   }
+
+  async copyInviteLink() {
+    if (!this.inviteLink) return;
+    try {
+      await navigator.clipboard.writeText(this.inviteLink);
+      this.copied = true;
+      setTimeout(() => this.copied = false, 2500);
+    } catch {
+      this.toast.show('Could not copy — please copy the link manually.', 'error');
+    }
+  }
+
+  dismissInviteLink() { this.inviteLink = ''; this.copied = false; }
 
   async toggleActive(user: any) {
     const newActive = !user.active;
@@ -115,28 +143,27 @@ export class AdminComponent implements OnInit {
     this.toast.show(`${user.email} marked as ${newActive ? 'Active' : 'Inactive'}`);
   }
 
-  openConfirm(user: any, newRole: string) {
-    if (newRole === user.role) return;
+  openRolePicker(user: any) {
     if (user.email === this.adminEmail) { this.toast.show('You cannot change your own role.', 'error'); return; }
-    this.confirmUser = user;
-    this.confirmNewRole = newRole;
+    this.rolePickerUser = user;
+    this.rolePickerSelected = user.role;
   }
 
-  cancelConfirm() { this.confirmUser = null; this.confirmNewRole = ''; }
+  closeRolePicker() { this.rolePickerUser = null; this.rolePickerSelected = ''; }
 
-  async confirmChange() {
-    if (!this.confirmUser) return;
-    const { error } = await this.supabase.updateUserRole(this.confirmUser.email, this.confirmNewRole, this.adminEmail);
+  async saveRoleChange() {
+    if (!this.rolePickerUser) return;
+    if (this.rolePickerSelected === this.rolePickerUser.role) { this.closeRolePicker(); return; }
+    const user = this.rolePickerUser;
+    const newRole = this.rolePickerSelected;
+    this.closeRolePicker();
+    const { error } = await this.supabase.updateUserRole(user.email, newRole, this.adminEmail);
     if (error) { this.toast.show('Failed to update role.', 'error'); }
-    else {
-      this.toast.show(`${this.confirmUser.email} is now ${this.ROLE_LABELS[this.confirmNewRole]}`);
-      await this.loadAll();
-    }
-    this.cancelConfirm();
+    else { this.toast.show(`${user.email} is now ${this.ROLE_LABELS[newRole]}`); await this.loadAll(); }
   }
 
   openDeleteConfirm(user: any) {
-    if (user.email === this.adminEmail) { this.toast.show('You cannot delete yourself.', 'error'); return; }
+    if (user.email === this.adminEmail) { this.toast.show('You cannot remove yourself.', 'error'); return; }
     this.confirmDelete = user;
   }
 
@@ -153,9 +180,9 @@ export class AdminComponent implements OnInit {
         headers: { 'Content-Type': 'application/json', 'x-notify-secret': 'vocto-notify-2024' },
         body: JSON.stringify({ action: 'delete', userId: authInfo?.userId, email: user.email })
       });
-      this.toast.show(`${user.email} deleted`);
+      this.toast.show(`${user.email} removed`);
       await this.loadAll();
-    } catch { this.toast.show('Failed to delete user.', 'error'); }
+    } catch { this.toast.show('Failed to remove user.', 'error'); }
   }
 
   formatDate(d: string | null) {
