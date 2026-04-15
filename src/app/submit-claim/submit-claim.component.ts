@@ -238,12 +238,14 @@ export class SubmitClaimComponent implements OnInit, OnDestroy {
         }
         const claimNumber = `VT${year}${String(seq).padStart(3, '0')}`;
         const employeeEmail = user.data.user?.email || '';
+        const employeeName = user.data.user?.user_metadata?.['full_name'] || '';
         const { error } = await this.supabase.submitClaim({
           claim_number: claimNumber, title: this.title, category: this.category,
           amount: this.amount, expense_date: this.expenseDate, vendor: this.vendor,
           pay_mode: this.payMode, description: this.description,
           file_url: fileUrl, file_name: fileName,
-          submitted_by: user.data.user?.id, employee_email: employeeEmail, status: 'PENDING'
+          submitted_by: user.data.user?.id, employee_email: employeeEmail,
+          employee_name: employeeName, status: 'PENDING'
         });
         if (error) { this.errorMsg = error.message; }
         else {
