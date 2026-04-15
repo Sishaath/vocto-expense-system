@@ -65,7 +65,7 @@ export class SubmitClaimComponent implements OnInit, OnDestroy {
     const templateData = history.state?.templateData;
     if (templateData && !this.editMode) {
       this.title = templateData.title || '';
-      this.category = templateData.category || 'Travel & Transport';
+      this.category = templateData.category || 'Travel & Accommodation';
       this.amount = templateData.amount || null;
       this.vendor = templateData.vendor || '';
       this.payMode = templateData.pay_mode || 'Company Card';
@@ -167,9 +167,15 @@ export class SubmitClaimComponent implements OnInit, OnDestroy {
   async submitClaim() {
     this.formSubmitted = true;
     const hasFile = this.previews.length > 0 || (this.editMode && !!this.existingFileUrl);
-    if (!this.title.trim() || !this.amount || this.amount <= 0 || !this.category ||
-        !this.expenseDate || !this.vendor.trim() || !this.description.trim() || !hasFile) {
-      this.errorMsg = 'All fields and at least one supporting document are required.';
+    const missing: string[] = [];
+    if (!this.title.trim()) missing.push('Title');
+    if (!this.amount || this.amount <= 0) missing.push('Amount');
+    if (!this.expenseDate) missing.push('Expense Date');
+    if (!this.vendor.trim()) missing.push('Vendor');
+    if (!this.description.trim()) missing.push('Description');
+    if (!hasFile) missing.push('Supporting Document');
+    if (missing.length > 0) {
+      this.errorMsg = `Please fill in: ${missing.join(', ')}.`;
       return;
     }
     this.loading = true;
@@ -243,10 +249,10 @@ export class SubmitClaimComponent implements OnInit, OnDestroy {
         else {
           this.toastService.show('Claim submitted successfully!');
           await this.supabase.logAudit({ entity_type: 'claim', entity_id: claimNumber, entity_ref: claimNumber, action: 'submitted', performed_by: employeeEmail, new_values: { title: this.title, amount: this.amount, category: this.category } });
-          await this.supabase.createNotifications(
-            ['yogeshwari@voctotechnologies.com', 'accounts@voctotechnologies.com'],
-            { title: `New voucher submitted — ${claimNumber}`, body: `${this.title} · ₹${Number(this.amount).toLocaleString('en-IN')} by ${employeeEmail}`, entity_type: 'claim', entity_id: claimNumber, entity_ref: claimNumber }
-          );
+          const accEmails = await this.supabase.getUsersByRole('accounts');
+          if (accEmails.length) {
+            await this.supabase.createNotifications(accEmails, { title: `New voucher submitted — ${claimNumber}`, body: `${this.title} · ₹${Number(this.amount).toLocaleString('en-IN')} by ${employeeEmail}`, entity_type: 'claim', entity_id: claimNumber, entity_ref: claimNumber });
+          }
           // Advance recurring template due date
           if (this.fromTemplateId) {
             const freq = this.templateData?.frequency || 'monthly';

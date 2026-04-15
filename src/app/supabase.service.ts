@@ -381,4 +381,10 @@ export class SupabaseService {
   async updateUserRole(email: string, role: string, updatedBy: string) {
     return this.supabase.from('user_roles').update({ role, updated_at: new Date().toISOString(), invited_by: updatedBy }).eq('email', email);
   }
+
+  async getUsersByRole(role: string): Promise<string[]> {
+    const { data } = await this.supabase.from('user_roles')
+      .select('email').eq('role', role).eq('active', true);
+    return data ? data.map((r: any) => r.email) : [];
+  }
 }

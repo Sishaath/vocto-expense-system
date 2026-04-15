@@ -100,7 +100,7 @@ export class DashboardComponent implements OnInit {
       if (this.selectedStatus !== 'all' && c.status !== this.selectedStatus) return false;
       if (this.searchQuery) {
         const q = this.searchQuery.toLowerCase();
-        if (!c.title?.toLowerCase().includes(q) && !c.claim_number?.toLowerCase().includes(q)) return false;
+        if (!c.title?.toLowerCase().includes(q) && !c.claim_number?.toLowerCase().includes(q) && !c.category?.toLowerCase().includes(q)) return false;
       }
       if (this.filterCategory !== 'all' && c.category !== this.filterCategory) return false;
       if (this.filterDateFrom && new Date(c.created_at) < new Date(this.filterDateFrom)) return false;
@@ -276,7 +276,7 @@ export class DashboardComponent implements OnInit {
     this.fullName = session?.user?.user_metadata?.['full_name'] || '';
     // Role-based redirect — admin must not see employee dashboard
     try {
-      const roleRes = await fetch(`https://vocto-expense-system.vercel.app/api/get-role`, {
+      const roleRes = await fetch(`${environment.apiBaseUrl}/api/get-role`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-notify-secret': 'vocto-notify-2024' },
         body: JSON.stringify({ email: this.userEmail })
@@ -334,10 +334,20 @@ export class DashboardComponent implements OnInit {
 
   async openViewer(claim: any) {
     if (!claim.file_url) return;
-    const url = this.supabase.getFileUrl(claim.file_url);
-    const ext = claim.file_name?.split('.').pop()?.toLowerCase() || '';
+    let fileUrl = claim.file_url;
+    let fileName = claim.file_name;
+    try {
+      const parsed = JSON.parse(fileUrl);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        fileUrl = parsed[0];
+        const names = JSON.parse(fileName);
+        fileName = Array.isArray(names) ? names[0] : fileName;
+      }
+    } catch {}
+    const url = this.supabase.getFileUrl(fileUrl);
+    const ext = fileName?.split('.').pop()?.toLowerCase() || '';
     this.viewerIsPdf = ext === 'pdf';
-    this.viewerName = claim.file_name || 'Attachment';
+    this.viewerName = fileName || 'Attachment';
     this.viewerUrl = this.viewerIsPdf ? this.sanitizer.bypassSecurityTrustResourceUrl(url) : url;
     this.viewerOpen = true;
   }

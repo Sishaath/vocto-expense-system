@@ -165,8 +165,8 @@
               </td>
               <td>
                 <div class="action-btns">
-                  <button class="btn-approve" (click)="$event.stopPropagation(); approveClaim(claim.id)">✓ Approve</button>
-                  <button class="btn-reject" (click)="$event.stopPropagation(); openRejectModal(claim.id)">✕ Reject</button>
+                  <button class="btn-approve" (click)="$event.stopPropagation(); approveClaim(claim.id)" [disabled]="actionLoading">✓ Approve</button>
+                  <button class="btn-reject" (click)="$event.stopPropagation(); openRejectModal(claim.id)" [disabled]="actionLoading">✕ Reject</button>
                 </div>
               </td>
             </tr>
@@ -266,8 +266,8 @@
                 <td class="muted">{{ req.description || '—' }}</td>
                 <td>
                   <div class="action-btns">
-                    <button class="btn-approve" (click)="approveRequisition(req.id)">✓ Approve</button>
-                    <button class="btn-reject" (click)="rejectRequisition(req.id)">✕ Reject</button>
+                    <button class="btn-approve" (click)="approveRequisition(req.id)" [disabled]="actionLoading">✓ Approve</button>
+                    <button class="btn-reject" (click)="openRejectReqModal(req.id)" [disabled]="actionLoading">✕ Reject</button>
                   </div>
                 </td>
               </tr>
@@ -322,6 +322,25 @@
     <div class="reject-modal-footer">
       <button class="btn-cancel-reject" (click)="cancelReject()">Cancel</button>
       <button class="btn-confirm-reject" (click)="confirmReject()" [disabled]="!rejectionReason.trim()">✕ Confirm Reject</button>
+    </div>
+  </div>
+</div>
+
+<!-- Reject Requisition Modal -->
+<div class="reject-overlay" *ngIf="rejectReqModalOpen" (click)="cancelRejectReq()">
+  <div class="reject-modal" (click)="$event.stopPropagation()">
+    <div class="reject-modal-header">
+      <div class="reject-modal-title">Reason for Rejection</div>
+      <button class="btn-close" (click)="cancelRejectReq()">✕</button>
+    </div>
+    <div class="reject-modal-body">
+      <p class="reject-hint">Please provide a reason for rejecting this advance requisition.</p>
+      <textarea class="reject-textarea" [(ngModel)]="reqRejectionReason"
+        placeholder="e.g. Amount exceeds policy, insufficient justification..." rows="4"></textarea>
+    </div>
+    <div class="reject-modal-footer">
+      <button class="btn-cancel-reject" (click)="cancelRejectReq()">Cancel</button>
+      <button class="btn-confirm-reject" (click)="confirmRejectReq()" [disabled]="!reqRejectionReason.trim()">✕ Confirm Reject</button>
     </div>
   </div>
 </div>

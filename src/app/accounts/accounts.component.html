@@ -473,7 +473,7 @@
                     </button>
                     <button class="btn-view" (click)="openTemplateModal(t)">Edit</button>
                     <button class="btn-toggle" (click)="toggleTemplate(t)">{{ t.active ? 'Disable' : 'Enable' }}</button>
-                    <button class="btn-reject" (click)="deleteTemplate(t)">Delete</button>
+                    <button class="btn-reject" (click)="openDeleteTemplateConfirm(t)">Delete</button>
                   </div>
                 </td>
               </tr>
@@ -685,6 +685,42 @@
         <iframe *ngIf="viewerIsPdf" [src]="viewerUrl"></iframe>
         <img *ngIf="!viewerIsPdf" [src]="viewerUrl" [alt]="viewerName" />
       </ng-container>
+    </div>
+  </div>
+</div>
+
+<!-- Bulk Reject Modal -->
+<div class="reject-overlay" *ngIf="bulkRejectModalOpen" (click)="cancelBulkReject()">
+  <div class="reject-modal" (click)="$event.stopPropagation()">
+    <div class="reject-modal-header">
+      <div class="reject-modal-title">Reject {{ selectedClaimIds.size }} Claim(s)</div>
+      <button class="btn-close" (click)="cancelBulkReject()">✕</button>
+    </div>
+    <div class="reject-modal-body">
+      <p class="reject-hint">This rejection reason will apply to all selected claims.</p>
+      <textarea class="reject-textarea" [(ngModel)]="bulkRejectReason"
+        placeholder="e.g. Missing receipts, incorrect amounts..." rows="4"></textarea>
+    </div>
+    <div class="reject-modal-footer">
+      <button class="btn-cancel-reject" (click)="cancelBulkReject()">Cancel</button>
+      <button class="btn-confirm-reject" (click)="confirmBulkReject()" [disabled]="!bulkRejectReason.trim()">✕ Confirm Reject All</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Template Confirm Modal -->
+<div class="reject-overlay" *ngIf="deleteConfirmTemplate" (click)="cancelDeleteTemplate()">
+  <div class="reject-modal" (click)="$event.stopPropagation()">
+    <div class="reject-modal-header">
+      <div class="reject-modal-title">Delete Template?</div>
+      <button class="btn-close" (click)="cancelDeleteTemplate()">✕</button>
+    </div>
+    <div class="reject-modal-body">
+      <p class="reject-hint">This will permanently delete <strong>{{ deleteConfirmTemplate?.title }}</strong>. This cannot be undone.</p>
+    </div>
+    <div class="reject-modal-footer">
+      <button class="btn-cancel-reject" (click)="cancelDeleteTemplate()">Cancel</button>
+      <button class="btn-confirm-reject" (click)="deleteTemplate(deleteConfirmTemplate)">Yes, Delete</button>
     </div>
   </div>
 </div>

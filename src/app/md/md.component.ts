@@ -33,6 +33,10 @@ export class MdComponent implements OnInit {
   poRejectModalOpen = false;
   rejectingPOId: string | null = null;
   poRejectionReason = '';
+  rejectReqModalOpen = false;
+  rejectingReqId: string | null = null;
+  reqRejectionReason = '';
+  actionLoading = false;
   viewerOpen = false;
   viewerUrl: SafeResourceUrl | string = '';
   viewerName = '';
@@ -75,7 +79,15 @@ export class MdComponent implements OnInit {
   }
 
   get approvedClaims() {
-    return this.allClaims.filter(c => c.status === 'MD_APPROVED' && this.matchesMonth(c));
+    return this.allClaims.filter(c => {
+      if (c.status !== 'MD_APPROVED') return false;
+      if (!this.matchesMonth(c)) return false;
+      if (this.searchQuery) {
+        const q = this.searchQuery.toLowerCase();
+        return c.title?.toLowerCase().includes(q) || c.claim_number?.toLowerCase().includes(q) || c.employee_email?.toLowerCase().includes(q);
+      }
+      return true;
+    });
   }
 
   get rejectedClaims() {
@@ -94,7 +106,11 @@ export class MdComponent implements OnInit {
 
   get totalPaid() {
     return this.allClaims
-      .filter(c => c.status === 'PAID')
+      .filter(c => {
+        if (c.status !== 'PAID') return false;
+        const d = new Date(c.payment_date || c.created_at);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}` === this.currentMonthKey;
+      })
       .reduce((sum, c) => sum + c.amount, 0);
   }
 
@@ -121,15 +137,27 @@ export class MdComponent implements OnInit {
     await this.ngOnInit();
   }
 
-  async rejectRequisition(id: string) {
-    const reason = prompt('Reason for rejection:');
-    if (reason === null) return;
+  openRejectReqModal(id: string) {
+    this.rejectingReqId = id;
+    this.reqRejectionReason = '';
+    this.rejectReqModalOpen = true;
+  }
+
+  cancelRejectReq() {
+    this.rejectReqModalOpen = false;
+    this.rejectingReqId = null;
+    this.reqRejectionReason = '';
+  }
+
+  async confirmRejectReq() {
+    if (!this.rejectingReqId || !this.reqRejectionReason.trim()) return;
     const { error } = await this.supabase.getClient()
       .from('advance_requisitions')
-      .update({ status: 'REJECTED', rejection_reason: reason })
-      .eq('id', id);
+      .update({ status: 'REJECTED', rejection_reason: this.reqRejectionReason.trim() })
+      .eq('id', this.rejectingReqId);
     if (error) { this.toast.show(error.message, 'error'); return; }
     this.toast.show('Requisition rejected.', 'warning');
+    this.cancelRejectReq();
     await this.ngOnInit();
   }
 
@@ -203,18 +231,26 @@ export class MdComponent implements OnInit {
   }
 
   async approvePO(id: string) {
+    this.actionLoading = true;
     const { data: { session } } = await this.supabase.getClient().auth.getSession();
     const po = this.allPOs.find(p => p.id === id);
-    await this.supabase.getClient()
+    const { error } = await this.supabase.getClient()
       .from('purchase_orders')
       .update({ status: 'md_approved', md_approved_by: session?.user?.email || '' })
       .eq('id', id);
+    if (error) { this.toast.show(error.message, 'error'); this.actionLoading = false; return; }
     await this.supabase.logAudit({ entity_type: 'purchase_order', entity_id: id, entity_ref: po?.po_number, action: 'md_approved', performed_by: session?.user?.email || '', old_values: { status: po?.status }, new_values: { status: 'md_approved' } });
+    const accountsEmails = await this.supabase.getUsersByRole('accounts');
+    if (accountsEmails.length) {
+      await this.supabase.createNotifications(accountsEmails, { title: `PO approved by MD — ${po?.po_number}`, body: `${po?.vendor_name}`, entity_type: 'purchase_order', entity_id: id, entity_ref: po?.po_number });
+    }
     this.toast.show('PO approved!', 'success');
+    this.actionLoading = false;
     await this.ngOnInit();
   }
 
   async approveClaim(id: string) {
+    this.actionLoading = true;
     const { data: { session } } = await this.supabase.getClient().auth.getSession();
     const claim = this.allClaims.find(c => c.id === id);
     const approvedByName = session?.user?.user_metadata?.['full_name'] || session?.user?.email || '';
@@ -222,15 +258,15 @@ export class MdComponent implements OnInit {
       .from('claims')
       .update({ status: 'MD_APPROVED', approved_by: session?.user?.email || '', approved_by_name: approvedByName })
       .eq('id', id);
-    if (error) { this.toast.show(error.message, 'error'); return; }
+    if (error) { this.toast.show(error.message, 'error'); this.actionLoading = false; return; }
     await this.supabase.logAudit({ entity_type: 'claim', entity_id: id, entity_ref: claim?.claim_number, action: 'md_approved', performed_by: session?.user?.email || '', old_values: { status: 'VERIFIED' }, new_values: { status: 'MD_APPROVED' } });
-    // Auto-clear the "ready for approval" notification from MD inbox
-    await this.supabase.markNotificationsReadForEntity(session?.user?.email || '', claim?.id || id);
-    // Notify accounts to release payment
-    await this.supabase.createNotifications(
-      ['yogeshwari@voctotechnologies.com', 'accounts@voctotechnologies.com'],
-      { title: `MD approved — release payment — ${claim?.claim_number}`, body: `${claim?.title} · ₹${Number(claim?.amount).toLocaleString('en-IN')}`, entity_type: 'claim', entity_id: claim?.id, entity_ref: claim?.claim_number }
-    );
+    // Fix: use claim_number (entity_ref) not claim.id so it matches how notifications were created
+    await this.supabase.markNotificationsReadForEntity(session?.user?.email || '', claim?.claim_number || id);
+    // Notify accounts dynamically — no hardcoded emails
+    const accountsEmails = await this.supabase.getUsersByRole('accounts');
+    if (accountsEmails.length) {
+      await this.supabase.createNotifications(accountsEmails, { title: `MD approved — release payment — ${claim?.claim_number}`, body: `${claim?.title} · ₹${Number(claim?.amount).toLocaleString('en-IN')}`, entity_type: 'claim', entity_id: claim?.id, entity_ref: claim?.claim_number });
+    }
     this.toast.show('Claim approved!', 'success');
     if (claim) {
       fetch('/api/notify', {
@@ -238,6 +274,7 @@ export class MdComponent implements OnInit {
         body: JSON.stringify({ event: 'approved', claimNumber: claim.claim_number, claimTitle: claim.title, amount: claim.amount, submittedBy: claim.employee_email || claim.submitted_by })
       }).catch(() => {});
     }
+    this.actionLoading = false;
     await this.ngOnInit();
   }
 
@@ -285,13 +322,14 @@ export class MdComponent implements OnInit {
   }
 
   async rejectClaim(id: string, reason: string) {
+    this.actionLoading = true;
     const { data: { session } } = await this.supabase.getClient().auth.getSession();
     const claim = this.allClaims.find(c => c.id === id);
     const { error } = await this.supabase.getClient()
       .from('claims')
       .update({ status: 'REJECTED', rejection_reason: reason })
       .eq('id', id);
-    if (error) { this.toast.show(error.message, 'error'); return; }
+    if (error) { this.toast.show(error.message, 'error'); this.actionLoading = false; return; }
     await this.supabase.logAudit({ entity_type: 'claim', entity_id: id, entity_ref: claim?.claim_number, action: 'rejected', performed_by: session?.user?.email || '', old_values: { status: claim?.status }, new_values: { status: 'REJECTED', rejection_reason: reason } });
     this.toast.show('Claim rejected.', 'warning');
     if (claim?.employee_email) {
@@ -300,6 +338,7 @@ export class MdComponent implements OnInit {
         body: JSON.stringify({ event: 'rejected', claimNumber: claim.claim_number, claimTitle: claim.title, amount: claim.amount, employeeEmail: claim.employee_email })
       }).catch(() => {});
     }
+    this.actionLoading = false;
     await this.ngOnInit();
   }
 

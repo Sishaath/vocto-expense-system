@@ -67,6 +67,9 @@ export class AccountsComponent implements OnInit {
 
   // Bulk selection
   selectedClaimIds: Set<string> = new Set();
+  bulkRejectModalOpen = false;
+  bulkRejectReason = '';
+  deleteConfirmTemplate: any = null;
   get allPendingSelected(): boolean {
     return this.pendingClaims.length > 0 && this.pendingClaims.every(c => this.selectedClaimIds.has(c.id));
   }
@@ -127,7 +130,7 @@ export class AccountsComponent implements OnInit {
     return this.allClaims.filter(c => c.status === 'MD_APPROVED' && this.matchesMonth(c));
   }
   get paidClaims() {
-    return this.allClaims.filter(c => c.status === 'PAID');
+    return this.allClaims.filter(c => c.status === 'PAID' && this.matchesMonth(c));
   }
   get rejectedClaims() {
     return this.allClaims.filter(c => c.status === 'REJECTED' && this.matchesMonth(c));
@@ -259,11 +262,11 @@ export class AccountsComponent implements OnInit {
     await this.supabase.logAudit({ entity_type: 'claim', entity_id: id, entity_ref: claim?.claim_number, action: 'verified', performed_by: session?.user?.email || '', old_values: { status: 'PENDING' }, new_values: { status: 'VERIFIED' } });
     // Auto-clear the "submitted" notification for this claim from accounts inbox
     await this.supabase.markNotificationsReadForEntity(session?.user?.email || '', claim?.claim_number || id);
-    // Notify MD
-    await this.supabase.createNotifications(
-      ['rrk@voctotechnologies.com', 'md@voctotechnologies.com'],
-      { title: `Voucher ready for approval — ${claim?.claim_number}`, body: `${claim?.title} · ₹${Number(claim?.amount).toLocaleString('en-IN')}`, entity_type: 'claim', entity_id: claim?.id, entity_ref: claim?.claim_number }
-    );
+    // Notify MD dynamically — no hardcoded emails
+    const mdEmails = await this.supabase.getUsersByRole('md');
+    if (mdEmails.length) {
+      await this.supabase.createNotifications(mdEmails, { title: `Voucher ready for approval — ${claim?.claim_number}`, body: `${claim?.title} · ₹${Number(claim?.amount).toLocaleString('en-IN')}`, entity_type: 'claim', entity_id: claim?.id, entity_ref: claim?.claim_number });
+    }
     this.toast.show('Claim verified and sent to MD!', 'success');
     if (claim) {
       fetch('/api/notify', {
@@ -516,8 +519,11 @@ export class AccountsComponent implements OnInit {
     await this.loadTemplates();
   }
 
+  openDeleteTemplateConfirm(t: any) { this.deleteConfirmTemplate = t; }
+  cancelDeleteTemplate() { this.deleteConfirmTemplate = null; }
+
   async deleteTemplate(t: RecurringTemplate) {
-    if (!confirm(`Delete "${t.title}"? This cannot be undone.`)) return;
+    this.deleteConfirmTemplate = null;
     await this.supabase.deleteTemplate(t.id!);
     this.toast.show('Template deleted.', 'warning');
     await this.loadTemplates();
@@ -551,10 +557,10 @@ export class AccountsComponent implements OnInit {
       .update({ next_due_date: newDate, last_generated_at: new Date().toISOString() })
       .eq('id', t.id!);
     await this.supabase.logAudit({ entity_type: 'claim', entity_id: claimNumber, entity_ref: claimNumber, action: 'submitted', performed_by: this.userEmail, new_values: { title: t.title, amount: t.amount, category: t.category, source: 'recurring' } });
-    await this.supabase.createNotifications(
-      ['yogeshwari@voctotechnologies.com', 'accounts@voctotechnologies.com'],
-      { title: `Recurring voucher — ${claimNumber}`, body: `${t.title} · ₹${Number(t.amount).toLocaleString('en-IN')}`, entity_type: 'claim', entity_id: claimNumber, entity_ref: claimNumber }
-    );
+    const accEmails = await this.supabase.getUsersByRole('accounts');
+    if (accEmails.length) {
+      await this.supabase.createNotifications(accEmails, { title: `Recurring voucher — ${claimNumber}`, body: `${t.title} · ₹${Number(t.amount).toLocaleString('en-IN')}`, entity_type: 'claim', entity_id: claimNumber, entity_ref: claimNumber });
+    }
     this.toast.show(`Voucher ${claimNumber} generated!`, 'success');
     this.generatingId = null;
     await this.ngOnInit();
@@ -564,25 +570,51 @@ export class AccountsComponent implements OnInit {
     if (this.selectedClaimIds.size === 0) return;
     const { data: { session } } = await this.supabase.getClient().auth.getSession();
     const ids = Array.from(this.selectedClaimIds);
+    let successCount = 0;
+    let failCount = 0;
     for (const id of ids) {
-      await this.supabase.getClient().from('claims').update({ status: 'VERIFIED', verified_by: session?.user?.email }).eq('id', id).eq('status', 'PENDING');
+      const { error } = await this.supabase.getClient().from('claims')
+        .update({ status: 'VERIFIED', verified_by: session?.user?.email })
+        .eq('id', id).eq('status', 'PENDING');
+      if (error) failCount++; else successCount++;
     }
     this.selectedClaimIds = new Set();
-    this.toast.show(`${ids.length} claim(s) verified!`, 'success');
+    if (failCount > 0) this.toast.show(`${successCount} verified, ${failCount} failed.`, 'error');
+    else this.toast.show(`${successCount} claim(s) verified!`, 'success');
+    await this.ngOnInit();
+  }
+
+  openBulkRejectModal() {
+    if (this.selectedClaimIds.size === 0) return;
+    this.bulkRejectReason = '';
+    this.bulkRejectModalOpen = true;
+  }
+
+  cancelBulkReject() {
+    this.bulkRejectModalOpen = false;
+    this.bulkRejectReason = '';
+  }
+
+  async confirmBulkReject() {
+    if (!this.bulkRejectReason.trim()) return;
+    const ids = Array.from(this.selectedClaimIds);
+    let successCount = 0;
+    let failCount = 0;
+    for (const id of ids) {
+      const { error } = await this.supabase.getClient().from('claims')
+        .update({ status: 'REJECTED', rejection_reason: this.bulkRejectReason.trim() })
+        .eq('id', id).eq('status', 'PENDING');
+      if (error) failCount++; else successCount++;
+    }
+    this.selectedClaimIds = new Set();
+    this.cancelBulkReject();
+    if (failCount > 0) this.toast.show(`${successCount} rejected, ${failCount} failed.`, 'error');
+    else this.toast.show(`${successCount} claim(s) rejected.`, 'warning');
     await this.ngOnInit();
   }
 
   async bulkReject() {
-    if (this.selectedClaimIds.size === 0) return;
-    const reason = prompt('Rejection reason for all selected claims:');
-    if (!reason) return;
-    const ids = Array.from(this.selectedClaimIds);
-    for (const id of ids) {
-      await this.supabase.getClient().from('claims').update({ status: 'REJECTED', rejection_reason: reason }).eq('id', id).eq('status', 'PENDING');
-    }
-    this.selectedClaimIds = new Set();
-    this.toast.show(`${ids.length} claim(s) rejected.`, 'warning');
-    await this.ngOnInit();
+    this.openBulkRejectModal();
   }
 
   async logout() {
