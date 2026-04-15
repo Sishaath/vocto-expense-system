@@ -19,6 +19,7 @@ export class SetPasswordComponent implements OnInit {
   loading = false;
   done = false;
   sessionReady = false;
+  isReset = false;
 
   constructor(private supabase: SupabaseService, private router: Router) {}
 
@@ -29,6 +30,7 @@ export class SetPasswordComponent implements OnInit {
       if ((event === 'SIGNED_IN' || event === 'PASSWORD_RECOVERY' || event === 'USER_UPDATED') && session) {
         this.sessionReady = true;
         this.errorMsg = '';
+        if (event === 'PASSWORD_RECOVERY') this.isReset = true;
       }
     });
 
@@ -40,7 +42,7 @@ export class SetPasswordComponent implements OnInit {
   }
 
   async setPassword() {
-    if (!this.fullName.trim()) {
+    if (!this.isReset && !this.fullName.trim()) {
       this.errorMsg = 'Please enter your full name.'; return;
     }
     if (!this.password || this.password.length < 8) {
