@@ -4,7 +4,7 @@
     <img src="/vocto-logo.png" alt="Vocto" style="height:32px;margin-right:6px;" />
     <button class="btn-back" (click)="router.navigate(['/dashboard'])">← Dashboard</button>
     <div class="ab-title" *ngIf="po">{{ po.po_number }}</div>
-    <span class="badge status-{{po?.status}}" *ngIf="po">{{ statusLabel(po?.status) }}</span>
+    <span class="badge status-{{po?.status || ''}}" *ngIf="po">{{ statusLabel(po?.status || '') }}</span>
   </div>
   <div class="ab-right" *ngIf="po">
     <button class="btn-edit" *ngIf="po.status === 'draft'" (click)="router.navigate(['/po/edit', po.id])">Edit</button>

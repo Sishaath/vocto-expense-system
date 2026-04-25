@@ -141,7 +141,7 @@
                   {{ u.active ? 'Active' : 'Inactive' }}
                 </button>
               </td>
-              <td class="cell-dim">{{ authMap[u.email]?.lastLogin ? formatDate(authMap[u.email].lastLogin) : '—' }}</td>
+              <td class="cell-dim">{{ authMap[u.email]?.lastLogin ? formatDate(authMap[u.email]?.lastLogin ?? '') : '—' }}</td>
               <td class="cell-dim">{{ u.created_at | date:'dd MMM yyyy' }}</td>
               <td>
                 <div class="row-actions">
