@@ -149,3 +149,9 @@ tbody tr:hover td { background: #FAFBFD; }
 .btn-cancel:hover { background: #E2E8F0; }
 .btn-danger { padding: 8px 20px; background: #DC2626; color: #fff; border: none; border-radius: 7px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; transition: background 0.15s; }
 .btn-danger:hover { background: #B91C1C; }
+
+/* ── Tabs ───────────────────────────────────────── */
+.tabs { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 2px solid #E2E8F0; }
+.tab-btn { padding: 10px 20px; background: none; border: none; border-bottom: 2px solid transparent; margin-bottom: -2px; font-size: 13px; font-weight: 600; color: #94A3B8; cursor: pointer; font-family: inherit; transition: color 0.15s, border-color 0.15s; }
+.tab-btn:hover { color: #475569; }
+.tab-btn.active { color: #0C1F3D; border-bottom-color: #0C1F3D; }

@@ -140,7 +140,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let claim of pendingClaims" class="clickable-row" (click)="openDetail(claim)">
+            <tr *ngFor="let claim of pendingClaimsPaged" class="clickable-row" (click)="openDetail(claim)">
               <td (click)="$event.stopPropagation()">
                 <input type="checkbox" [checked]="selectedClaimIds.has(claim.id)" (change)="toggleSelect(claim.id)" />
               </td>
@@ -170,6 +170,11 @@
             </tr>
           </tbody>
         </table>
+        <div class="pagination" *ngIf="pendingTotalPages > 1">
+          <button (click)="pendingPage = pendingPage - 1" [disabled]="pendingPage === 1">‹ Prev</button>
+          <span>Page {{ pendingPage }} of {{ pendingTotalPages }}</span>
+          <button (click)="pendingPage = pendingPage + 1" [disabled]="pendingPage === pendingTotalPages">Next ›</button>
+        </div>
       </div>
       </ng-container>
 
@@ -252,7 +257,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let claim of paidClaims" class="clickable-row" (click)="openDetail(claim)">
+              <tr *ngFor="let claim of paidClaimsPaged" class="clickable-row" (click)="openDetail(claim)">
                 <td class="mono">{{ claim.claim_number }}</td>
                 <td>{{ claim.employee_name || claim.employee_email || '—' }}</td>
                 <td><strong>{{ claim.title }}</strong></td>
@@ -268,6 +273,11 @@
               </tr>
             </tbody>
           </table>
+          <div class="pagination" *ngIf="paidTotalPages > 1">
+            <button (click)="paidPage = paidPage - 1" [disabled]="paidPage === 1">‹ Prev</button>
+            <span>Page {{ paidPage }} of {{ paidTotalPages }}</span>
+            <button (click)="paidPage = paidPage + 1" [disabled]="paidPage === paidTotalPages">Next ›</button>
+          </div>
         </div>
       </ng-container>
 

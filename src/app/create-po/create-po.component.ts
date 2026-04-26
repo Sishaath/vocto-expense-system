@@ -6,6 +6,7 @@ import { SupabaseService, POItem, PurchaseOrder } from '../supabase.service';
 import { GstService } from '../gst.service';
 import { ToastService } from '../shared/toast.service';
 import { SharedSidebarComponent } from '../shared-sidebar/shared-sidebar.component';
+import { environment } from '../../environments/environment';
 
 const DEFAULT_TERMS = `1. All goods/services must be delivered as per the specifications mentioned in this PO.
 2. Invoice must reference this PO number.
@@ -300,6 +301,25 @@ export class CreatePoComponent implements OnInit {
       if (error) { this.toast.show(error.message, 'error'); return; }
     }
     this.toast.show('PO submitted for Accounts review!', 'success');
+    // Notify accounts team
+    try {
+      const accountsUsers = await this.supabase.getUsersByRole('accounts');
+      const recipients = accountsUsers.map((u: any) => u.email).filter(Boolean);
+      if (recipients.length) {
+        await fetch(`${environment.apiBaseUrl}/api/notify`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-notify-secret': 'vocto-notify-2024' },
+          body: JSON.stringify({
+            type: 'po_submitted',
+            to: recipients[0],
+            submittedBy: this.userEmail,
+            poNumber: this.editId ? `PO-${this.editId.slice(0, 8).toUpperCase()}` : 'Draft',
+            vendorName: this.vendorName,
+            total: this.total
+          })
+        });
+      }
+    } catch { /* non-critical */ }
     // Register vendor in directory
     if (this.vendorName.trim()) {
       await this.supabase.upsertVendor({

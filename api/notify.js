@@ -11,7 +11,7 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  const { event, claimNumber, claimTitle, amount, employeeEmail, submittedBy } = req.body || {};
+  const { event, type, claimNumber, claimTitle, amount, employeeEmail, submittedBy, poNumber, vendorName, total } = req.body || {};
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) return res.status(500).json({ error: 'Email service not configured' });
 
@@ -19,8 +19,32 @@ export default async function handler(req, res) {
   const portalUrl = 'https://vocto-po-system.vercel.app';
 
   let to, subject, html;
+  const eventKey = event || type;
 
-  switch (event) {
+  switch (eventKey) {
+    case 'po_submitted': {
+      const poAmt = total ? `₹${Number(total).toLocaleString('en-IN')}` : '';
+      to = req.body.to;
+      subject = `New PO Submitted for Review — ${poNumber}`;
+      html = `<div style="font-family:Inter,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#1a1a1a">
+        <div style="background:#0C1F3D;padding:16px 24px;border-radius:8px 8px 0 0">
+          <span style="color:#fff;font-weight:700;font-size:16px">Vocto Technologies</span>
+          <span style="color:#F4721B;margin-left:8px;font-size:12px">Expense System</span>
+        </div>
+        <div style="background:#fff;border:1px solid #E8ECF3;border-top:none;padding:24px;border-radius:0 0 8px 8px">
+          <h2 style="margin:0 0 16px;font-size:18px;color:#0C1F3D">New Purchase Order Needs Review</h2>
+          <table style="width:100%;border-collapse:collapse;margin-bottom:20px">
+            <tr><td style="padding:8px 0;color:#8A9BB0;font-size:13px;width:140px">PO Number</td><td style="padding:8px 0;font-weight:600;font-size:13px">${poNumber}</td></tr>
+            <tr><td style="padding:8px 0;color:#8A9BB0;font-size:13px">Vendor</td><td style="padding:8px 0;font-size:13px">${vendorName || '—'}</td></tr>
+            <tr><td style="padding:8px 0;color:#8A9BB0;font-size:13px">Total</td><td style="padding:8px 0;font-weight:700;font-size:14px;color:#F4721B">${poAmt}</td></tr>
+            <tr><td style="padding:8px 0;color:#8A9BB0;font-size:13px">Submitted by</td><td style="padding:8px 0;font-size:13px">${submittedBy || '—'}</td></tr>
+          </table>
+          <a href="https://portal.voctotechnologies.com/accounts" style="display:inline-block;background:#0C1F3D;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:13px;font-weight:600">Review on Accounts Dashboard →</a>
+        </div>
+      </div>`;
+      break;
+    }
+
     case 'submitted':
       to = 'accounts@voctotechnologies.com';
       subject = `New Claim Submitted — ${claimNumber}`;

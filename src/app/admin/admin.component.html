@@ -25,6 +25,53 @@
       <div class="page-sub">Manage team access and portal roles</div>
     </div>
 
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab-btn" [class.active]="activeTab === 'users'" (click)="switchTab('users')">User Management</button>
+      <button class="tab-btn" [class.active]="activeTab === 'audit'" (click)="switchTab('audit')">Audit Log</button>
+    </div>
+
+    <!-- AUDIT LOG TAB -->
+    <div *ngIf="activeTab === 'audit'">
+      <div class="card">
+        <div class="tbl-hd">
+          <span class="card-title">Recent Activity</span>
+          <span class="user-count">Last 100 actions</span>
+        </div>
+        <div class="loading-box" *ngIf="auditLoading">
+          <div class="spinner"></div><span>Loading logs…</span>
+        </div>
+        <div class="tbl-wrap" *ngIf="!auditLoading">
+          <table>
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Action</th>
+                <th>Entity</th>
+                <th>Performed By</th>
+                <th>Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let log of auditLogs">
+                <td class="cell-dim" style="white-space:nowrap">{{ formatDateTime(log.created_at) }}</td>
+                <td><span class="role-badge role-{{log.action?.toLowerCase()}}">{{ log.action }}</span></td>
+                <td class="cell-dim">{{ log.entity_type }} {{ log.entity_id ? '#' + log.entity_id.slice(0,8) : '' }}</td>
+                <td class="cell-dim">{{ log.performed_by }}</td>
+                <td class="cell-dim">{{ log.notes || '—' }}</td>
+              </tr>
+              <tr *ngIf="auditLogs.length === 0">
+                <td colspan="5" class="empty-row">No audit logs found</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- USER MANAGEMENT TAB -->
+    <div *ngIf="activeTab === 'users'">
+
     <!-- Stats -->
     <div class="stats" *ngIf="!loading">
       <div class="stat-card">
@@ -164,6 +211,8 @@
         </table>
       </div>
     </div>
+
+    </div> <!-- end users tab -->
 
   </main>
 </div>

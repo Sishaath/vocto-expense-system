@@ -66,6 +66,11 @@ export class AccountsComponent implements OnInit {
   filterTo = '';
   searchQuery = '';
 
+  // Pagination
+  readonly PAGE_SIZE = 20;
+  pendingPage = 1;
+  paidPage = 1;
+
   // Bulk selection
   selectedClaimIds: Set<string> = new Set();
   bulkRejectModalOpen = false;
@@ -124,14 +129,24 @@ export class AccountsComponent implements OnInit {
   get pendingClaims() {
     return this.allClaims.filter(c => c.status === 'PENDING' && this.matchesMonth(c));
   }
+  get pendingClaimsPaged() {
+    const start = (this.pendingPage - 1) * this.PAGE_SIZE;
+    return this.pendingClaims.slice(start, start + this.PAGE_SIZE);
+  }
+  get pendingTotalPages() { return Math.ceil(this.pendingClaims.length / this.PAGE_SIZE) || 1; }
+  get paidClaims() {
+    return this.allClaims.filter(c => c.status === 'PAID' && this.matchesMonth(c));
+  }
+  get paidClaimsPaged() {
+    const start = (this.paidPage - 1) * this.PAGE_SIZE;
+    return this.paidClaims.slice(start, start + this.PAGE_SIZE);
+  }
+  get paidTotalPages() { return Math.ceil(this.paidClaims.length / this.PAGE_SIZE) || 1; }
   get verifiedClaims() {
     return this.allClaims.filter(c => c.status === 'VERIFIED' && this.matchesMonth(c));
   }
   get approvedClaims() {
     return this.allClaims.filter(c => c.status === 'MD_APPROVED' && this.matchesMonth(c));
-  }
-  get paidClaims() {
-    return this.allClaims.filter(c => c.status === 'PAID' && this.matchesMonth(c));
   }
   get rejectedClaims() {
     return this.allClaims.filter(c => c.status === 'REJECTED' && this.matchesMonth(c));

@@ -18,6 +18,9 @@ export class AdminComponent implements OnInit {
   authMap: Record<string, { lastLogin: string | null; userId: string; confirmed: boolean }> = {};
   loading = true;
   adminEmail = '';
+  activeTab: 'users' | 'audit' = 'users';
+  auditLogs: any[] = [];
+  auditLoading = false;
   search = '';
   filterRole = '';
 
@@ -185,9 +188,32 @@ export class AdminComponent implements OnInit {
     } catch { this.toast.show('Failed to remove user.', 'error'); }
   }
 
+  async switchTab(tab: 'users' | 'audit') {
+    this.activeTab = tab;
+    if (tab === 'audit' && this.auditLogs.length === 0) {
+      await this.loadAuditLogs();
+    }
+  }
+
+  async loadAuditLogs() {
+    this.auditLoading = true;
+    const { data } = await this.supabase.getClient()
+      .from('audit_logs')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(100);
+    this.auditLogs = data || [];
+    this.auditLoading = false;
+  }
+
   formatDate(d: string | null) {
     if (!d) return '—';
     return new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+
+  formatDateTime(d: string) {
+    if (!d) return '—';
+    return new Date(d).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   }
 
   logout() { this.supabase.getClient().auth.signOut().then(() => this.router.navigate(['/login'])); }
