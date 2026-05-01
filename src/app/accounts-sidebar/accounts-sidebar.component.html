@@ -6,7 +6,10 @@
   <a class="nav-item" [class.active]="is('/submit')" routerLink="/submit">+ Submit My Voucher</a>
 
   <div class="nav-label" style="margin-top:8px;">Advance Requisitions</div>
-  <div class="nav-item nav-sub" [class.active]="activeSection==='advance-req'" (click)="go('advance-req')">Requisitions</div>
+  <div class="nav-item nav-sub" [class.active]="activeSection==='advance-req'" (click)="go('advance-req')">
+    Requisitions
+    <span class="req-badge" *ngIf="pendingReqCount > 0">{{ pendingReqCount }}</span>
+  </div>
 
   <div class="nav-label" style="margin-top:8px;">Purchase Orders</div>
   <div class="nav-item nav-sub" [class.active]="activeSection==='my-pos'" (click)="go('my-pos')">All POs</div>

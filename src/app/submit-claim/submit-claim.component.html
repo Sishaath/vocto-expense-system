@@ -107,6 +107,13 @@
 
         <div class="error-msg" *ngIf="errorMsg && !errorMsg.includes('verified')">{{ errorMsg }}</div>
 
+        <div class="draft-bar" *ngIf="!editMode">
+          <span class="draft-status" *ngIf="draftSaved">✓ Draft saved locally</span>
+          <span class="draft-status" *ngIf="!draftSaved">Auto-save your progress</span>
+          <button class="btn-save-draft" (click)="saveDraftLocally()" type="button">Save Draft</button>
+          <button class="btn-clear-draft" (click)="clearDraft()" *ngIf="draftSaved" type="button">Clear Draft</button>
+        </div>
+
         <div class="form-actions">
           <button class="btn-cancel" routerLink="/dashboard">Cancel</button>
           <button class="btn-submit" (click)="submitClaim()" [disabled]="loading">

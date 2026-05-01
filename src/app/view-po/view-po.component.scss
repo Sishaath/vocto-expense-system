@@ -20,6 +20,8 @@
 .btn-sent:hover { background: #d45e10; }
 .btn-print  { padding: 7px 14px; background: #1A4B8C; border: none; border-radius: 6px; color: #fff; font-size: 12px; font-weight: 600; cursor: pointer; }
 .btn-print:hover { background: #0C2D5E; }
+.btn-share  { padding: 7px 14px; background: #0F9B6A; border: none; border-radius: 6px; color: #fff; font-size: 12px; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+.btn-share:hover { background: #0a7a52; }
 
 .badge { padding: 3px 10px; border-radius: 20px; font-size: 10px; font-weight: 600; }
 .status-draft     { background: rgba(255,255,255,0.15); color: #ccc; }
@@ -116,14 +118,25 @@
 /* ── PRINT STYLES ── */
 @media print {
   .no-print { display: none !important; }
-  body { margin: 0; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { margin: 0; background: #fff; }
   .po-document {
     max-width: 100%; margin: 0; border: none; border-radius: 0;
-    padding: 16mm 18mm; box-shadow: none;
+    padding: 10mm 14mm; box-shadow: none; font-size: 11px;
   }
-  .po-header { break-inside: avoid; }
-  .items-table { break-inside: auto; }
-  .po-footer-block { break-inside: avoid; }
+  .po-header { break-inside: avoid; padding-bottom: 12px; margin-bottom: 10px; }
+  .po-meta-strip { break-inside: avoid; margin-bottom: 10px; }
+  .po-parties { break-inside: avoid; margin-bottom: 10px; }
+  .items-table { break-inside: auto; font-size: 10px; }
+  .items-table th, .items-table td { padding: 6px 8px; }
+  .po-totals { break-inside: avoid; }
+  .po-footer-block { break-inside: avoid; margin-top: 8px; }
+  .approval-trail { break-inside: avoid; border: 1px solid #ddd; margin-top: 8px; }
+  .vendor-invoice-section { display: none !important; }
+  .rating-section { display: none !important; }
+  .amount-words { break-inside: avoid; }
+  .terms-section { break-inside: avoid; font-size: 9px; }
+  @page { margin: 10mm; size: A4; }
 }
 
 /* APPROVAL TRAIL */
@@ -149,13 +162,13 @@
 .inv-upload-form { margin-top: 14px; border-top: 1px solid #E8ECF3; padding-top: 14px; }
 .inv-row { display: flex; gap: 16px; align-items: flex-end; margin-bottom: 12px; flex-wrap: wrap; }
 .inv-field { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 160px; }
-.inv-field label { font-size: 11px; font-weight: 600; color: #8094AE; text-transform: uppercase; }
+.inv-field label { font-size: 11px; font-weight: 600; color: #8A9BB0; text-transform: uppercase; }
 .inv-field input[type="text"], .inv-field input[type="date"] { padding: 8px 10px; border: 1.5px solid #E8ECF3; border-radius: 6px; font-size: 13px; outline: none; }
 .inv-field input[type="file"] { font-size: 12px; }
-.inv-hint { font-size: 11px; color: #8094AE; margin-top: 3px; }
+.inv-hint { font-size: 11px; color: #8A9BB0; margin-top: 3px; }
 .btn-save-inv { padding: 9px 18px; background: #0C1F3D; color: #fff; border: none; border-radius: 7px; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
 .btn-save-inv:disabled { opacity: 0.6; cursor: not-allowed; }
-.btn-view-inv { padding: 6px 14px; background: #EEF2FF; color: #4F46E5; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; }
+.btn-view-inv { padding: 6px 14px; background: #EEF3FA; color: #185FA5; border: 1px solid #B5CDED; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; }
 
 /* INVOICE VIEWER MODAL */
 .file-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000; display: flex; align-items: center; justify-content: center; }
@@ -163,7 +176,7 @@
 .file-modal-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid #E8ECF3; }
 .file-modal-title { font-size: 14px; font-weight: 600; color: #0C1F3D; }
 .file-modal-body { flex: 1; overflow: hidden; }
-.btn-close { background: none; border: none; font-size: 16px; cursor: pointer; color: #8094AE; }
+.btn-close { background: none; border: none; font-size: 16px; cursor: pointer; color: #8A9BB0; }
 
 /* VENDOR RATING */
 .rating-stars { display: flex; align-items: center; gap: 8px; margin: 12px 0 8px; }
@@ -172,4 +185,4 @@
 .star.filled { color: #F4721B; }
 .rating-label { font-size: 13px; font-weight: 600; color: #4A6080; margin-left: 4px; }
 .rating-notes { width: 100%; padding: 10px 12px; border: 1.5px solid #E8ECF3; border-radius: 7px; font-size: 13px; font-family: inherit; outline: none; resize: vertical; }
-.rating-notes:focus { border-color: #4F46E5; }
+.rating-notes:focus { border-color: #F4721B; box-shadow: 0 0 0 3px rgba(244,114,27,0.1); }

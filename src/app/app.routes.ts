@@ -1,46 +1,29 @@
 import { Routes } from '@angular/router';
-import { LoginComponent } from './login/login.component';
-import { DashboardComponent } from './dashboard/dashboard.component';
-import { SubmitClaimComponent } from './submit-claim/submit-claim.component';
-import { AccountsComponent } from './accounts/accounts.component';
-import { MdComponent } from './md/md.component';
-import { CreatePoComponent } from './create-po/create-po.component';
-import { ViewPoComponent } from './view-po/view-po.component';
-import { SetPasswordComponent } from './set-password/set-password.component';
 import { authGuard, accountsGuard, mdGuard, adminGuard } from './guards/auth.guard';
-import { AdminComponent } from './admin/admin.component';
-import { ProfileComponent } from './profile/profile.component';
-import { VendorsComponent } from './vendors/vendors.component';
-import { VendorDetailComponent } from './vendor-detail/vendor-detail.component';
-import { BudgetsComponent } from './budgets/budgets.component';
-import { RecurringComponent } from './recurring/recurring.component';
-import { CategoriesComponent } from './categories/categories.component';
-import { AdvanceRequisitionComponent } from './advance-requisition/advance-requisition.component';
-import { SalesInvoiceComponent } from './sales-invoice/sales-invoice.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
-  { path: 'login', component: LoginComponent },
-  { path: 'set-password', component: SetPasswordComponent },
-  { path: 'dashboard', component: DashboardComponent, canActivate: [authGuard] },
-  { path: 'submit', component: SubmitClaimComponent, canActivate: [authGuard] },
-  { path: 'edit/:id', component: SubmitClaimComponent, canActivate: [authGuard] },
-  { path: 'accounts', component: AccountsComponent, canActivate: [accountsGuard] },
-  { path: 'md', component: MdComponent, canActivate: [mdGuard] },
-  { path: 'po/create', component: CreatePoComponent, canActivate: [authGuard] },
-  { path: 'po/edit/:id', component: CreatePoComponent, canActivate: [authGuard] },
-  { path: 'po/view/:id', component: ViewPoComponent, canActivate: [authGuard] },
-  { path: 'profile', component: ProfileComponent, canActivate: [authGuard] },
-  { path: 'vendors', component: VendorsComponent, canActivate: [authGuard] },
-  { path: 'vendors/:id', component: VendorDetailComponent, canActivate: [authGuard] },
-  { path: 'budgets', component: BudgetsComponent, canActivate: [accountsGuard] },
-  { path: 'categories', component: CategoriesComponent, canActivate: [accountsGuard] },
-  { path: 'recurring', component: RecurringComponent, canActivate: [authGuard] },
-  { path: 'advance-requisition', component: AdvanceRequisitionComponent, canActivate: [authGuard] },
-  { path: 'advance-requisition/:id', component: AdvanceRequisitionComponent, canActivate: [authGuard] },
-  { path: 'invoice/export/create', component: SalesInvoiceComponent, canActivate: [authGuard] },
-  { path: 'invoice/export/:id', component: SalesInvoiceComponent, canActivate: [authGuard] },
-  { path: 'invoice/dta/create', component: SalesInvoiceComponent, canActivate: [authGuard] },
-  { path: 'invoice/dta/:id', component: SalesInvoiceComponent, canActivate: [authGuard] },
-  { path: 'admin', component: AdminComponent, canActivate: [adminGuard] },
+  { path: 'login', loadComponent: () => import('./login/login.component').then(m => m.LoginComponent) },
+  { path: 'set-password', loadComponent: () => import('./set-password/set-password.component').then(m => m.SetPasswordComponent) },
+  { path: 'dashboard', loadComponent: () => import('./dashboard/dashboard.component').then(m => m.DashboardComponent), canActivate: [authGuard] },
+  { path: 'submit', loadComponent: () => import('./submit-claim/submit-claim.component').then(m => m.SubmitClaimComponent), canActivate: [authGuard] },
+  { path: 'edit/:id', loadComponent: () => import('./submit-claim/submit-claim.component').then(m => m.SubmitClaimComponent), canActivate: [authGuard] },
+  { path: 'accounts', loadComponent: () => import('./accounts/accounts.component').then(m => m.AccountsComponent), canActivate: [accountsGuard] },
+  { path: 'md', loadComponent: () => import('./md/md.component').then(m => m.MdComponent), canActivate: [mdGuard] },
+  { path: 'po/create', loadComponent: () => import('./create-po/create-po.component').then(m => m.CreatePoComponent), canActivate: [authGuard] },
+  { path: 'po/edit/:id', loadComponent: () => import('./create-po/create-po.component').then(m => m.CreatePoComponent), canActivate: [authGuard] },
+  { path: 'po/view/:id', loadComponent: () => import('./view-po/view-po.component').then(m => m.ViewPoComponent), canActivate: [authGuard] },
+  { path: 'profile', loadComponent: () => import('./profile/profile.component').then(m => m.ProfileComponent), canActivate: [authGuard] },
+  { path: 'vendors', loadComponent: () => import('./vendors/vendors.component').then(m => m.VendorsComponent), canActivate: [authGuard] },
+  { path: 'vendors/:id', loadComponent: () => import('./vendor-detail/vendor-detail.component').then(m => m.VendorDetailComponent), canActivate: [authGuard] },
+  { path: 'budgets', loadComponent: () => import('./budgets/budgets.component').then(m => m.BudgetsComponent), canActivate: [accountsGuard] },
+  { path: 'categories', loadComponent: () => import('./categories/categories.component').then(m => m.CategoriesComponent), canActivate: [accountsGuard] },
+  { path: 'recurring', loadComponent: () => import('./recurring/recurring.component').then(m => m.RecurringComponent), canActivate: [authGuard] },
+  { path: 'advance-requisition', loadComponent: () => import('./advance-requisition/advance-requisition.component').then(m => m.AdvanceRequisitionComponent), canActivate: [authGuard] },
+  { path: 'advance-requisition/:id', loadComponent: () => import('./advance-requisition/advance-requisition.component').then(m => m.AdvanceRequisitionComponent), canActivate: [authGuard] },
+  { path: 'invoice/export/create', loadComponent: () => import('./sales-invoice/sales-invoice.component').then(m => m.SalesInvoiceComponent), canActivate: [authGuard] },
+  { path: 'invoice/export/:id', loadComponent: () => import('./sales-invoice/sales-invoice.component').then(m => m.SalesInvoiceComponent), canActivate: [authGuard] },
+  { path: 'invoice/dta/create', loadComponent: () => import('./sales-invoice/sales-invoice.component').then(m => m.SalesInvoiceComponent), canActivate: [authGuard] },
+  { path: 'invoice/dta/:id', loadComponent: () => import('./sales-invoice/sales-invoice.component').then(m => m.SalesInvoiceComponent), canActivate: [authGuard] },
+  { path: 'admin', loadComponent: () => import('./admin/admin.component').then(m => m.AdminComponent), canActivate: [adminGuard] },
 ];

@@ -7,7 +7,7 @@
         <div class="dp-title">{{ claim.title }}</div>
         <div class="dp-header-meta">
           <span class="dp-number">{{ claim.claim_number }}</span>
-          <span class="badge" [ngClass]="claim.status.toLowerCase()">{{ claim.status }}</span>
+          <span class="badge" [ngClass]="claim.status.toLowerCase()">{{ statusLabel(claim.status) }}</span>
         </div>
       </div>
       <button class="btn-print" (click)="printClaim()" title="Print / Save as PDF">🖨</button>

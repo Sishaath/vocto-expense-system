@@ -20,6 +20,7 @@ export class MdComponent implements OnInit {
   allClaims: any[] = [];
   allPOs: any[] = [];
   allRequisitions: any[] = [];
+  get pendingReqCount(): number { return this.allRequisitions.filter(r => r.status === 'ACCOUNTS_APPROVED').length; }
   sidebarOpen = false;
 
   toggleSidebar() { this.sidebarOpen = !this.sidebarOpen; }
@@ -132,6 +133,18 @@ export class MdComponent implements OnInit {
       .reduce((sum, c) => sum + c.amount, 0);
   }
 
+  readonly PAGE_SIZE = 20;
+  verifiedPage = 1;
+  approvedPage = 1;
+  rejectedPage = 1;
+
+  get verifiedPaged() { return this.verifiedClaims.slice((this.verifiedPage - 1) * this.PAGE_SIZE, this.verifiedPage * this.PAGE_SIZE); }
+  get verifiedTotalPages() { return Math.max(1, Math.ceil(this.verifiedClaims.length / this.PAGE_SIZE)); }
+  get approvedPaged() { return this.processedClaims.slice((this.approvedPage - 1) * this.PAGE_SIZE, this.approvedPage * this.PAGE_SIZE); }
+  get approvedTotalPages() { return Math.max(1, Math.ceil(this.processedClaims.length / this.PAGE_SIZE)); }
+  get rejectedPaged() { return this.rejectedClaims.slice((this.rejectedPage - 1) * this.PAGE_SIZE, this.rejectedPage * this.PAGE_SIZE); }
+  get rejectedTotalPages() { return Math.max(1, Math.ceil(this.rejectedClaims.length / this.PAGE_SIZE)); }
+
   get pendingPOs() {
     return this.allPOs.filter(p => p.status === 'acc_verified');
   }
@@ -233,6 +246,24 @@ export class MdComponent implements OnInit {
     return this.thisMonthApproved.reduce((s, c) => s + c.amount, 0);
   }
 
+  get monthlySpendChart(): { label: string; amount: number; barPct: number }[] {
+    const map = new Map<string, number>();
+    for (const c of this.allClaims.filter(c => ['MD_APPROVED', 'PAID'].includes(c.status))) {
+      const d = new Date(c.created_at);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      map.set(key, (map.get(key) || 0) + c.amount);
+    }
+    const sorted = Array.from(map.entries())
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .slice(-6);
+    const max = Math.max(...sorted.map(([, v]) => v), 1);
+    return sorted.map(([key, amount]) => {
+      const [yr, mo] = key.split('-');
+      const label = new Date(+yr, +mo - 1, 1).toLocaleString('default', { month: 'short', year: '2-digit' });
+      return { label, amount, barPct: Math.round(amount / max * 100) };
+    });
+  }
+
   get topCategories(): { category: string; amount: number }[] {
     const map = new Map<string, number>();
     for (const c of this.allClaims.filter(c => ['MD_APPROVED', 'PAID'].includes(c.status))) {
@@ -287,8 +318,9 @@ export class MdComponent implements OnInit {
     }
     this.toast.show('Claim approved!', 'success');
     if (claim) {
+      const token = await this.supabase.getAuthToken();
       fetch('/api/notify', {
-        method: 'POST', headers: { 'Content-Type': 'application/json', 'x-notify-secret': 'vocto-notify-2024' },
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ event: 'approved', claimNumber: claim.claim_number, claimTitle: claim.title, amount: claim.amount, submittedBy: claim.employee_email || claim.submitted_by })
       }).catch(() => {});
     }
@@ -351,8 +383,9 @@ export class MdComponent implements OnInit {
     await this.supabase.logAudit({ entity_type: 'claim', entity_id: id, entity_ref: claim?.claim_number, action: 'rejected', performed_by: session?.user?.email || '', old_values: { status: claim?.status }, new_values: { status: 'REJECTED', rejection_reason: reason } });
     this.toast.show('Claim rejected.', 'warning');
     if (claim?.employee_email) {
+      const token = await this.supabase.getAuthToken();
       fetch('/api/notify', {
-        method: 'POST', headers: { 'Content-Type': 'application/json', 'x-notify-secret': 'vocto-notify-2024' },
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ event: 'rejected', claimNumber: claim.claim_number, claimTitle: claim.title, amount: claim.amount, employeeEmail: claim.employee_email })
       }).catch(() => {});
     }

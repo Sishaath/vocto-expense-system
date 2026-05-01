@@ -28,7 +28,7 @@
     <div class="sidebar-overlay" *ngIf="sidebarOpen" (click)="closeSidebar()"></div>
     <div class="sidebar" [class.open]="sidebarOpen">
       <button class="sidebar-close" (click)="closeSidebar()">✕</button>
-      <app-accounts-sidebar [activeSection]="activeSection" (sectionChange)="activeSection=$event; closeSidebar()"></app-accounts-sidebar>
+      <app-accounts-sidebar [activeSection]="activeSection" [pendingReqCount]="pendingReqCount" (sectionChange)="activeSection=$event; closeSidebar()"></app-accounts-sidebar>
     </div>
 
     <div class="main">
@@ -85,6 +85,7 @@
         <button class="btn-export" (click)="exportDateRange()">CSV</button>
         <button class="btn-export-xl" (click)="exportDateRangeExcel()">Excel</button>
         <button class="btn-export-pdf" (click)="printReport()">PDF</button>
+        <button class="btn-export-gst" (click)="exportGSTReport()" title="Export GSTR-2 purchase register">GST Report</button>
       </div>
 
       <!-- PURCHASE ORDERS SECTION -->
@@ -212,17 +213,25 @@
       <!-- READY TO PAY -->
       <div class="section-head" *ngIf="show('approved')">
         <div class="section-title">Ready for Payment</div>
+        <div class="bulk-actions" *ngIf="selectedApprovedIds.size > 0 || approvedClaims.length > 0">
+          <span class="bulk-count" *ngIf="selectedApprovedIds.size > 0">{{ selectedApprovedIds.size }} selected</span>
+          <button class="btn-bulk-export" (click)="exportPaymentSheet()">⬇ Export Payment Sheet{{ selectedApprovedIds.size > 0 ? ' (' + selectedApprovedIds.size + ')' : ' (All)' }}</button>
+        </div>
       </div>
       <div class="table-wrap" *ngIf="show('approved')">
         <table>
           <thead>
             <tr>
+              <th><input type="checkbox" [checked]="allApprovedSelected" (change)="toggleApprovedSelectAll()" /></th>
               <th>Voucher ID</th><th>Employee</th><th>Title</th>
               <th>Amount</th><th>Verified by</th><th>Attachment</th><th>Action</th>
             </tr>
           </thead>
           <tbody>
             <tr *ngFor="let claim of approvedClaims" class="clickable-row" (click)="openDetail(claim)">
+              <td (click)="$event.stopPropagation()">
+                <input type="checkbox" [checked]="selectedApprovedIds.has(claim.id)" (change)="toggleApprovedSelect(claim.id)" />
+              </td>
               <td class="mono">{{ claim.claim_number }}</td>
               <td>{{ claim.employee_name || claim.employee_email || '—' }}</td>
               <td><strong>{{ claim.title }}</strong></td>
@@ -237,7 +246,7 @@
               </td>
             </tr>
             <tr *ngIf="approvedClaims.length === 0">
-              <td colspan="7" class="empty">No vouchers pending payment</td>
+              <td colspan="8" class="empty">No vouchers pending payment</td>
             </tr>
           </tbody>
         </table>

@@ -48,6 +48,7 @@ export class AccountsComponent implements OnInit {
 
   // Advance Requisitions
   allRequisitions: any[] = [];
+  get pendingReqCount(): number { return this.allRequisitions.filter(r => r.status === 'PENDING').length; }
   advanceGiveModalOpen = false;
   advanceGivingId: string | null = null;
   advancePayMode = 'Bank Transfer';
@@ -71,10 +72,26 @@ export class AccountsComponent implements OnInit {
   pendingPage = 1;
   paidPage = 1;
 
-  // Bulk selection
+  // Bulk selection (pending)
   selectedClaimIds: Set<string> = new Set();
   bulkRejectModalOpen = false;
   bulkRejectReason = '';
+
+  // Bulk selection (approved/ready-to-pay)
+  selectedApprovedIds: Set<string> = new Set();
+  get allApprovedSelected(): boolean {
+    return this.approvedClaims.length > 0 && this.approvedClaims.every(c => this.selectedApprovedIds.has(c.id));
+  }
+  toggleApprovedSelectAll() {
+    if (this.allApprovedSelected) { this.approvedClaims.forEach(c => this.selectedApprovedIds.delete(c.id)); }
+    else { this.approvedClaims.forEach(c => this.selectedApprovedIds.add(c.id)); }
+    this.selectedApprovedIds = new Set(this.selectedApprovedIds);
+  }
+  toggleApprovedSelect(id: string) {
+    if (this.selectedApprovedIds.has(id)) this.selectedApprovedIds.delete(id);
+    else this.selectedApprovedIds.add(id);
+    this.selectedApprovedIds = new Set(this.selectedApprovedIds);
+  }
   deleteConfirmTemplate: any = null;
   get allPendingSelected(): boolean {
     return this.pendingClaims.length > 0 && this.pendingClaims.every(c => this.selectedClaimIds.has(c.id));
@@ -287,8 +304,9 @@ export class AccountsComponent implements OnInit {
     }
     this.toast.show('Claim verified and sent to MD!', 'success');
     if (claim) {
+      const token = await this.supabase.getAuthToken();
       fetch('/api/notify', {
-        method: 'POST', headers: { 'Content-Type': 'application/json', 'x-notify-secret': 'vocto-notify-2024' },
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ event: 'verified', claimNumber: claim.claim_number, claimTitle: claim.title, amount: claim.amount, submittedBy: claim.employee_email || claim.submitted_by })
       }).catch(() => {});
     }
@@ -328,8 +346,9 @@ export class AccountsComponent implements OnInit {
     await this.supabase.logAudit({ entity_type: 'claim', entity_id: id, entity_ref: claim?.claim_number, action: 'rejected', performed_by: session?.user?.email || '', old_values: { status: claim?.status }, new_values: { status: 'REJECTED', rejection_reason: reason } });
     this.toast.show('Claim rejected.', 'warning');
     if (claim?.employee_email) {
+      const token = await this.supabase.getAuthToken();
       fetch('/api/notify', {
-        method: 'POST', headers: { 'Content-Type': 'application/json', 'x-notify-secret': 'vocto-notify-2024' },
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ event: 'rejected', claimNumber: claim.claim_number, claimTitle: claim.title, amount: claim.amount, employeeEmail: claim.employee_email })
       }).catch(() => {});
     }
@@ -372,8 +391,9 @@ export class AccountsComponent implements OnInit {
     await this.supabase.markNotificationsReadForEntity(session?.user?.email || '', claim?.claim_number || id);
     this.toast.show('Payment released successfully!', 'success');
     if (claim?.employee_email) {
+      const token = await this.supabase.getAuthToken();
       fetch('/api/notify', {
-        method: 'POST', headers: { 'Content-Type': 'application/json', 'x-notify-secret': 'vocto-notify-2024' },
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ event: 'paid', claimNumber: claim.claim_number, claimTitle: claim.title, amount: claim.amount, employeeEmail: claim.employee_email })
       }).catch(() => {});
     }
@@ -904,5 +924,69 @@ export class AccountsComponent implements OnInit {
 
   printReport() {
     window.print();
+  }
+
+  exportPaymentSheet() {
+    const ids = this.selectedApprovedIds.size > 0
+      ? this.approvedClaims.filter(c => this.selectedApprovedIds.has(c.id))
+      : this.approvedClaims;
+    if (!ids.length) { this.toast.show('No claims to export', 'error'); return; }
+    const headers = ['Voucher ID', 'Employee Name', 'Employee Email', 'Title', 'Category', 'Amount (Rs.)', 'Payment Mode', 'Bank/UPI Ref', 'Pay Date', 'Approved By'];
+    const rows = ids.map(c => [
+      c.claim_number,
+      c.employee_name || '',
+      c.employee_email || '',
+      `"${(c.title || '').replace(/"/g, '""')}"`,
+      c.category,
+      c.amount,
+      c.payment_mode || 'Bank Transfer',
+      '',
+      new Date().toISOString().split('T')[0],
+      c.verified_by_name || c.verified_by || ''
+    ]);
+    const total = ids.reduce((s, c) => s + c.amount, 0);
+    rows.push(['', '', '', 'TOTAL', '', total, '', '', '', '']);
+    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `payment-batch-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click(); URL.revokeObjectURL(url);
+    this.toast.show(`Payment sheet exported — ${ids.length} claims, ₹${total.toLocaleString('en-IN')}`, 'success');
+    this.selectedApprovedIds = new Set();
+  }
+
+  async exportGSTReport() {
+    const { data: pos } = await this.supabase.getClient()
+      .from('purchase_orders')
+      .select('*')
+      .eq('status', 'md_approved')
+      .order('date', { ascending: false });
+    if (!pos?.length) { this.toast.show('No approved POs found', 'error'); return; }
+    const headers = ['Date', 'PO Number', 'Vendor Name', 'Vendor GSTIN', 'Vendor State', 'Taxable Amount', 'CGST', 'SGST', 'IGST', 'Total Tax', 'Invoice Total'];
+    const rows = pos.map((po: any) => [
+      po.date,
+      po.po_number || '',
+      `"${(po.vendor_name || '').replace(/"/g, '""')}"`,
+      po.vendor_gstin || '',
+      po.vendor_state || '',
+      (po.subtotal || 0).toFixed(2),
+      (po.cgst || 0).toFixed(2),
+      (po.sgst || 0).toFixed(2),
+      (po.igst || 0).toFixed(2),
+      ((po.cgst || 0) + (po.sgst || 0) + (po.igst || 0)).toFixed(2),
+      (po.total || 0).toFixed(2)
+    ]);
+    const totalTaxable = pos.reduce((s: number, p: any) => s + (p.subtotal || 0), 0);
+    const totalTax = pos.reduce((s: number, p: any) => s + (p.cgst || 0) + (p.sgst || 0) + (p.igst || 0), 0);
+    const totalAmt = pos.reduce((s: number, p: any) => s + (p.total || 0), 0);
+    rows.push(['', 'TOTAL', '', '', '', totalTaxable.toFixed(2), '', '', '', totalTax.toFixed(2), totalAmt.toFixed(2)]);
+    const csv = [headers.join(','), ...rows.map((r: any[]) => r.join(','))].join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `gst-purchase-register-${new Date().toISOString().slice(0, 7)}.csv`;
+    a.click(); URL.revokeObjectURL(url);
+    this.toast.show(`GST report exported — ${pos.length} POs`, 'success');
   }
 }

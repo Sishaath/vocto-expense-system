@@ -1,22 +1,47 @@
-export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+const ALLOWED_ORIGINS = [
+  'https://portal.voctotechnologies.com',
+  'https://vocto-expense-system.vercel.app'
+];
 
+function setCors(req, res) {
+  const origin = req.headers.origin;
+  if (ALLOWED_ORIGINS.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Vary', 'Origin');
+}
+
+async function verifySupabaseToken(token, supabaseUrl, serviceRoleKey) {
+  const r = await fetch(`${supabaseUrl}/auth/v1/user`, {
+    headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${token}` }
+  });
+  if (!r.ok) return null;
+  return r.json();
+}
+
+export default async function handler(req, res) {
+  setCors(req, res);
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const secret = process.env.NOTIFY_SECRET;
-  if (secret && req.headers['x-notify-secret']?.trim() !== secret.trim()) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-
-  const { event, type, claimNumber, claimTitle, amount, employeeEmail, submittedBy, poNumber, vendorName, total } = req.body || {};
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const apiKey = process.env.RESEND_API_KEY;
+
+  if (!supabaseUrl || !serviceRoleKey) return res.status(500).json({ error: 'Not configured' });
   if (!apiKey) return res.status(500).json({ error: 'Email service not configured' });
 
+  const token = req.headers['authorization']?.replace('Bearer ', '');
+  if (!token) return res.status(401).json({ error: 'Unauthorized' });
+
+  const user = await verifySupabaseToken(token, supabaseUrl, serviceRoleKey);
+  if (!user?.email) return res.status(401).json({ error: 'Unauthorized' });
+
+  const { event, type, claimNumber, claimTitle, amount, employeeEmail, submittedBy, poNumber, vendorName, total, purpose } = req.body || {};
   const amtFormatted = amount ? `₹${Number(amount).toLocaleString('en-IN')}` : '';
-  const portalUrl = 'https://vocto-po-system.vercel.app';
+  const portalUrl = 'https://portal.voctotechnologies.com';
 
   let to, subject, html;
   const eventKey = event || type;
@@ -39,7 +64,29 @@ export default async function handler(req, res) {
             <tr><td style="padding:8px 0;color:#8A9BB0;font-size:13px">Total</td><td style="padding:8px 0;font-weight:700;font-size:14px;color:#F4721B">${poAmt}</td></tr>
             <tr><td style="padding:8px 0;color:#8A9BB0;font-size:13px">Submitted by</td><td style="padding:8px 0;font-size:13px">${submittedBy || '—'}</td></tr>
           </table>
-          <a href="https://portal.voctotechnologies.com/accounts" style="display:inline-block;background:#0C1F3D;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:13px;font-weight:600">Review on Accounts Dashboard →</a>
+          <a href="${portalUrl}/accounts" style="display:inline-block;background:#0C1F3D;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:13px;font-weight:600">Review on Accounts Dashboard →</a>
+        </div>
+      </div>`;
+      break;
+    }
+
+    case 'advance_submitted': {
+      const advAmt = amount ? `₹${Number(amount).toLocaleString('en-IN')}` : '';
+      to = req.body.to;
+      subject = `Advance Requisition Submitted — ${purpose || 'Review Required'}`;
+      html = `<div style="font-family:Inter,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#1a1a1a">
+        <div style="background:#0C1F3D;padding:16px 24px;border-radius:8px 8px 0 0">
+          <span style="color:#fff;font-weight:700;font-size:16px">Vocto Technologies</span>
+          <span style="color:#F4721B;margin-left:8px;font-size:12px">Expense System</span>
+        </div>
+        <div style="background:#fff;border:1px solid #E8ECF3;border-top:none;padding:24px;border-radius:0 0 8px 8px">
+          <h2 style="margin:0 0 16px;font-size:18px;color:#0C1F3D">New Advance Requisition</h2>
+          <table style="width:100%;border-collapse:collapse;margin-bottom:20px">
+            <tr><td style="padding:8px 0;color:#8A9BB0;font-size:13px;width:140px">Purpose</td><td style="padding:8px 0;font-weight:600;font-size:13px">${purpose || '—'}</td></tr>
+            <tr><td style="padding:8px 0;color:#8A9BB0;font-size:13px">Amount</td><td style="padding:8px 0;font-weight:700;font-size:14px;color:#F4721B">${advAmt}</td></tr>
+            <tr><td style="padding:8px 0;color:#8A9BB0;font-size:13px">Submitted by</td><td style="padding:8px 0;font-size:13px">${submittedBy || '—'}</td></tr>
+          </table>
+          <a href="${portalUrl}/accounts" style="display:inline-block;background:#0C1F3D;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:13px;font-weight:600">Review on Accounts Dashboard →</a>
         </div>
       </div>`;
       break;
@@ -55,7 +102,6 @@ export default async function handler(req, res) {
         </div>
         <div style="background:#fff;border:1px solid #E8ECF3;border-top:none;padding:24px;border-radius:0 0 8px 8px">
           <h2 style="margin:0 0 16px;font-size:18px;color:#0C1F3D">New Claim Needs Verification</h2>
-          <p style="margin:0 0 16px;color:#4A6080">A new expense claim has been submitted and requires your verification.</p>
           <table style="width:100%;border-collapse:collapse;margin-bottom:20px">
             <tr><td style="padding:8px 0;color:#8A9BB0;font-size:13px;width:140px">Claim ID</td><td style="padding:8px 0;font-weight:600;font-size:13px">${claimNumber}</td></tr>
             <tr><td style="padding:8px 0;color:#8A9BB0;font-size:13px">Title</td><td style="padding:8px 0;font-size:13px">${claimTitle || '—'}</td></tr>
@@ -77,7 +123,6 @@ export default async function handler(req, res) {
         </div>
         <div style="background:#fff;border:1px solid #E8ECF3;border-top:none;padding:24px;border-radius:0 0 8px 8px">
           <h2 style="margin:0 0 16px;font-size:18px;color:#0C1F3D">Claim Awaiting Your Approval</h2>
-          <p style="margin:0 0 16px;color:#4A6080">An expense claim has been verified by Accounts and is awaiting your approval.</p>
           <table style="width:100%;border-collapse:collapse;margin-bottom:20px">
             <tr><td style="padding:8px 0;color:#8A9BB0;font-size:13px;width:140px">Claim ID</td><td style="padding:8px 0;font-weight:600;font-size:13px">${claimNumber}</td></tr>
             <tr><td style="padding:8px 0;color:#8A9BB0;font-size:13px">Title</td><td style="padding:8px 0;font-size:13px">${claimTitle || '—'}</td></tr>
@@ -99,7 +144,6 @@ export default async function handler(req, res) {
         </div>
         <div style="background:#fff;border:1px solid #E8ECF3;border-top:none;padding:24px;border-radius:0 0 8px 8px">
           <h2 style="margin:0 0 16px;font-size:18px;color:#0C1F3D">Claim Approved — Release Payment</h2>
-          <p style="margin:0 0 16px;color:#4A6080">MD has approved the following claim. Please release payment.</p>
           <table style="width:100%;border-collapse:collapse;margin-bottom:20px">
             <tr><td style="padding:8px 0;color:#8A9BB0;font-size:13px;width:140px">Claim ID</td><td style="padding:8px 0;font-weight:600;font-size:13px">${claimNumber}</td></tr>
             <tr><td style="padding:8px 0;color:#8A9BB0;font-size:13px">Title</td><td style="padding:8px 0;font-size:13px">${claimTitle || '—'}</td></tr>
@@ -122,7 +166,6 @@ export default async function handler(req, res) {
         </div>
         <div style="background:#fff;border:1px solid #E8ECF3;border-top:none;padding:24px;border-radius:0 0 8px 8px">
           <h2 style="margin:0 0 16px;font-size:18px;color:#0C1F3D">Payment Released ✓</h2>
-          <p style="margin:0 0 16px;color:#4A6080">Your expense claim has been approved and payment has been released.</p>
           <table style="width:100%;border-collapse:collapse;margin-bottom:20px">
             <tr><td style="padding:8px 0;color:#8A9BB0;font-size:13px;width:140px">Claim ID</td><td style="padding:8px 0;font-weight:600;font-size:13px">${claimNumber}</td></tr>
             <tr><td style="padding:8px 0;color:#8A9BB0;font-size:13px">Title</td><td style="padding:8px 0;font-size:13px">${claimTitle || '—'}</td></tr>
@@ -145,13 +188,11 @@ export default async function handler(req, res) {
         </div>
         <div style="background:#fff;border:1px solid #E8ECF3;border-top:none;padding:24px;border-radius:0 0 8px 8px">
           <h2 style="margin:0 0 16px;font-size:18px;color:#C0392B">Claim Rejected</h2>
-          <p style="margin:0 0 16px;color:#4A6080">Your expense claim has been reviewed and could not be approved at this time.</p>
           <table style="width:100%;border-collapse:collapse;margin-bottom:20px">
             <tr><td style="padding:8px 0;color:#8A9BB0;font-size:13px;width:140px">Claim ID</td><td style="padding:8px 0;font-weight:600;font-size:13px">${claimNumber}</td></tr>
             <tr><td style="padding:8px 0;color:#8A9BB0;font-size:13px">Title</td><td style="padding:8px 0;font-size:13px">${claimTitle || '—'}</td></tr>
             <tr><td style="padding:8px 0;color:#8A9BB0;font-size:13px">Amount</td><td style="padding:8px 0;font-size:13px">${amtFormatted}</td></tr>
           </table>
-          <p style="color:#4A6080;font-size:13px">Please log in to the portal to view the rejection reason and resubmit if needed.</p>
           <a href="${portalUrl}/dashboard" style="display:inline-block;background:#0C1F3D;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:13px;font-weight:600">View My Claims →</a>
         </div>
       </div>`;
@@ -168,13 +209,11 @@ export default async function handler(req, res) {
         </div>
         <div style="background:#fff;border:1px solid #E8ECF3;border-top:none;padding:24px;border-radius:0 0 8px 8px">
           <h2 style="margin:0 0 16px;font-size:18px;color:#0C1F3D">Voucher Submitted Successfully</h2>
-          <p style="margin:0 0 16px;color:#4A6080">Your expense voucher has been submitted and is awaiting verification by the Accounts team.</p>
           <table style="width:100%;border-collapse:collapse;margin-bottom:20px">
             <tr><td style="padding:8px 0;color:#8A9BB0;font-size:13px;width:140px">Claim ID</td><td style="padding:8px 0;font-weight:600;font-size:13px">${claimNumber}</td></tr>
             <tr><td style="padding:8px 0;color:#8A9BB0;font-size:13px">Title</td><td style="padding:8px 0;font-size:13px">${claimTitle || '—'}</td></tr>
             <tr><td style="padding:8px 0;color:#8A9BB0;font-size:13px">Amount</td><td style="padding:8px 0;font-weight:700;font-size:14px;color:#F4721B">${amtFormatted}</td></tr>
           </table>
-          <p style="color:#8A9BB0;font-size:12px">You will be notified once the Accounts team verifies your voucher.</p>
           <a href="${portalUrl}/dashboard" style="display:inline-block;background:#0C1F3D;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:13px;font-weight:600">View My Claims →</a>
         </div>
       </div>`;
@@ -187,16 +226,8 @@ export default async function handler(req, res) {
   try {
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        from: 'Vocto Expense System <onboarding@resend.dev>',
-        to: [to],
-        subject,
-        html
-      })
+      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from: 'Vocto Expense System <onboarding@resend.dev>', to: [to], subject, html })
     });
     const data = await response.json();
     if (!response.ok) return res.status(500).json({ error: data });

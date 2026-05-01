@@ -100,6 +100,11 @@ tbody td { padding: 12px 14px; font-size: 12px; color: #0C2D5E; }
 .badge-expiry { margin-left: 6px; padding: 2px 7px; border-radius: 20px; font-size: 10px; font-weight: 600; background: #FFF3CD; color: #856404; }
 .badge.draft { background: #F2F4F7; color: #5A6A80; }
 .badge.acc_verified { background: #EEF3FA; color: #185FA5; }
+.badge.withdrawn { background: #F2F4F7; color: #5A6A80; }
+.btn-withdraw { padding: 4px 10px; background: #FFF3CD; color: #856404; border: 1px solid #F0D060; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.btn-withdraw:hover { background: #FFE8A1; }
+.btn-resubmit { padding: 4px 10px; background: #E1F5EE; color: #0F6E56; border: 1px solid #86E0C0; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.btn-resubmit:hover { background: #C6F0E0; }
 .small { font-size: 10px; }
 .action-cell { display: flex; gap: 6px; align-items: center; }
 .btn-view { padding: 4px 10px; background: #EEF3FA; color: #185FA5; border: 1px solid #B5CDED; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; }
@@ -259,11 +264,11 @@ tbody td { padding: 12px 14px; font-size: 12px; color: #0C2D5E; }
 .budget-panel { background: #fff; border: 1px solid #E8ECF3; border-radius: 10px; padding: 14px 18px; margin-bottom: 20px; }
 .bp-header { display: flex; align-items: center; justify-content: space-between; }
 .bp-title { font-size: 13px; font-weight: 700; color: #0C1F3D; }
-.bp-toggle { font-size: 11px; color: #8094AE; }
+.bp-toggle { font-size: 11px; color: #8A9BB0; }
 .bp-rows { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
 .bp-row { display: grid; grid-template-columns: 180px 1fr 140px; align-items: center; gap: 12px; }
 .bp-cat { font-size: 12px; color: #4A6080; }
 .bp-bar-track { height: 6px; background: #E8ECF3; border-radius: 3px; overflow: hidden; }
-.bp-bar-fill { height: 100%; background: #4F46E5; border-radius: 3px; }
+.bp-bar-fill { height: 100%; background: #1A4B8C; border-radius: 3px; }
 .bp-bar-fill.over { background: #E53E3E; }
-.bp-amounts { font-size: 11px; color: #8094AE; text-align: right; }
+.bp-amounts { font-size: 11px; color: #8A9BB0; text-align: right; }

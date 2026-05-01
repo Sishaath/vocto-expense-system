@@ -11,6 +11,7 @@ import { CommonModule } from '@angular/common';
 })
 export class MdSidebarComponent {
   @Input() activeSection: string = 'all';
+  @Input() pendingReqCount: number = 0;
   @Output() sectionChange = new EventEmitter<string>();
 
   constructor(private router: Router) {}

@@ -1,10 +1,14 @@
 // Vercel Cron: runs every 5 days to prevent Supabase free tier from pausing
 // Schedule configured in vercel.json
 import { createClient } from '@supabase/supabase-js';
+import { timingSafeEqual } from 'crypto';
 
 export default async function handler(req, res) {
-  // Only allow cron calls
-  if (req.headers['authorization'] !== `Bearer ${process.env.CRON_SECRET}`) {
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret) return res.status(401).json({ error: 'Unauthorized' });
+  const provided = Buffer.from(req.headers['authorization'] || '');
+  const expected = Buffer.from(`Bearer ${cronSecret}`);
+  if (provided.length !== expected.length || !timingSafeEqual(provided, expected)) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 

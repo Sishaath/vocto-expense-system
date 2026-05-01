@@ -3,11 +3,11 @@ import { Router } from '@angular/router';
 import { SupabaseService } from '../supabase.service';
 import { environment } from '../../environments/environment';
 
-async function getRoleFromApi(email: string): Promise<string | null> {
+async function getRoleFromApi(email: string, token: string): Promise<string | null> {
   try {
     const res = await fetch(`${environment.apiBaseUrl}/api/get-role`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-notify-secret': 'vocto-notify-2024' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify({ email })
     });
     const json = await res.json();
@@ -21,7 +21,7 @@ async function getSessionAndRole() {
   const supabase = inject(SupabaseService);
   const { data: { session } } = await supabase.getClient().auth.getSession();
   if (!session) return { session: null, role: null };
-  const role = await getRoleFromApi(session.user.email || '');
+  const role = await getRoleFromApi(session.user.email || '', session.access_token);
   return { session, role };
 }
 

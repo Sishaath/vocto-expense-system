@@ -5,6 +5,7 @@ import { CommonModule } from '@angular/common';
 import { SupabaseService } from '../supabase.service';
 import { ToastService } from '../shared/toast.service';
 import { SharedSidebarComponent } from '../shared-sidebar/shared-sidebar.component';
+import { environment } from '../../environments/environment';
 
 @Component({
   selector: 'app-advance-requisition',
@@ -90,6 +91,24 @@ export class AdvanceRequisitionComponent implements OnInit {
     this.saving = false;
     if (error) { this.errorMsg = error.message; return; }
     this.toast.show('Advance requisition submitted!', 'success');
+    // Notify accounts team
+    try {
+      const accountsUsers = await this.supabase.getUsersByRole('accounts');
+      const recipients = accountsUsers.map((u: any) => u.email).filter(Boolean);
+      if (recipients.length) {
+        await this.supabase.createNotifications(accountsUsers, {
+          title: `Advance requisition submitted — ${this.purpose}`,
+          body: `₹${Number(this.advance_amount).toLocaleString('en-IN')} by ${this.userEmail}`,
+          entity_type: 'advance_requisition', entity_id: '', entity_ref: ''
+        });
+        const token = await this.supabase.getAuthToken();
+        fetch(`${environment.apiBaseUrl}/api/notify`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ type: 'advance_submitted', to: recipients[0], purpose: this.purpose, amount: this.advance_amount, submittedBy: this.userEmail })
+        }).catch(() => {});
+      }
+    } catch { /* non-critical */ }
     setTimeout(() => this.router.navigate(['/dashboard']), 1200);
   }
 

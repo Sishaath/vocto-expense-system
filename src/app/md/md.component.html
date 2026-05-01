@@ -28,7 +28,7 @@
     <div class="sidebar-overlay" *ngIf="sidebarOpen" (click)="closeSidebar()"></div>
     <div class="sidebar" [class.open]="sidebarOpen">
       <button class="sidebar-close" (click)="closeSidebar()">✕</button>
-      <app-md-sidebar [activeSection]="activeSection" (sectionChange)="activeSection=$event; closeSidebar()"></app-md-sidebar>
+      <app-md-sidebar [activeSection]="activeSection" [pendingReqCount]="pendingReqCount" (sectionChange)="activeSection=$event; closeSidebar()"></app-md-sidebar>
     </div>
 
     <div class="main">
@@ -68,6 +68,20 @@
         <span class="top-cat-chip" *ngFor="let c of topCategories">
           {{ c.category }} <strong>₹{{ c.amount.toLocaleString('en-IN') }}</strong>
         </span>
+      </div>
+
+      <!-- MONTHLY SPEND CHART -->
+      <div class="spend-chart" *ngIf="monthlySpendChart.length > 1">
+        <div class="chart-title">Monthly Approved Spend</div>
+        <div class="chart-bars">
+          <div class="chart-bar-col" *ngFor="let m of monthlySpendChart">
+            <div class="chart-bar-wrap">
+              <div class="chart-bar" [style.height.%]="m.barPct"></div>
+            </div>
+            <div class="chart-label">{{ m.label }}</div>
+            <div class="chart-amt">₹{{ (m.amount/1000 | number:'1.0-0') }}k</div>
+          </div>
+        </div>
       </div>
 
       <!-- FILTER BAR -->
@@ -150,7 +164,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let claim of verifiedClaims" class="clickable-row" (click)="openDetail(claim)">
+            <tr *ngFor="let claim of verifiedPaged" class="clickable-row" (click)="openDetail(claim)">
               <td class="mono">{{ claim.claim_number }}</td>
               <td><strong>{{ claim.title }}</strong></td>
               <td class="muted">{{ claim.category }}</td>
@@ -175,6 +189,11 @@
             </tr>
           </tbody>
         </table>
+        <div class="pagination" *ngIf="verifiedTotalPages > 1">
+          <button class="pg-btn" (click)="verifiedPage=verifiedPage-1" [disabled]="verifiedPage===1">← Prev</button>
+          <span class="pg-info">{{ verifiedPage }} / {{ verifiedTotalPages }}</span>
+          <button class="pg-btn" (click)="verifiedPage=verifiedPage+1" [disabled]="verifiedPage===verifiedTotalPages">Next →</button>
+        </div>
       </div>
 
       <!-- RECENTLY PROCESSED -->
@@ -193,7 +212,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let claim of processedClaims" class="clickable-row" (click)="openDetail(claim)">
+            <tr *ngFor="let claim of approvedPaged" class="clickable-row" (click)="openDetail(claim)">
               <td class="mono">{{ claim.claim_number }}</td>
               <td><strong>{{ claim.title }}</strong></td>
               <td class="amount">₹{{ claim.amount.toLocaleString('en-IN') }}</td>
@@ -209,6 +228,11 @@
             </tr>
           </tbody>
         </table>
+        <div class="pagination" *ngIf="approvedTotalPages > 1">
+          <button class="pg-btn" (click)="approvedPage=approvedPage-1" [disabled]="approvedPage===1">← Prev</button>
+          <span class="pg-info">{{ approvedPage }} / {{ approvedTotalPages }}</span>
+          <button class="pg-btn" (click)="approvedPage=approvedPage+1" [disabled]="approvedPage===approvedTotalPages">Next →</button>
+        </div>
       </div>
 
       <!-- REJECTED VIEW -->
@@ -224,7 +248,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let claim of rejectedClaims" class="clickable-row" (click)="openDetail(claim)">
+              <tr *ngFor="let claim of rejectedPaged" class="clickable-row" (click)="openDetail(claim)">
                 <td class="mono">{{ claim.claim_number }}</td>
                 <td><strong>{{ claim.title }}</strong></td>
                 <td class="amount">₹{{ claim.amount.toLocaleString('en-IN') }}</td>
@@ -240,6 +264,11 @@
               </tr>
             </tbody>
           </table>
+          <div class="pagination" *ngIf="rejectedTotalPages > 1">
+            <button class="pg-btn" (click)="rejectedPage=rejectedPage-1" [disabled]="rejectedPage===1">← Prev</button>
+            <span class="pg-info">{{ rejectedPage }} / {{ rejectedTotalPages }}</span>
+            <button class="pg-btn" (click)="rejectedPage=rejectedPage+1" [disabled]="rejectedPage===rejectedTotalPages">Next →</button>
+          </div>
         </div>
       </ng-container>
 

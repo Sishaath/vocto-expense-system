@@ -69,6 +69,18 @@ export class ClaimDetailComponent implements OnChanges {
     this.auditLogs = combined;
   }
 
+  statusLabel(status: string): string {
+    const map: Record<string, string> = {
+      PENDING: 'Waiting for Review',
+      VERIFIED: 'Accounts Verified',
+      MD_APPROVED: 'Approved',
+      PAID: 'Paid',
+      REJECTED: 'Rejected',
+      WITHDRAWN: 'Withdrawn'
+    };
+    return map[status] || status;
+  }
+
   auditLabel(action: string): string {
     const map: any = { submitted: 'Submitted', verified: 'Verified by Accounts', md_approved: 'Approved by MD', rejected: 'Rejected', paid: 'Payment Released', edited: 'Edited' };
     return map[action] || action;

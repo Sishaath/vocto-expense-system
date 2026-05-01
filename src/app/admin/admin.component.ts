@@ -18,9 +18,37 @@ export class AdminComponent implements OnInit {
   authMap: Record<string, { lastLogin: string | null; userId: string; confirmed: boolean }> = {};
   loading = true;
   adminEmail = '';
-  activeTab: 'users' | 'audit' = 'users';
+  activeTab: 'users' | 'audit' | 'settings' = 'users';
   auditLogs: any[] = [];
   auditLoading = false;
+
+  // Bulk role change
+  selectedUserEmails: Set<string> = new Set();
+  bulkRoleModal = false;
+  bulkRole = 'employee';
+  get allUsersSelected(): boolean { return this.filtered.length > 0 && this.filtered.every(u => this.selectedUserEmails.has(u.email)); }
+  toggleUserSelectAll() {
+    if (this.allUsersSelected) this.filtered.forEach(u => this.selectedUserEmails.delete(u.email));
+    else this.filtered.forEach(u => this.selectedUserEmails.add(u.email));
+    this.selectedUserEmails = new Set(this.selectedUserEmails);
+  }
+  toggleUserSelect(email: string) {
+    if (this.selectedUserEmails.has(email)) this.selectedUserEmails.delete(email);
+    else this.selectedUserEmails.add(email);
+    this.selectedUserEmails = new Set(this.selectedUserEmails);
+  }
+
+  // Company settings (localStorage)
+  companySettings = {
+    name: 'Vocto Technologies Pvt. Ltd.',
+    gstin: '33AAACO0420H1ZH',
+    cin: 'U32509TN1994PTC029202',
+    address: 'B4, Phase II, MEPZ SEZ, Tambaram, Chennai – 600 045, Tamil Nadu',
+    email: 'admin@voctotechnologies.com',
+    phone: '+91 99941 78734',
+    stateCode: '33'
+  };
+  settingsSaved = false;
   search = '';
   filterRole = '';
 
@@ -52,11 +80,12 @@ export class AdminComponent implements OnInit {
 
   async loadAll() {
     this.loading = true;
+    const token = await this.supabase.getAuthToken();
     const [rolesRes, authRes] = await Promise.all([
       this.supabase.getAllUserRoles(),
       fetch(`${environment.apiBaseUrl}/api/admin-users`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-notify-secret': 'vocto-notify-2024' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ action: 'list' })
       }).then(r => r.json()).catch(() => ({ map: {} }))
     ]);
@@ -91,9 +120,10 @@ export class AdminComponent implements OnInit {
     }
     this.inviting = true;
     try {
+      const token = await this.supabase.getAuthToken();
       const res = await fetch(`${environment.apiBaseUrl}/api/invite-user`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-notify-secret': 'vocto-notify-2024' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ email: this.inviteEmail.trim(), role: this.inviteRole, invitedBy: this.adminEmail })
       });
       const json = await res.json();
@@ -110,9 +140,10 @@ export class AdminComponent implements OnInit {
   }
 
   async resendInvite(user: any) {
+    const token = await this.supabase.getAuthToken();
     const res = await fetch(`${environment.apiBaseUrl}/api/invite-user`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-notify-secret': 'vocto-notify-2024' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify({ email: user.email, role: user.role, invitedBy: this.adminEmail })
     });
     const json = await res.json().catch(() => ({}));
@@ -177,10 +208,11 @@ export class AdminComponent implements OnInit {
     const user = this.confirmDelete;
     this.cancelDelete();
     try {
+      const token = await this.supabase.getAuthToken();
       const authInfo = this.authMap[user.email];
       await fetch(`${environment.apiBaseUrl}/api/admin-users`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-notify-secret': 'vocto-notify-2024' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ action: 'delete', userId: authInfo?.userId, email: user.email })
       });
       this.toast.show(`${user.email} removed`);
@@ -188,11 +220,38 @@ export class AdminComponent implements OnInit {
     } catch { this.toast.show('Failed to remove user.', 'error'); }
   }
 
-  async switchTab(tab: 'users' | 'audit') {
+  async switchTab(tab: 'users' | 'audit' | 'settings') {
     this.activeTab = tab;
-    if (tab === 'audit' && this.auditLogs.length === 0) {
-      await this.loadAuditLogs();
+    if (tab === 'audit' && this.auditLogs.length === 0) await this.loadAuditLogs();
+    if (tab === 'settings') this.loadSettings();
+  }
+
+  loadSettings() {
+    const saved = localStorage.getItem('vocto_company_settings');
+    if (saved) try { this.companySettings = { ...this.companySettings, ...JSON.parse(saved) }; } catch {}
+  }
+
+  saveSettings() {
+    localStorage.setItem('vocto_company_settings', JSON.stringify(this.companySettings));
+    this.settingsSaved = true;
+    this.toast.show('Company settings saved!', 'success');
+    setTimeout(() => this.settingsSaved = false, 3000);
+  }
+
+  async confirmBulkRoleChange() {
+    if (!this.bulkRole || this.selectedUserEmails.size === 0) return;
+    const emails = Array.from(this.selectedUserEmails);
+    let ok = 0; let fail = 0;
+    for (const email of emails) {
+      if (email === this.adminEmail) { fail++; continue; }
+      const { error } = await this.supabase.updateUserRole(email, this.bulkRole, this.adminEmail);
+      if (error) fail++; else ok++;
     }
+    this.selectedUserEmails = new Set();
+    this.bulkRoleModal = false;
+    if (fail > 0) this.toast.show(`${ok} updated, ${fail} failed (cannot change your own role).`, 'error');
+    else this.toast.show(`${ok} user(s) updated to ${this.ROLE_LABELS[this.bulkRole]}`, 'success');
+    await this.loadAll();
   }
 
   async loadAuditLogs() {

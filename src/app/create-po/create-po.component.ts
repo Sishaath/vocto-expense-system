@@ -306,9 +306,10 @@ export class CreatePoComponent implements OnInit {
       const accountsUsers = await this.supabase.getUsersByRole('accounts');
       const recipients = accountsUsers.map((u: any) => u.email).filter(Boolean);
       if (recipients.length) {
+        const token = await this.supabase.getAuthToken();
         await fetch(`${environment.apiBaseUrl}/api/notify`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'x-notify-secret': 'vocto-notify-2024' },
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify({
             type: 'po_submitted',
             to: recipients[0],

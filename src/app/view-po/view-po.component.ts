@@ -142,7 +142,22 @@ export class ViewPoComponent implements OnInit {
     return this.po?.vendor_state_code && this.po.vendor_state_code !== '33';
   }
 
+  vendorLinkCopied = false;
+
   print() { window.print(); }
+
+  async copyVendorLink() {
+    if (!this.po?.id) return;
+    const link = `${window.location.origin}/po/view/${this.po.id}`;
+    try {
+      await navigator.clipboard.writeText(link);
+      this.vendorLinkCopied = true;
+      setTimeout(() => this.vendorLinkCopied = false, 2500);
+      this.toast.show('Vendor link copied to clipboard!', 'success');
+    } catch {
+      this.toast.show('Could not copy — please copy the URL manually.', 'error');
+    }
+  }
 
   async markAccepted() {
     if (!this.po?.id) return;

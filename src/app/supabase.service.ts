@@ -152,6 +152,11 @@ export class SupabaseService {
     return this.supabase;
   }
 
+  async getAuthToken(): Promise<string> {
+    const { data: { session } } = await this.supabase.auth.getSession();
+    return session?.access_token || '';
+  }
+
   async signIn(email: string, password: string) {
     return this.supabase.auth.signInWithPassword({ email, password });
   }

@@ -274,9 +274,10 @@ export class DashboardComponent implements OnInit {
     if (cats.length) this.categories = cats;
     // Role-based redirect — admin must not see employee dashboard
     try {
+      const token = await this.supabase.getAuthToken();
       const roleRes = await fetch(`${environment.apiBaseUrl}/api/get-role`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-notify-secret': 'vocto-notify-2024' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ email: this.userEmail })
       });
       const { role } = await roleRes.json();
@@ -326,9 +327,36 @@ export class DashboardComponent implements OnInit {
     return days > 3;
   }
 
+  statusLabel(status: string): string {
+    const map: Record<string, string> = {
+      PENDING: 'Waiting for Review',
+      VERIFIED: 'Accounts Verified',
+      MD_APPROVED: 'Approved',
+      PAID: 'Paid',
+      REJECTED: 'Rejected',
+      WITHDRAWN: 'Withdrawn'
+    };
+    return map[status] || status;
+  }
+
   openDetail(claim: any) { this.selectedClaim = claim; }
   closeDetail() { this.selectedClaim = null; }
   editClaim(claim: any) { this.router.navigate(['/edit', claim.id]); }
+
+  resubmitClaim(claim: any, event: Event) {
+    event.stopPropagation();
+    this.router.navigate(['/submit'], { state: { resubmitData: claim } });
+  }
+
+  async withdrawClaim(claim: any, event: Event) {
+    event.stopPropagation();
+    if (!confirm(`Withdraw voucher "${claim.title}"? This cannot be undone.`)) return;
+    const { error } = await this.supabase.getClient()
+      .from('claims').update({ status: 'WITHDRAWN' }).eq('id', claim.id);
+    if (error) { this.toast.show('Failed to withdraw voucher.', 'error'); return; }
+    claim.status = 'WITHDRAWN';
+    this.toast.show('Voucher withdrawn.');
+  }
 
   async openViewer(claim: any) {
     if (!claim.file_url) return;

@@ -8,6 +8,9 @@
   </div>
   <div class="ab-right" *ngIf="po">
     <button class="btn-edit" *ngIf="po.status === 'draft'" (click)="router.navigate(['/po/edit', po.id])">Edit</button>
+    <button class="btn-share" *ngIf="po.status === 'md_approved'" (click)="copyVendorLink()" title="Copy shareable link for vendor">
+      {{ vendorLinkCopied ? '✓ Copied!' : 'Copy Vendor Link' }}
+    </button>
     <button class="btn-print" *ngIf="po.status === 'md_approved'" (click)="print()">Download PDF</button>
   </div>
 </div>

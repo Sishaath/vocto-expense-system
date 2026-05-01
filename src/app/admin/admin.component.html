@@ -29,6 +29,51 @@
     <div class="tabs">
       <button class="tab-btn" [class.active]="activeTab === 'users'" (click)="switchTab('users')">User Management</button>
       <button class="tab-btn" [class.active]="activeTab === 'audit'" (click)="switchTab('audit')">Audit Log</button>
+      <button class="tab-btn" [class.active]="activeTab === 'settings'" (click)="switchTab('settings')">Settings</button>
+    </div>
+
+    <!-- SETTINGS TAB -->
+    <div *ngIf="activeTab === 'settings'">
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">Company Settings</div>
+          <div class="card-sub">These details appear on Purchase Orders and reports. Saved locally in this browser.</div>
+        </div>
+        <div style="padding: 0 24px 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+          <div class="settings-field">
+            <label class="settings-label">Company Name</label>
+            <input class="field" [(ngModel)]="companySettings.name" placeholder="Vocto Technologies Pvt. Ltd." />
+          </div>
+          <div class="settings-field">
+            <label class="settings-label">GSTIN</label>
+            <input class="field" [(ngModel)]="companySettings.gstin" placeholder="33AAACO0420H1ZH" style="font-family:monospace" />
+          </div>
+          <div class="settings-field">
+            <label class="settings-label">CIN</label>
+            <input class="field" [(ngModel)]="companySettings.cin" placeholder="U32509TN1994PTC029202" style="font-family:monospace" />
+          </div>
+          <div class="settings-field">
+            <label class="settings-label">State Code (GST)</label>
+            <input class="field" [(ngModel)]="companySettings.stateCode" placeholder="33" />
+          </div>
+          <div class="settings-field">
+            <label class="settings-label">Email</label>
+            <input class="field" [(ngModel)]="companySettings.email" placeholder="admin@voctotechnologies.com" type="email" />
+          </div>
+          <div class="settings-field">
+            <label class="settings-label">Phone</label>
+            <input class="field" [(ngModel)]="companySettings.phone" placeholder="+91 99941 78734" />
+          </div>
+          <div class="settings-field" style="grid-column: 1 / -1">
+            <label class="settings-label">Registered Address</label>
+            <textarea class="field" [(ngModel)]="companySettings.address" rows="3" style="resize:vertical;width:100%"></textarea>
+          </div>
+        </div>
+        <div style="padding: 0 24px 20px; display: flex; gap: 10px; align-items: center;">
+          <button class="btn-primary" (click)="saveSettings()">Save Settings</button>
+          <span style="font-size:12px;color:#10B981;font-weight:600" *ngIf="settingsSaved">✓ Saved</span>
+        </div>
+      </div>
     </div>
 
     <!-- AUDIT LOG TAB -->
@@ -56,7 +101,7 @@
               <tr *ngFor="let log of auditLogs">
                 <td class="cell-dim" style="white-space:nowrap">{{ formatDateTime(log.created_at) }}</td>
                 <td><span class="role-badge role-{{log.action?.toLowerCase()}}">{{ log.action }}</span></td>
-                <td class="cell-dim">{{ log.entity_type }} {{ log.entity_id ? '#' + log.entity_id.slice(0,8) : '' }}</td>
+                <td class="cell-dim">{{ log.entity_type === 'auth' ? 'Login' : log.entity_type + (log.entity_id ? ' #' + log.entity_id.slice(0,8) : '') }}</td>
                 <td class="cell-dim">{{ log.performed_by }}</td>
                 <td class="cell-dim">{{ log.notes || '—' }}</td>
               </tr>
@@ -132,6 +177,10 @@
         <div class="tbl-hd-left">
           <span class="card-title">Team Members</span>
           <span class="user-count" *ngIf="!loading">{{ filtered.length }} {{ filtered.length === 1 ? 'user' : 'users' }}</span>
+          <ng-container *ngIf="selectedUserEmails.size > 0">
+            <span class="user-count" style="background:#EEF2FF;color:#4F46E5">{{ selectedUserEmails.size }} selected</span>
+            <button class="act-btn act-role" (click)="bulkRoleModal=true" style="margin-left:6px">Change Role for Selected</button>
+          </ng-container>
         </div>
         <div class="tbl-hd-right">
           <input class="field search-f" [(ngModel)]="search" placeholder="Search by email…" />
@@ -156,6 +205,7 @@
         <table>
           <thead>
             <tr>
+              <th><input type="checkbox" [checked]="allUsersSelected" (change)="toggleUserSelectAll()" /></th>
               <th>User</th>
               <th>Role</th>
               <th>Status</th>
@@ -168,6 +218,9 @@
             <tr *ngFor="let u of filtered"
               [class.row-self]="u.email === adminEmail"
               [class.row-inactive]="!u.active && !isPending(u)">
+              <td (click)="$event.stopPropagation()">
+                <input type="checkbox" [checked]="selectedUserEmails.has(u.email)" (change)="toggleUserSelect(u.email)" [disabled]="u.email === adminEmail" />
+              </td>
               <td>
                 <div class="user-cell">
                   <span class="user-email">{{ u.email }}</span>
@@ -205,7 +258,7 @@
               </td>
             </tr>
             <tr *ngIf="filtered.length === 0">
-              <td colspan="6" class="empty-row">No users found</td>
+              <td colspan="7" class="empty-row">No users found</td>
             </tr>
           </tbody>
         </table>
@@ -240,6 +293,30 @@
       <button class="btn-primary" (click)="saveRoleChange()" [disabled]="rolePickerSelected === rolePickerUser?.role">
         Save Changes
       </button>
+    </div>
+  </div>
+</div>
+
+<!-- Bulk Role Change Modal -->
+<div class="overlay" *ngIf="bulkRoleModal" (click)="bulkRoleModal=false">
+  <div class="modal modal-sm" (click)="$event.stopPropagation()">
+    <div class="modal-hd">
+      <div class="modal-title">Change Role for {{ selectedUserEmails.size }} Users</div>
+      <button class="modal-x" (click)="bulkRoleModal=false">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <p style="margin-bottom:14px">Select the new role to assign to all selected users:</p>
+      <select class="field sel" [(ngModel)]="bulkRole" style="width:100%;margin-bottom:8px">
+        <option value="employee">Employee</option>
+        <option value="accounts">Accounts</option>
+        <option value="md">Managing Director</option>
+        <option value="admin">Admin</option>
+      </select>
+      <p style="font-size:12px;color:#94A3B8">Note: Your own account will be skipped.</p>
+    </div>
+    <div class="modal-ft">
+      <button class="btn-cancel" (click)="bulkRoleModal=false">Cancel</button>
+      <button class="btn-primary" (click)="confirmBulkRoleChange()">Apply to {{ selectedUserEmails.size }} Users</button>
     </div>
   </div>
 </div>

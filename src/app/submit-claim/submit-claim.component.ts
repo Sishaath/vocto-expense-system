@@ -40,7 +40,9 @@ export class SubmitClaimComponent implements OnInit, OnDestroy {
   loading = false;
   errorMsg = '';
   formSubmitted = false;
+  draftSaved = false;
   private objectUrls: string[] = [];
+  private readonly DRAFT_KEY = 'vocto_claim_draft';
 
   constructor(
     private supabase: SupabaseService,
@@ -60,8 +62,25 @@ export class SubmitClaimComponent implements OnInit, OnDestroy {
       await this.loadClaim(id);
     }
 
+    // Restore draft from localStorage (only for new claims, not edits)
+    if (!this.editMode) {
+      const saved = localStorage.getItem(this.DRAFT_KEY);
+      if (saved) {
+        try {
+          const d = JSON.parse(saved);
+          this.title = d.title || '';
+          this.category = d.category || 'Travel & Accommodation';
+          this.amount = d.amount || null;
+          this.expenseDate = d.expenseDate || '';
+          this.vendor = d.vendor || '';
+          this.payMode = d.payMode || 'Company Card';
+          this.description = d.description || '';
+          this.draftSaved = true;
+        } catch {}
+      }
+    }
+
     // Pre-fill from recurring template if navigated with state
-    const nav = this.router.getCurrentNavigation?.() ?? null;
     const templateData = history.state?.templateData;
     if (templateData && !this.editMode) {
       this.title = templateData.title || '';
@@ -72,6 +91,21 @@ export class SubmitClaimComponent implements OnInit, OnDestroy {
       this.description = templateData.description || '';
       this.fromTemplateId = templateData.id || null;
       this.templateData = templateData;
+    }
+
+    // Pre-fill from rejected claim resubmission
+    const resubmitData = history.state?.resubmitData;
+    if (resubmitData && !this.editMode && !templateData) {
+      this.title = resubmitData.title || '';
+      this.category = resubmitData.category || 'Travel & Accommodation';
+      this.amount = resubmitData.amount || null;
+      this.expenseDate = resubmitData.expense_date || '';
+      this.vendor = resubmitData.vendor || '';
+      this.payMode = resubmitData.pay_mode || 'Company Card';
+      this.description = resubmitData.description || '';
+      // Clear any saved draft since we have fresh data
+      localStorage.removeItem(this.DRAFT_KEY);
+      this.draftSaved = false;
     }
   }
 
@@ -164,6 +198,24 @@ export class SubmitClaimComponent implements OnInit, OnDestroy {
     this.objectUrls.forEach(u => URL.revokeObjectURL(u));
   }
 
+  saveDraftLocally() {
+    if (this.editMode) return;
+    localStorage.setItem(this.DRAFT_KEY, JSON.stringify({
+      title: this.title, category: this.category, amount: this.amount,
+      expenseDate: this.expenseDate, vendor: this.vendor, payMode: this.payMode, description: this.description
+    }));
+    this.draftSaved = true;
+    this.toastService.show('Draft saved locally', 'info', 2000);
+  }
+
+  clearDraft() {
+    localStorage.removeItem(this.DRAFT_KEY);
+    this.draftSaved = false;
+    this.title = ''; this.category = 'Travel & Accommodation'; this.amount = null;
+    this.expenseDate = ''; this.vendor = ''; this.payMode = 'Company Card'; this.description = '';
+    this.toastService.show('Draft cleared', 'info', 1500);
+  }
+
   async submitClaim() {
     this.formSubmitted = true;
     const hasFile = this.previews.length > 0 || (this.editMode && !!this.existingFileUrl);
@@ -180,6 +232,7 @@ export class SubmitClaimComponent implements OnInit, OnDestroy {
     }
     this.loading = true;
     this.errorMsg = '';
+    const token = await this.supabase.getAuthToken();
     try {
       // Upload new files
       const uploadedPaths: string[] = [];
@@ -217,13 +270,28 @@ export class SubmitClaimComponent implements OnInit, OnDestroy {
         else {
           this.toastService.show('Claim updated successfully!');
           fetch('/api/notify', {
-            method: 'POST', headers: { 'Content-Type': 'application/json', 'x-notify-secret': 'vocto-notify-2024' },
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ event: 'submitted', claimNumber: this.editClaimNumber, claimTitle: this.title, amount: this.amount, employeeEmail: this.editClaimEmployeeEmail, submittedBy: this.editClaimEmployeeEmail })
           }).catch(() => {});
           setTimeout(() => this.router.navigate(['/dashboard']), 1200);
         }
       } else {
         const user = await this.supabase.getClient().auth.getUser();
+        // Duplicate detection: same amount + date + vendor in last 7 days
+        const { data: dupeCheck } = await this.supabase.getClient()
+          .from('claims')
+          .select('claim_number, title')
+          .eq('amount', this.amount)
+          .eq('expense_date', this.expenseDate)
+          .eq('vendor', this.vendor.trim())
+          .eq('employee_email', user.data.user?.email || '')
+          .limit(1);
+        if (dupeCheck && dupeCheck.length > 0) {
+          const existing = dupeCheck[0];
+          this.errorMsg = `Possible duplicate: A claim for ₹${this.amount} from "${this.vendor}" on this date already exists (${existing.claim_number}). Please verify before submitting.`;
+          this.loading = false;
+          return;
+        }
         const year = new Date().getFullYear();
         const { data: lastClaims } = await this.supabase.getClient()
           .from('claims')
@@ -250,6 +318,7 @@ export class SubmitClaimComponent implements OnInit, OnDestroy {
         if (error) { this.errorMsg = error.message; }
         else {
           this.toastService.show('Claim submitted successfully!');
+          localStorage.removeItem(this.DRAFT_KEY);
           await this.supabase.logAudit({ entity_type: 'claim', entity_id: claimNumber, entity_ref: claimNumber, action: 'submitted', performed_by: employeeEmail, new_values: { title: this.title, amount: this.amount, category: this.category } });
           const accEmails = await this.supabase.getUsersByRole('accounts');
           if (accEmails.length) {
@@ -265,11 +334,11 @@ export class SubmitClaimComponent implements OnInit, OnDestroy {
             await this.supabase.advanceTemplateDueDate(this.fromTemplateId, due.toISOString().split('T')[0]);
           }
           fetch('/api/notify', {
-            method: 'POST', headers: { 'Content-Type': 'application/json', 'x-notify-secret': 'vocto-notify-2024' },
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ event: 'submitted', claimNumber, claimTitle: this.title, amount: this.amount, employeeEmail, submittedBy: employeeEmail })
           }).catch(() => {});
           fetch('/api/notify', {
-            method: 'POST', headers: { 'Content-Type': 'application/json', 'x-notify-secret': 'vocto-notify-2024' },
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ event: 'receipt', claimNumber, claimTitle: this.title, amount: this.amount, employeeEmail })
           }).catch(() => {});
           setTimeout(() => this.router.navigate(['/dashboard']), 1200);

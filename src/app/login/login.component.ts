@@ -38,16 +38,28 @@ export class LoginComponent implements OnInit {
     const { data, error } = await this.supabase.signIn(this.email.trim(), this.password);
     if (error) { this.errorMsg = error.message; this.loading = false; return; }
     const canonicalEmail = data.user?.email || this.email.trim().toLowerCase();
+    const token = data.session?.access_token || '';
     let role: string | null = null;
     try {
       const res = await fetch(`${environment.apiBaseUrl}/api/get-role`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-notify-secret': 'vocto-notify-2024' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ email: canonicalEmail })
       });
       const json = await res.json();
       role = json.role || null;
     } catch {}
+    // Log login event to audit_logs
+    try {
+      await this.supabase.logAudit({
+        entity_type: 'auth',
+        entity_id: canonicalEmail,
+        action: 'login',
+        performed_by: canonicalEmail,
+        notes: `Signed in as ${role || 'employee'}`
+      });
+    } catch {}
+
     if (role === 'accounts') this.router.navigate(['/accounts']);
     else if (role === 'md') this.router.navigate(['/md']);
     else if (role === 'admin') this.router.navigate(['/admin']);
