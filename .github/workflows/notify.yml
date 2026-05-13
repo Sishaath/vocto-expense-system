@@ -18,23 +18,14 @@ jobs:
         run: |
           echo "files=$(git diff --name-status HEAD~1 HEAD | tr '\n' ' ')" >> $GITHUB_OUTPUT
 
-      - name: Send deploy notification email
-        uses: dawidd6/action-send-mail@v3
-        with:
-          server_address: smtp.gmail.com
-          server_port: 465
-          username: ${{ secrets.MAIL_USERNAME }}
-          password: ${{ secrets.MAIL_PASSWORD }}
-          subject: "Vocto Expense — Deployed to production"
-          to: ${{ secrets.MAIL_USERNAME }}
-          from: ${{ secrets.MAIL_USERNAME }}
-          body: |
-            A new version of Vocto Expense System has been deployed to production.
-
-            Commit  : ${{ github.sha }}
-            Author  : ${{ github.actor }}
-            Message : ${{ github.event.head_commit.message }}
-            Changes : ${{ steps.changes.outputs.files }}
-
-            Vercel  : https://vercel.com/dashboard
-            Live    : https://portal.voctotechnologies.com
+      - name: Send deploy notification via Resend
+        run: |
+          curl -s -X POST https://api.resend.com/emails \
+            -H "Authorization: Bearer ${{ secrets.RESEND_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "from": "Vocto Expense <onboarding@resend.dev>",
+              "to": "sishaath@gmail.com",
+              "subject": "Vocto Expense — Deployed to production",
+              "html": "<p><strong>A new version has been deployed to production.</strong></p><br><p><strong>Commit:</strong> ${{ github.sha }}</p><p><strong>Author:</strong> ${{ github.actor }}</p><p><strong>Message:</strong> ${{ github.event.head_commit.message }}</p><p><strong>Changes:</strong> ${{ steps.changes.outputs.files }}</p><br><p><a href=\"https://portal.voctotechnologies.com\">View Live Site</a> &nbsp;|&nbsp; <a href=\"https://vercel.com/dashboard\">Vercel Dashboard</a></p>"
+            }'
