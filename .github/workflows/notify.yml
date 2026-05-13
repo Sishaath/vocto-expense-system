@@ -1,0 +1,40 @@
+name: Deploy Notification
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  notify:
+    name: Notify on Production Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get changed files
+        id: changes
+        run: |
+          echo "files=$(git diff --name-status HEAD~1 HEAD | tr '\n' ' ')" >> $GITHUB_OUTPUT
+
+      - name: Send deploy notification email
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: "Vocto Expense — Deployed to production"
+          to: ${{ secrets.MAIL_USERNAME }}
+          from: ${{ secrets.MAIL_USERNAME }}
+          body: |
+            A new version of Vocto Expense System has been deployed to production.
+
+            Commit  : ${{ github.sha }}
+            Author  : ${{ github.actor }}
+            Message : ${{ github.event.head_commit.message }}
+            Changes : ${{ steps.changes.outputs.files }}
+
+            Vercel  : https://vercel.com/dashboard
+            Live    : https://portal.voctotechnologies.com
