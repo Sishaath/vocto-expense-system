@@ -18,7 +18,7 @@
         <div class="page-title">Sales <span>Pipeline</span></div>
         <div class="page-sub">Leads and contacts</div>
       </div>
-      <button class="btn-primary" (click)="openNew()">+ New Lead</button>
+      <button class="btn-primary" *ngIf="!readOnly" (click)="openNew()">+ New Lead</button>
     </div>
 
     <div class="tab-bar">
@@ -42,12 +42,12 @@
           <div class="l-company" *ngIf="l.company">{{ l.company }}</div>
           <div class="l-value" *ngIf="l.value_estimate">₹{{ l.value_estimate.toLocaleString('en-IN') }}</div>
           <div class="l-meta">{{ l.source || '' }}</div>
-          <select class="stage-select" [ngModel]="l.stage" (ngModelChange)="moveStage(l, $event)" (click)="$event.stopPropagation()">
+          <select class="stage-select" [ngModel]="l.stage" (ngModelChange)="moveStage(l, $event)" (click)="$event.stopPropagation()" [disabled]="readOnly">
             <option *ngFor="let st of stages" [value]="st">{{ stageLabel(st) }}</option>
           </select>
           <div class="l-actions">
             <span class="linked" *ngIf="l.customer_id">Customer ✓</span>
-            <button class="btn-mini danger" (click)="deleteLead(l, $event)">✕</button>
+            <button class="btn-mini danger" *ngIf="!readOnly" (click)="deleteLead(l, $event)">✕</button>
           </div>
         </div>
         <div class="stage-empty" *ngIf="leadsInStage(s).length === 0">—</div>
@@ -92,7 +92,7 @@
       </div>
       <div class="modal-actions">
         <button class="btn-cancel" (click)="showForm = false">Cancel</button>
-        <button class="btn-save" (click)="save()" [disabled]="saving">Save Lead</button>
+        <button class="btn-save" *ngIf="!readOnly" (click)="save()" [disabled]="saving">Save Lead</button>
       </div>
     </div>
   </div>

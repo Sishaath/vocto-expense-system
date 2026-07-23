@@ -18,6 +18,7 @@ export class CustomerDetailComponent implements OnInit {
   contacts: any[] = [];
   loading = true;
   userEmail = '';
+  readOnly = false;  // md sees everything, edits nothing
 
   showContactForm = false;
   savingContact = false;
@@ -36,6 +37,7 @@ export class CustomerDetailComponent implements OnInit {
     const { data: { session } } = await this.supabase.getClient().auth.getSession();
     if (!session) { this.router.navigate(['/login']); return; }
     this.userEmail = session.user.email || '';
+    this.readOnly = (await this.supabase.getUserRole(this.userEmail)) === 'md';
     const id = this.route.snapshot.paramMap.get('id');
     if (!id) { this.router.navigate(['/customers']); return; }
     await this.load(id);

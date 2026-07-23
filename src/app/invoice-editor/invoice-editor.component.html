@@ -20,8 +20,8 @@
       </div>
       <div class="head-actions">
         <button class="btn-secondary" (click)="printDoc()" *ngIf="!isNew">Print / PDF</button>
-        <button class="btn-outline" (click)="save(false)" [disabled]="saving || isFinalized">Save Draft</button>
-        <button class="btn-primary" (click)="save(true)" [disabled]="saving">
+        <button class="btn-outline" *ngIf="!readOnly" (click)="save(false)" [disabled]="saving || isFinalized">Save Draft</button>
+        <button class="btn-primary" *ngIf="!readOnly" (click)="save(true)" [disabled]="saving">
           {{ isFinalized ? 'Update' : (docType === 'credit_note' ? 'Issue Credit Note' : docType === 'estimate' ? 'Mark Sent' : 'Finalize & Number') }}
         </button>
       </div>

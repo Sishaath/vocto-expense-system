@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard, accountsGuard, mdGuard, adminGuard } from './guards/auth.guard';
+import { authGuard, accountsGuard, mdGuard, adminGuard, billingGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
@@ -25,16 +25,16 @@ export const routes: Routes = [
   { path: 'invoice/export/:id', loadComponent: () => import('./sales-invoice/sales-invoice.component').then(m => m.SalesInvoiceComponent), canActivate: [accountsGuard] },
   { path: 'invoice/dta/create', loadComponent: () => import('./sales-invoice/sales-invoice.component').then(m => m.SalesInvoiceComponent), canActivate: [accountsGuard] },
   { path: 'invoice/dta/:id', loadComponent: () => import('./sales-invoice/sales-invoice.component').then(m => m.SalesInvoiceComponent), canActivate: [accountsGuard] },
-  { path: 'customers', loadComponent: () => import('./customers/customers.component').then(m => m.CustomersComponent), canActivate: [accountsGuard] },
-  { path: 'customers/:id', loadComponent: () => import('./customer-detail/customer-detail.component').then(m => m.CustomerDetailComponent), canActivate: [accountsGuard] },
-  { path: 'billing', loadComponent: () => import('./billing/billing.component').then(m => m.BillingComponent), canActivate: [accountsGuard] },
-  { path: 'billing/invoice/create', loadComponent: () => import('./invoice-editor/invoice-editor.component').then(m => m.InvoiceEditorComponent), canActivate: [accountsGuard], data: { docType: 'invoice' } },
-  { path: 'billing/invoice/:id', loadComponent: () => import('./invoice-editor/invoice-editor.component').then(m => m.InvoiceEditorComponent), canActivate: [accountsGuard], data: { docType: 'invoice' } },
-  { path: 'billing/estimate/create', loadComponent: () => import('./invoice-editor/invoice-editor.component').then(m => m.InvoiceEditorComponent), canActivate: [accountsGuard], data: { docType: 'estimate' } },
-  { path: 'billing/estimate/:id', loadComponent: () => import('./invoice-editor/invoice-editor.component').then(m => m.InvoiceEditorComponent), canActivate: [accountsGuard], data: { docType: 'estimate' } },
-  { path: 'billing/credit-note/create', loadComponent: () => import('./invoice-editor/invoice-editor.component').then(m => m.InvoiceEditorComponent), canActivate: [accountsGuard], data: { docType: 'credit_note' } },
-  { path: 'billing/credit-note/:id', loadComponent: () => import('./invoice-editor/invoice-editor.component').then(m => m.InvoiceEditorComponent), canActivate: [accountsGuard], data: { docType: 'credit_note' } },
-  { path: 'crm', loadComponent: () => import('./crm/crm.component').then(m => m.CrmComponent), canActivate: [accountsGuard] },
-  { path: 'inventory', loadComponent: () => import('./inventory/inventory.component').then(m => m.InventoryComponent), canActivate: [accountsGuard] },
+  { path: 'customers', loadComponent: () => import('./customers/customers.component').then(m => m.CustomersComponent), canActivate: [billingGuard] },
+  { path: 'customers/:id', loadComponent: () => import('./customer-detail/customer-detail.component').then(m => m.CustomerDetailComponent), canActivate: [billingGuard] },
+  { path: 'billing', loadComponent: () => import('./billing/billing.component').then(m => m.BillingComponent), canActivate: [billingGuard] },
+  { path: 'billing/invoice/create', loadComponent: () => import('./invoice-editor/invoice-editor.component').then(m => m.InvoiceEditorComponent), canActivate: [billingGuard], data: { docType: 'invoice' } },
+  { path: 'billing/invoice/:id', loadComponent: () => import('./invoice-editor/invoice-editor.component').then(m => m.InvoiceEditorComponent), canActivate: [billingGuard], data: { docType: 'invoice' } },
+  { path: 'billing/estimate/create', loadComponent: () => import('./invoice-editor/invoice-editor.component').then(m => m.InvoiceEditorComponent), canActivate: [billingGuard], data: { docType: 'estimate' } },
+  { path: 'billing/estimate/:id', loadComponent: () => import('./invoice-editor/invoice-editor.component').then(m => m.InvoiceEditorComponent), canActivate: [billingGuard], data: { docType: 'estimate' } },
+  { path: 'billing/credit-note/create', loadComponent: () => import('./invoice-editor/invoice-editor.component').then(m => m.InvoiceEditorComponent), canActivate: [billingGuard], data: { docType: 'credit_note' } },
+  { path: 'billing/credit-note/:id', loadComponent: () => import('./invoice-editor/invoice-editor.component').then(m => m.InvoiceEditorComponent), canActivate: [billingGuard], data: { docType: 'credit_note' } },
+  { path: 'crm', loadComponent: () => import('./crm/crm.component').then(m => m.CrmComponent), canActivate: [billingGuard] },
+  { path: 'inventory', loadComponent: () => import('./inventory/inventory.component').then(m => m.InventoryComponent), canActivate: [billingGuard] },
   { path: 'admin', loadComponent: () => import('./admin/admin.component').then(m => m.AdminComponent), canActivate: [adminGuard] },
 ];

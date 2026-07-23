@@ -18,7 +18,7 @@
         <div class="page-title">Billing <span>&amp; Receivables</span></div>
         <div class="page-sub">Invoices, estimates, credit notes and payments</div>
       </div>
-      <div class="head-actions">
+      <div class="head-actions" *ngIf="!readOnly">
         <button class="btn-outline" (click)="router.navigate(['/billing/estimate/create'])">+ Estimate</button>
         <button class="btn-outline" (click)="router.navigate(['/billing/credit-note/create'])">+ Credit Note</button>
         <button class="btn-primary" (click)="router.navigate(['/billing/invoice/create'])">+ New Invoice</button>
@@ -65,9 +65,9 @@
             <td class="amount">₹{{ ((inv.total || 0) - (inv.amount_paid || 0)).toLocaleString('en-IN') }}</td>
             <td><span class="badge" [ngClass]="isOverdue(inv) ? 'overdue' : inv.status">{{ isOverdue(inv) ? 'Overdue' : statusLabel(inv.status) }}</span></td>
             <td class="action-cell">
-              <button class="btn-mini" *ngIf="!['draft','cancelled','paid'].includes(inv.status)" (click)="openPayment(inv, $event)">+ Payment</button>
-              <button class="btn-mini warn" *ngIf="isOverdue(inv)" (click)="sendOverdueReminder(inv, $event)">Remind</button>
-              <button class="btn-mini danger" *ngIf="inv.status === 'draft'" (click)="cancelInvoice(inv, $event)">Cancel</button>
+              <button class="btn-mini" *ngIf="!readOnly && !['draft','cancelled','paid'].includes(inv.status)" (click)="openPayment(inv, $event)">+ Payment</button>
+              <button class="btn-mini warn" *ngIf="!readOnly && isOverdue(inv)" (click)="sendOverdueReminder(inv, $event)">Remind</button>
+              <button class="btn-mini danger" *ngIf="!readOnly && inv.status === 'draft'" (click)="cancelInvoice(inv, $event)">Cancel</button>
             </td>
           </tr>
           <tr *ngIf="filteredInvoices.length === 0"><td colspan="8" class="empty">No invoices yet</td></tr>
@@ -88,7 +88,7 @@
             <td class="amount">₹{{ (e.total || 0).toLocaleString('en-IN') }}</td>
             <td><span class="badge" [ngClass]="e.status">{{ statusLabel(e.status) }}</span></td>
             <td class="action-cell">
-              <button class="btn-mini" *ngIf="e.status !== 'converted'" (click)="convertEstimate(e, $event)">→ Invoice</button>
+              <button class="btn-mini" *ngIf="!readOnly && e.status !== 'converted'" (click)="convertEstimate(e, $event)">→ Invoice</button>
             </td>
           </tr>
           <tr *ngIf="filteredEstimates.length === 0"><td colspan="7" class="empty">No estimates yet</td></tr>
@@ -134,7 +134,7 @@
 
     <!-- RECURRING -->
     <div *ngIf="!loading && tab === 'recurring'">
-      <div class="filter-bar"><button class="btn-primary" (click)="openRecurringForm()">+ New Recurring Template</button></div>
+      <div class="filter-bar" *ngIf="!readOnly"><button class="btn-primary" (click)="openRecurringForm()">+ New Recurring Template</button></div>
       <div class="table-wrap">
         <table>
           <thead><tr><th>Name</th><th>Customer</th><th>Frequency</th><th>Next Run</th><th>Status</th><th>Actions</th></tr></thead>
@@ -146,8 +146,8 @@
               <td class="mono">{{ t.next_run_date | date:'dd MMM yy' }} <span class="badge overdue" *ngIf="t.active && isRecurringDue(t)">Due</span></td>
               <td><span class="badge" [ngClass]="t.active ? 'paid' : 'cancelled'">{{ t.active ? 'Active' : 'Paused' }}</span></td>
               <td class="action-cell">
-                <button class="btn-mini" *ngIf="t.active" (click)="generateFromRecurring(t)">Generate Now</button>
-                <button class="btn-mini" (click)="toggleRecurring(t)">{{ t.active ? 'Pause' : 'Resume' }}</button>
+                <button class="btn-mini" *ngIf="!readOnly && t.active" (click)="generateFromRecurring(t)">Generate Now</button>
+                <button class="btn-mini" *ngIf="!readOnly" (click)="toggleRecurring(t)">{{ t.active ? 'Pause' : 'Resume' }}</button>
               </td>
             </tr>
             <tr *ngIf="recurring.length === 0"><td colspan="6" class="empty">No recurring templates yet</td></tr>

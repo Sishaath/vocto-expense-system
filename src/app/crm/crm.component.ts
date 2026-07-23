@@ -22,6 +22,7 @@ export class CrmComponent implements OnInit {
   customers: any[] = [];
   loading = true;
   userEmail = '';
+  readOnly = false;  // md sees everything, edits nothing
   search = '';
 
   showForm = false;
@@ -38,6 +39,7 @@ export class CrmComponent implements OnInit {
     const { data: { session } } = await this.supabase.getClient().auth.getSession();
     if (!session) { this.router.navigate(['/login']); return; }
     this.userEmail = session.user.email || '';
+    this.readOnly = (await this.supabase.getUserRole(this.userEmail)) === 'md';
     await this.load();
   }
 
@@ -131,5 +133,5 @@ export class CrmComponent implements OnInit {
     await this.load();
   }
 
-  goBack() { this.router.navigate(['/accounts']); }
+  goBack() { this.router.navigate([this.readOnly ? '/md' : '/accounts']); }
 }

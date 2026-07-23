@@ -18,7 +18,7 @@
         <div class="page-title">Inventory <span>&amp; Production</span></div>
         <div class="page-sub">Item catalog, stock ledger and production runs</div>
       </div>
-      <div class="head-actions">
+      <div class="head-actions" *ngIf="!readOnly">
         <button class="btn-outline" (click)="openMovement()">± Stock Movement</button>
         <button class="btn-outline" (click)="openNewProd()">+ Production Order</button>
         <button class="btn-primary" (click)="openNewItem()">+ New Item</button>
@@ -57,8 +57,8 @@
             </td>
             <td class="muted">{{ i.track_inventory && i.item_type === 'goods' ? (i.reorder_level || 0) : '—' }}</td>
             <td class="action-cell">
-              <button class="btn-mini" (click)="editItem(i)">Edit</button>
-              <button class="btn-mini" *ngIf="i.track_inventory && i.item_type === 'goods'" (click)="openMovement(i)">± Stock</button>
+              <button class="btn-mini" *ngIf="!readOnly" (click)="editItem(i)">Edit</button>
+              <button class="btn-mini" *ngIf="!readOnly && i.track_inventory && i.item_type === 'goods'" (click)="openMovement(i)">± Stock</button>
             </td>
           </tr>
           <tr *ngIf="filteredItems.length === 0"><td colspan="9" class="empty">No items in the catalog yet</td></tr>
@@ -99,9 +99,9 @@
             <td class="mono">{{ po.start_date ? (po.start_date | date:'dd MMM yy') : '—' }}</td>
             <td class="mono">{{ po.completed_date ? (po.completed_date | date:'dd MMM yy') : '—' }}</td>
             <td class="action-cell">
-              <button class="btn-mini" *ngIf="po.status === 'planned'" (click)="startProd(po)">Start</button>
-              <button class="btn-mini go" *ngIf="po.status === 'in_progress'" (click)="completeProd(po)">Complete</button>
-              <button class="btn-mini danger" *ngIf="po.status === 'planned' || po.status === 'in_progress'" (click)="cancelProd(po)">Cancel</button>
+              <button class="btn-mini" *ngIf="!readOnly && po.status === 'planned'" (click)="startProd(po)">Start</button>
+              <button class="btn-mini go" *ngIf="!readOnly && po.status === 'in_progress'" (click)="completeProd(po)">Complete</button>
+              <button class="btn-mini danger" *ngIf="!readOnly && (po.status === 'planned' || po.status === 'in_progress')" (click)="cancelProd(po)">Cancel</button>
             </td>
           </tr>
           <tr *ngIf="productionOrders.length === 0"><td colspan="8" class="empty">No production orders yet</td></tr>

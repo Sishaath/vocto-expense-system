@@ -42,6 +42,7 @@ export class InvoiceEditorComponent implements OnInit {
   saving = false;
   errorMsg = '';
   userEmail = '';
+  readOnly = false;  // md sees everything, edits nothing
 
   constructor(
     private supabase: SupabaseService,
@@ -57,6 +58,7 @@ export class InvoiceEditorComponent implements OnInit {
   async ngOnInit() {
     const { data: { session } } = await this.supabase.getClient().auth.getSession();
     this.userEmail = session?.user?.email || '';
+    this.readOnly = (await this.supabase.getUserRole(this.userEmail)) === 'md';
     this.docType = (this.route.snapshot.data['docType'] as DocType) || 'invoice';
 
     const [cust, items] = await Promise.all([this.supabase.getCustomers(), this.supabase.getItems()]);

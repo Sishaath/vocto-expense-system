@@ -22,7 +22,7 @@
 
     <div class="filter-bar">
       <input class="search-input" [(ngModel)]="search" placeholder="Search by name, GSTIN, city or email..." />
-      <button class="btn-export" (click)="openNew()">+ New Customer</button>
+      <button class="btn-export" *ngIf="!readOnly" (click)="openNew()">+ New Customer</button>
     </div>
 
     <div class="loading-overlay" *ngIf="loading">
@@ -50,7 +50,7 @@
             <td>{{ c.city || '—' }}<span class="muted" *ngIf="c.state"> · {{ c.state }}</span></td>
             <td class="muted">{{ c.email || c.phone || '—' }}</td>
             <td>
-              <button class="btn-view" (click)="editCustomer(c, $event)">Edit</button>
+              <button class="btn-view" *ngIf="!readOnly" (click)="editCustomer(c, $event)">Edit</button>
             </td>
           </tr>
           <tr *ngIf="filtered.length === 0">

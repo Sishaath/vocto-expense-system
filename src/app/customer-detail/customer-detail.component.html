@@ -18,7 +18,7 @@
         <div class="page-title">{{ customer.name }} <span class="inactive-tag" *ngIf="!customer.active">Inactive</span></div>
         <div class="page-sub mono">{{ customer.gstin || 'No GSTIN' }} · {{ customer.city || '—' }}{{ customer.state ? ', ' + customer.state : '' }}</div>
       </div>
-      <div class="head-actions">
+      <div class="head-actions" *ngIf="!readOnly">
         <button class="btn-secondary" (click)="exportData()">Export Data</button>
         <button class="btn-danger" (click)="deleteCustomer()">Delete</button>
         <button class="btn-primary" (click)="newInvoice()">+ New Invoice</button>
@@ -50,7 +50,7 @@
       <div class="card">
         <div class="card-title-row">
           <div class="card-title">Contacts</div>
-          <button class="btn-mini" (click)="showContactForm = !showContactForm">{{ showContactForm ? 'Cancel' : '+ Add' }}</button>
+          <button class="btn-mini" *ngIf="!readOnly" (click)="showContactForm = !showContactForm">{{ showContactForm ? 'Cancel' : '+ Add' }}</button>
         </div>
         <div class="contact-form" *ngIf="showContactForm">
           <input [(ngModel)]="contactForm.name" placeholder="Name *" />
@@ -64,7 +64,7 @@
             <div class="c-name">{{ c.name }} <span class="muted" *ngIf="c.designation">· {{ c.designation }}</span></div>
             <div class="muted">{{ c.email || '' }} {{ c.phone ? '· ' + c.phone : '' }}</div>
           </div>
-          <button class="btn-mini danger" (click)="deleteContact(c)">Remove</button>
+          <button class="btn-mini danger" *ngIf="!readOnly" (click)="deleteContact(c)">Remove</button>
         </div>
         <div class="empty" *ngIf="contacts.length === 0 && !showContactForm">No contacts recorded</div>
       </div>

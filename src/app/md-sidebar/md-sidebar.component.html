@@ -16,6 +16,12 @@
   <div class="nav-item nav-sub" [class.active]="activeSection==='pos'" (click)="go('pos')">All POs</div>
   <a class="nav-item" [class.active]="is('/po/create')" routerLink="/po/create">+ Create PO</a>
 
+  <div class="nav-label" style="margin-top:8px;">Billing &amp; CRM</div>
+  <a class="nav-item nav-sub" [class.active]="is('/billing')" routerLink="/billing">Invoices &amp; Payments</a>
+  <a class="nav-item nav-sub" [class.active]="is('/customers')" routerLink="/customers">Customers</a>
+  <a class="nav-item nav-sub" [class.active]="is('/crm')" routerLink="/crm">Sales Pipeline</a>
+  <a class="nav-item nav-sub" [class.active]="is('/inventory')" routerLink="/inventory">Inventory &amp; Production</a>
+
   <div class="nav-label" style="margin-top:8px;">Tools</div>
   <a class="nav-item nav-sub" [class.active]="is('/vendors')" routerLink="/vendors">Vendor Directory</a>
 </div>

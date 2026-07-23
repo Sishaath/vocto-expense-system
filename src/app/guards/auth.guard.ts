@@ -51,6 +51,17 @@ export const mdGuard = async (): Promise<boolean> => {
   return true;
 };
 
+// Billing/CRM/inventory pages: accounts full, md read-only (RLS
+// blocks md writes; the UI also hides mutating actions for md)
+export const billingGuard = async (): Promise<boolean> => {
+  const router = inject(Router);
+  const { session, role } = await getSessionAndRole();
+  if (!session) { router.navigate(['/login']); return false; }
+  if (role === 'admin') { router.navigate(['/admin']); return false; }
+  if (role !== 'accounts' && role !== 'md') { router.navigate(['/dashboard']); return false; }
+  return true;
+};
+
 export const adminGuard = async (): Promise<boolean> => {
   const router = inject(Router);
   const { session, role } = await getSessionAndRole();

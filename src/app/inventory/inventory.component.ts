@@ -19,6 +19,7 @@ export class InventoryComponent implements OnInit {
   productionOrders: any[] = [];
   loading = true;
   userEmail = '';
+  readOnly = false;  // md sees everything, edits nothing
   search = '';
 
   showItemForm = false;
@@ -49,6 +50,7 @@ export class InventoryComponent implements OnInit {
     const { data: { session } } = await this.supabase.getClient().auth.getSession();
     if (!session) { this.router.navigate(['/login']); return; }
     this.userEmail = session.user.email || '';
+    this.readOnly = (await this.supabase.getUserRole(this.userEmail)) === 'md';
     await this.load();
   }
 
@@ -184,5 +186,5 @@ export class InventoryComponent implements OnInit {
     return ({ planned: 'Planned', in_progress: 'In Progress', completed: 'Completed', cancelled: 'Cancelled' } as any)[s] || s;
   }
 
-  goBack() { this.router.navigate(['/accounts']); }
+  goBack() { this.router.navigate([this.readOnly ? '/md' : '/accounts']); }
 }
