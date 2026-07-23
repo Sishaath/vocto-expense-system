@@ -67,7 +67,9 @@ BEGIN
   RETURNING last_num INTO v_num;
   RETURN p_prefix || v_fy || '-' || LPAD(v_num::TEXT, 4, '0');
 END $$;
-GRANT EXECUTE ON FUNCTION public.next_doc_number(TEXT, TEXT) TO authenticated;
+-- Only the SECURITY DEFINER numbering triggers may consume serials —
+-- direct RPC calls would burn numbers and break gap-free numbering.
+REVOKE EXECUTE ON FUNCTION public.next_doc_number(TEXT, TEXT) FROM PUBLIC, anon, authenticated;
 
 -- ------------------------------------------------------------
 -- 2. Customers
