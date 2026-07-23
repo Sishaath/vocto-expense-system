@@ -4,12 +4,14 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SupabaseService, Customer } from '../supabase.service';
 import { ToastService } from '../shared/toast.service';
+import { AppShellComponent } from '../shared/app-shell/app-shell.component';
+import { getRailModules, RailModule } from '../shared/nav-config';
 import { GstService } from '../gst.service';
 
 @Component({
   selector: 'app-customers',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AppShellComponent],
   templateUrl: './customers.component.html',
   styleUrls: ['./customers.component.scss']
 })
@@ -19,6 +21,8 @@ export class CustomersComponent implements OnInit {
   search = '';
   userEmail = '';
   readOnly = false;  // md sees everything, edits nothing
+  role: string | null = null;
+  modules: RailModule[] = [];
 
   showForm = false;
   saving = false;
@@ -40,7 +44,9 @@ export class CustomersComponent implements OnInit {
     const { data: { session } } = await this.supabase.getClient().auth.getSession();
     if (!session) { this.router.navigate(['/login']); return; }
     this.userEmail = session.user.email || '';
-    this.readOnly = (await this.supabase.getUserRole(this.userEmail)) === 'md';
+    this.role = await this.supabase.getUserRole(this.userEmail);
+    this.readOnly = this.role === 'md';
+    this.modules = getRailModules(this.role);
     await this.load();
   }
 
@@ -102,4 +108,9 @@ export class CustomersComponent implements OnInit {
 
   cancelForm() { this.showForm = false; }
   goBack() { this.router.navigate([this.readOnly ? '/md' : '/accounts']); }
+
+  async logout() {
+    await this.supabase.signOut();
+    this.router.navigate(['/login']);
+  }
 }

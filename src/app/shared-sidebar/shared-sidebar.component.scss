@@ -1,11 +1,11 @@
 :host { display: flex; flex-direction: column; width: 100%; }
 
 .sidebar { display: flex; flex-direction: column; gap: 2px; width: 100%; }
-.nav-label { font-size: 9px; color: rgba(255,255,255,0.3); letter-spacing: 1px; text-transform: uppercase; padding: 8px 10px 4px; }
-.nav-item { padding: 8px 12px; border-radius: 7px; color: rgba(255,255,255,0.55); font-size: 12px; cursor: pointer; text-decoration: none; display: block; transition: all 0.15s; }
-.nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
-.nav-item.active { background: #F4721B; color: #fff; }
+.nav-label { font-size: 9px; color: #9CA3AF; letter-spacing: 1px; text-transform: uppercase; padding: 8px 10px 4px; }
+.nav-item { padding: 8px 12px; border-radius: 7px; color: #4B5563; font-size: 12px; cursor: pointer; text-decoration: none; display: block; transition: all 0.15s; }
+.nav-item:hover { background: #F3F4F6; color: #111827; }
+.nav-item.active { background: #4F46E5; color: #fff; }
 .nav-sub { padding-left: 20px; font-size: 11px; }
-.admin-link { color: #E8A838; font-weight: 600; }
-.admin-link:hover { background: rgba(248,166,56,0.15); color: #F4721B; }
-.admin-link.active { background: #F4721B; color: #fff; }
+.admin-link { color: #4338CA; font-weight: 600; }
+.admin-link:hover { background: #EEF2FF; color: #4338CA; }
+.admin-link.active { background: #4F46E5; color: #fff; }

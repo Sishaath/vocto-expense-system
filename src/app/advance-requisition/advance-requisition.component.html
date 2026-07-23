@@ -1,25 +1,7 @@
-<div class="app-wrap">
-  <div class="topbar">
-    <div class="topbar-accent"></div>
-    <div class="topbar-main">
-      <div class="logo">
-        <img src="/vocto-logo.png" alt="Vocto" class="logo-img" />
-        <div class="logo-divider"></div>
-        <div class="logo-text-block">
-          <div class="logo-company">Vocto Technologies Private Limited</div>
-        </div>
-      </div>
-      <div class="tb-section">{{ viewMode === 'new' ? 'NEW ADVANCE REQUISITION' : 'ADVANCE REQUISITION' }}</div>
-      <div class="tb-right"><button class="btn-back" routerLink="/dashboard">← Back</button></div>
-    </div>
-  </div>
+<app-shell [modules]="modules" activeModule="requisition" [pageTitle]="viewMode === 'new' ? 'New Advance Requisition' : 'Advance Requisition'" [userEmail]="userEmail" [userName]="userEmail" [hasSubnav]="true" (logoutClick)="logout()">
+  <app-shared-sidebar subnav></app-shared-sidebar>
 
-  <div class="shell">
-    <div class="sidebar">
-      <app-shared-sidebar></app-shared-sidebar>
-    </div>
-
-    <div class="main">
+  <div class="main">
       <div class="loading-overlay" *ngIf="loading">
         <div class="spinner"></div>
       </div>
@@ -131,5 +113,4 @@
         <div class="error-msg">{{ errorMsg }}</div>
       </div>
     </div>
-  </div>
-</div>
+</app-shell>

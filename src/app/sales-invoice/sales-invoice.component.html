@@ -1,26 +1,10 @@
-<div class="app-wrap no-print">
-  <div class="topbar">
-    <div class="topbar-accent"></div>
-    <div class="topbar-main">
-      <div class="logo">
-        <img src="/vocto-logo.png" alt="Vocto" class="logo-img" />
-        <div class="logo-divider"></div>
-        <div class="logo-text-block">
-          <div class="logo-company">Vocto Technologies Private Limited</div>
-        </div>
-      </div>
-      <div class="tb-section">{{ invoiceTypeLabel | uppercase }}</div>
-      <div class="tb-right">
-        <button class="btn-print" (click)="printInvoice()">Download PDF</button>
-        <button class="btn-save" (click)="saveDraft()" [disabled]="saving">{{ saving ? 'Saving...' : 'Save' }}</button>
-      </div>
-    </div>
-  </div>
-  <div class="shell">
-    <div class="sidebar">
-      <app-shared-sidebar></app-shared-sidebar>
-    </div>
-    <div class="inv-main">
+<app-shell class="no-print" [modules]="modules" activeModule="billing" [pageTitle]="invoiceTypeLabel" [userEmail]="userEmail" [userName]="userEmail" [hasSubnav]="true" (logoutClick)="logout()">
+  <ng-container header-actions>
+    <button class="btn-print" (click)="printInvoice()">Download PDF</button>
+    <button class="btn-save" (click)="saveDraft()" [disabled]="saving">{{ saving ? 'Saving...' : 'Save' }}</button>
+  </ng-container>
+  <app-shared-sidebar subnav></app-shared-sidebar>
+  <div class="inv-main">
 
 <div class="loading-state" *ngIf="loading">Loading…</div>
 
@@ -232,5 +216,4 @@
 </div>
 
     </div><!-- /inv-main -->
-  </div><!-- /shell -->
-</div><!-- /app-wrap -->
+</app-shell>

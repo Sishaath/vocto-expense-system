@@ -1,0 +1,76 @@
+* { box-sizing: border-box; }
+
+.shell { display: flex; min-height: 100vh; background: #F7F8FA; font-family: 'Inter', sans-serif; }
+
+/* ---------- icon rail ---------- */
+.rail {
+  width: 76px; flex-shrink: 0; background: #18181B; display: flex; flex-direction: column;
+  align-items: center; padding: 16px 0; position: sticky; top: 0; height: 100vh; z-index: 40;
+}
+.rail-logo { margin-bottom: 18px; }
+.rail-logo img { width: 30px; height: 30px; object-fit: contain; }
+
+.rail-item {
+  width: 100%; display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 10px 4px; color: rgba(255,255,255,0.55); text-decoration: none; background: none;
+  border: none; cursor: pointer; position: relative; font-family: inherit;
+}
+.rail-item:hover { color: #fff; }
+.rail-item.active { color: #fff; }
+.rail-item.active::before {
+  content: ''; position: absolute; left: 0; top: 8px; bottom: 8px; width: 3px;
+  background: #818CF8; border-radius: 0 3px 3px 0;
+}
+.rail-icon { width: 20px; height: 20px; }
+.rail-icon svg { width: 100%; height: 100%; }
+.rail-label { font-size: 9px; font-weight: 600; text-align: center; line-height: 1.2; max-width: 62px; }
+.rail-spacer { flex: 1; }
+.rail-logout { margin-top: 8px; }
+
+/* ---------- mobile rail toggle ---------- */
+.shell-overlay { display: none; }
+.mobile-toggle {
+  display: none; flex-direction: column; justify-content: center; gap: 4px; width: 32px; height: 32px;
+  background: none; border: none; cursor: pointer; margin-right: 6px;
+}
+.mobile-toggle span { display: block; height: 2px; background: #18181B; border-radius: 2px; }
+
+/* ---------- subnav panel (projected content) ---------- */
+.subnav {
+  width: 230px; flex-shrink: 0; background: #fff; border-right: 1px solid #E5E7EB;
+  padding: 18px 0; overflow-y: auto; position: sticky; top: 0; height: 100vh;
+}
+
+/* ---------- main body ---------- */
+.shell-body { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+
+.shell-header {
+  height: 60px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between;
+  padding: 0 24px; background: #fff; border-bottom: 1px solid #E5E7EB; position: sticky; top: 0; z-index: 20;
+}
+.shell-title-block { min-width: 0; }
+.shell-title { font-size: 15px; font-weight: 700; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.shell-subtitle { font-size: 11px; color: #6B7280; margin-top: 1px; }
+
+.shell-header-actions { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+.user-chip { display: flex; align-items: center; gap: 8px; text-decoration: none; padding: 4px 10px 4px 4px; border-radius: 20px; }
+.user-chip:hover { background: #F3F4F6; }
+.user-av { width: 28px; height: 28px; border-radius: 50%; background: #4F46E5; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
+.user-name { font-size: 12.5px; font-weight: 600; color: #374151; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.btn-logout { padding: 6px 14px; background: #F3F4F6; border: 1px solid #E5E7EB; border-radius: 7px; color: #4B5563; font-size: 12px; font-weight: 600; cursor: pointer; }
+.btn-logout:hover { background: #E5E7EB; }
+
+.shell-content { flex: 1; min-width: 0; }
+
+@media (max-width: 900px) {
+  .rail {
+    position: fixed; left: 0; top: 0; transform: translateX(-100%); transition: transform 0.2s ease;
+    box-shadow: 4px 0 16px rgba(0,0,0,0.15);
+  }
+  .mobile-nav-open .rail { transform: translateX(0); }
+  .shell-overlay { display: block; position: fixed; inset: 0; background: rgba(17,24,39,0.4); z-index: 30; }
+  .mobile-toggle { display: flex; }
+  .subnav { position: fixed; left: 76px; top: 0; z-index: 35; transform: translateX(-100%); transition: transform 0.2s ease; }
+  .mobile-nav-open .subnav { transform: translateX(0); }
+  .user-name { display: none; }
+}

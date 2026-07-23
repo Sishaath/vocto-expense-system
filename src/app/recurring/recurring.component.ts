@@ -3,6 +3,8 @@ import { Router, RouterLink } from '@angular/router';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SupabaseService, RecurringTemplate } from '../supabase.service';
+import { AppShellComponent } from '../shared/app-shell/app-shell.component';
+import { getRailModules, RailModule } from '../shared/nav-config';
 import { ToastService } from '../shared/toast.service';
 
 const CATEGORIES = [
@@ -13,7 +15,7 @@ const CATEGORIES = [
 @Component({
   selector: 'app-recurring',
   standalone: true,
-  imports: [CommonModule, DatePipe, FormsModule, RouterLink],
+  imports: [CommonModule, DatePipe, FormsModule, RouterLink, AppShellComponent],
   templateUrl: './recurring.component.html',
   styleUrls: ['./recurring.component.scss']
 })
@@ -23,6 +25,8 @@ export class RecurringComponent implements OnInit {
   showForm = false;
   saving = false;
   userEmail = '';
+  role: string | null = null;
+  modules: RailModule[] = [];
   categories = CATEGORIES;
 
   form: Partial<RecurringTemplate> = this.blankForm();
@@ -37,6 +41,8 @@ export class RecurringComponent implements OnInit {
     const { data: { session } } = await this.supabase.getClient().auth.getSession();
     if (!session) { this.router.navigate(['/login']); return; }
     this.userEmail = session.user.email || '';
+    this.role = await this.supabase.getUserRole(this.userEmail);
+    this.modules = getRailModules(this.role);
     await this.load();
   }
 
@@ -92,4 +98,9 @@ export class RecurringComponent implements OnInit {
   }
 
   cancelForm() { this.showForm = false; this.form = this.blankForm(); }
+
+  async logout() {
+    await this.supabase.signOut();
+    this.router.navigate(['/login']);
+  }
 }

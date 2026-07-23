@@ -1,0 +1,63 @@
+<div class="shell" [class.mobile-nav-open]="mobileNavOpen">
+  <nav class="rail">
+    <div class="rail-logo">
+      <img src="/vocto-logo.png" alt="Vocto" />
+    </div>
+
+    <a *ngFor="let m of modules" class="rail-item" [class.active]="activeModule === m.id"
+       [routerLink]="m.route" [title]="m.label" (click)="closeMobileNav()">
+      <span class="rail-icon" [ngSwitch]="m.icon">
+        <svg *ngSwitchCase="'dashboard'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="5" rx="1.5"/><rect x="13" y="10" width="8" height="11" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/></svg>
+        <svg *ngSwitchCase="'requisition'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        <svg *ngSwitchCase="'recurring'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12a9 9 0 0 1 15-6.7L21 8M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M21 3v5h-5M3 21v-5h5"/></svg>
+        <svg *ngSwitchCase="'vendors'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 21V8l9-5 9 5v13"/><path d="M9 21v-6h6v6M3 8l9 5 9-5"/></svg>
+        <svg *ngSwitchCase="'billing'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/></svg>
+        <svg *ngSwitchCase="'crm'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="18" cy="8" r="2.4"/><path d="M16.5 13.2A5.2 5.2 0 0 1 21.5 18"/></svg>
+        <svg *ngSwitchCase="'inventory'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 8l-9-5-9 5 9 5 9-5Z"/><path d="M3 8v8l9 5 9-5V8M12 13v8"/></svg>
+        <svg *ngSwitchCase="'admin'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2l8 3.5v6c0 5-3.4 8.4-8 10.5-4.6-2.1-8-5.5-8-10.5v-6L12 2Z"/><path d="m9 12 2 2 4-4"/></svg>
+        <svg *ngSwitchCase="'profile'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+      </span>
+      <span class="rail-label">{{ m.label }}</span>
+    </a>
+
+    <div class="rail-spacer"></div>
+
+    <button class="rail-item rail-logout" title="Logout" (click)="logoutClick.emit()">
+      <span class="rail-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
+      </span>
+      <span class="rail-label">Logout</span>
+    </button>
+  </nav>
+
+  <div class="shell-overlay" *ngIf="mobileNavOpen" (click)="closeMobileNav()"></div>
+
+  <aside class="subnav" *ngIf="hasSubnav">
+    <ng-content select="[subnav]"></ng-content>
+  </aside>
+
+  <div class="shell-body">
+    <header class="shell-header">
+      <button class="mobile-toggle" (click)="toggleMobileNav()">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="shell-title-block">
+        <div class="shell-title">{{ pageTitle }}</div>
+        <div class="shell-subtitle" *ngIf="pageSubtitle">{{ pageSubtitle }}</div>
+      </div>
+      <div class="shell-header-actions">
+        <ng-content select="[header-actions]"></ng-content>
+        <app-notif-bell [userEmail]="userEmail"></app-notif-bell>
+        <a class="user-chip" routerLink="/profile">
+          <span class="user-av">{{ userInitial }}</span>
+          <span class="user-name">{{ userName || userEmail }}</span>
+        </a>
+        <button class="btn-logout" (click)="logoutClick.emit()">Logout</button>
+      </div>
+    </header>
+
+    <main class="shell-content">
+      <ng-content></ng-content>
+    </main>
+  </div>
+</div>

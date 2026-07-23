@@ -6,15 +6,20 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { SupabaseService } from '../supabase.service';
 import { ToastService } from '../shared/toast.service';
 import { SharedSidebarComponent } from '../shared-sidebar/shared-sidebar.component';
+import { AppShellComponent } from '../shared/app-shell/app-shell.component';
+import { getRailModules, RailModule } from '../shared/nav-config';
 
 @Component({
   selector: 'app-submit-claim',
   standalone: true,
-  imports: [FormsModule, CommonModule, RouterLink, SharedSidebarComponent],
+  imports: [FormsModule, CommonModule, RouterLink, SharedSidebarComponent, AppShellComponent],
   templateUrl: './submit-claim.component.html',
   styleUrls: ['./submit-claim.component.scss']
 })
 export class SubmitClaimComponent implements OnInit, OnDestroy {
+  userEmail = '';
+  role: string | null = null;
+  modules: RailModule[] = [];
   editMode = false;
   editClaimId = '';
   editClaimNumber = '';
@@ -53,6 +58,10 @@ export class SubmitClaimComponent implements OnInit, OnDestroy {
   ) {}
 
   async ngOnInit() {
+    const { data: { session } } = await this.supabase.getClient().auth.getSession();
+    this.userEmail = session?.user?.email || '';
+    this.role = await this.supabase.getUserRole(this.userEmail);
+    this.modules = getRailModules(this.role);
     const cats = await this.supabase.getActiveCategories();
     if (cats.length) this.categories = cats;
     const id = this.route.snapshot.paramMap.get('id');
@@ -347,5 +356,10 @@ export class SubmitClaimComponent implements OnInit, OnDestroy {
       }
     } catch (err) { this.errorMsg = 'Something went wrong. Please try again.'; }
     this.loading = false;
+  }
+
+  async logout() {
+    await this.supabase.signOut();
+    this.router.navigate(['/login']);
   }
 }

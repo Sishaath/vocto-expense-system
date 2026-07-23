@@ -8,11 +8,13 @@ import { ClaimDetailComponent } from '../claim-detail/claim-detail.component';
 import { ToastService } from '../shared/toast.service';
 import { NotifBellComponent } from '../notif-bell/notif-bell.component';
 import { MdSidebarComponent } from '../md-sidebar/md-sidebar.component';
+import { AppShellComponent } from '../shared/app-shell/app-shell.component';
+import { getRailModules, RailModule } from '../shared/nav-config';
 
 @Component({
   selector: 'app-md',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterModule, DatePipe, ClaimDetailComponent, FormsModule, NotifBellComponent, MdSidebarComponent],
+  imports: [CommonModule, RouterLink, RouterModule, DatePipe, ClaimDetailComponent, FormsModule, NotifBellComponent, MdSidebarComponent, AppShellComponent],
   templateUrl: './md.component.html',
   styleUrls: ['./md.component.scss']
 })
@@ -202,6 +204,7 @@ export class MdComponent implements OnInit {
 
   userEmail = '';
   fullName = '';
+  modules: RailModule[] = getRailModules('md');
   get userName() { return this.fullName || this.userEmail.split('@')[0].replace(/\./g, ' ').replace(/\b\w/g, c => c.toUpperCase()); }
   get userInitial() { return this.userName.charAt(0).toUpperCase() || 'M'; }
 

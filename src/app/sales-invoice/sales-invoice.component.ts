@@ -5,6 +5,8 @@ import { CommonModule, DatePipe } from '@angular/common';
 import { SupabaseService } from '../supabase.service';
 import { ToastService } from '../shared/toast.service';
 import { SharedSidebarComponent } from '../shared-sidebar/shared-sidebar.component';
+import { AppShellComponent } from '../shared/app-shell/app-shell.component';
+import { getRailModules, RailModule } from '../shared/nav-config';
 
 export interface InvoiceItem {
   description: string;
@@ -19,7 +21,7 @@ export interface InvoiceItem {
 @Component({
   selector: 'app-sales-invoice',
   standalone: true,
-  imports: [FormsModule, CommonModule, RouterLink, DatePipe, SharedSidebarComponent],
+  imports: [FormsModule, CommonModule, RouterLink, DatePipe, SharedSidebarComponent, AppShellComponent],
   templateUrl: './sales-invoice.component.html',
   styleUrls: ['./sales-invoice.component.scss']
 })
@@ -45,6 +47,8 @@ export class SalesInvoiceComponent implements OnInit {
   saving = false;
   errorMsg = '';
   userEmail = '';
+  role: string | null = null;
+  modules: RailModule[] = [];
 
   constructor(
     private supabase: SupabaseService,
@@ -56,6 +60,8 @@ export class SalesInvoiceComponent implements OnInit {
   async ngOnInit() {
     const { data: { session } } = await this.supabase.getClient().auth.getSession();
     this.userEmail = session?.user?.email || '';
+    this.role = await this.supabase.getUserRole(this.userEmail);
+    this.modules = getRailModules(this.role);
 
     // Determine type from URL
     const url = this.router.url;
@@ -177,5 +183,10 @@ export class SalesInvoiceComponent implements OnInit {
 
   printInvoice() {
     window.print();
+  }
+
+  async logout() {
+    await this.supabase.signOut();
+    this.router.navigate(['/login']);
   }
 }

@@ -1,25 +1,7 @@
-<div class="app-wrap">
-  <div class="topbar">
-    <div class="topbar-accent"></div>
-    <div class="topbar-main">
-      <div class="logo">
-        <img src="/vocto-logo.png" alt="Vocto" class="logo-img" />
-        <div class="logo-divider"></div>
-        <div class="logo-text-block">
-          <div class="logo-company">Vocto Technologies Private Limited</div>
-        </div>
-      </div>
-      <div class="tb-section">{{ editMode ? 'EDIT VOUCHER' : 'NEW VOUCHER' }}</div>
-      <div class="tb-right"><button class="btn-back" routerLink="/dashboard">← Back</button></div>
-    </div>
-  </div>
+<app-shell [modules]="modules" activeModule="dashboard" [pageTitle]="editMode ? 'Edit Voucher' : 'New Voucher'" [userEmail]="userEmail" [userName]="userEmail" [hasSubnav]="true" (logoutClick)="logout()">
+  <app-shared-sidebar subnav activeView="claims" activeStatus="all"></app-shared-sidebar>
 
-  <div class="shell">
-    <div class="sidebar">
-      <app-shared-sidebar activeView="claims" activeStatus="all"></app-shared-sidebar>
-    </div>
-
-    <div class="main">
+  <div class="main">
       <div class="page-title">{{ editMode ? 'Edit' : 'Submit' }} <span>{{ editMode ? 'Voucher' : 'New Voucher' }}</span></div>
       <div class="page-sub">{{ editMode ? 'Update details — only editable while Pending' : 'Fill all fields and attach supporting documents' }}</div>
 
@@ -81,7 +63,7 @@
             (drop)="onDrop($event)">
             <input #fileInput type="file" accept=".pdf,.jpg,.jpeg,.png" multiple (change)="onFileSelected($event)" hidden />
             <div class="upload-icon">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#8A9BB0" stroke-width="1.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66L9.41 17.41a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="1.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66L9.41 17.41a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
             </div>
             <div class="upload-text">
               <strong>{{ isDragging ? 'Drop files here' : 'Click or drag & drop' }}</strong>
@@ -127,5 +109,4 @@
         <button class="btn-cancel" routerLink="/dashboard">← Back to Dashboard</button>
       </div>
     </div>
-  </div>
-</div>
+</app-shell>

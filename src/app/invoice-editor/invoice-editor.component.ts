@@ -4,6 +4,8 @@ import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SupabaseService, Customer, CatalogItem, InvoiceLineItem } from '../supabase.service';
 import { ToastService } from '../shared/toast.service';
+import { AppShellComponent } from '../shared/app-shell/app-shell.component';
+import { getRailModules, RailModule } from '../shared/nav-config';
 
 const COMPANY_STATE_CODE = '33'; // Tamil Nadu — drives CGST/SGST vs IGST
 
@@ -12,7 +14,7 @@ type DocType = 'invoice' | 'estimate' | 'credit_note';
 @Component({
   selector: 'app-invoice-editor',
   standalone: true,
-  imports: [CommonModule, DatePipe, FormsModule],
+  imports: [CommonModule, DatePipe, FormsModule, AppShellComponent],
   templateUrl: './invoice-editor.component.html',
   styleUrls: ['./invoice-editor.component.scss']
 })
@@ -43,6 +45,8 @@ export class InvoiceEditorComponent implements OnInit {
   errorMsg = '';
   userEmail = '';
   readOnly = false;  // md sees everything, edits nothing
+  role: string | null = null;
+  modules: RailModule[] = [];
 
   constructor(
     private supabase: SupabaseService,
@@ -58,7 +62,9 @@ export class InvoiceEditorComponent implements OnInit {
   async ngOnInit() {
     const { data: { session } } = await this.supabase.getClient().auth.getSession();
     this.userEmail = session?.user?.email || '';
-    this.readOnly = (await this.supabase.getUserRole(this.userEmail)) === 'md';
+    this.role = await this.supabase.getUserRole(this.userEmail);
+    this.readOnly = this.role === 'md';
+    this.modules = getRailModules(this.role);
     this.docType = (this.route.snapshot.data['docType'] as DocType) || 'invoice';
 
     const [cust, items] = await Promise.all([this.supabase.getCustomers(), this.supabase.getItems()]);
@@ -353,4 +359,9 @@ export class InvoiceEditorComponent implements OnInit {
   printDoc() { window.print(); }
 
   goBack() { this.router.navigate(['/billing']); }
+
+  async logout() {
+    await this.supabase.signOut();
+    this.router.navigate(['/login']);
+  }
 }

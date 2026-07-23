@@ -31,10 +31,10 @@
   to   { transform: translateX(0);    opacity: 1; }
 }
 
-.toast.success { background: #E1F5EE; color: #0F6E56; border-left: 4px solid #0F6E56; }
-.toast.error   { background: #FCEBEB; color: #A32D2D; border-left: 4px solid #A32D2D; }
-.toast.warning { background: #FEF0E6; color: #B85510; border-left: 4px solid #F4721B; }
-.toast.info    { background: #EEF3FA; color: #185FA5; border-left: 4px solid #185FA5; }
+.toast.success { background: #DCFCE7; color: #15803D; border-left: 4px solid #15803D; }
+.toast.error   { background: #FEE2E2; color: #DC2626; border-left: 4px solid #DC2626; }
+.toast.warning { background: #FEF3C7; color: #D97706; border-left: 4px solid #4F46E5; }
+.toast.info    { background: #EEF2FF; color: #4F46E5; border-left: 4px solid #4F46E5; }
 
 .toast-icon { font-size: 14px; font-weight: 700; flex-shrink: 0; }
 .toast-msg  { flex: 1; line-height: 1.4; }

@@ -1,20 +1,4 @@
-<div class="app-wrap">
-  <div class="topbar">
-    <div class="topbar-accent"></div>
-    <div class="topbar-main">
-      <div class="logo">
-        <img src="/vocto-logo.png" alt="Vocto" class="logo-img" />
-        <div class="logo-divider"></div>
-        <div class="logo-text-block">
-          <div class="logo-company">Vocto Technologies Private Limited</div>
-        </div>
-      </div>
-      <div class="tb-section">VENDOR DIRECTORY</div>
-      <div class="tb-right">
-        <button class="btn-back" (click)="goBack()">← Back</button>
-      </div>
-    </div>
-  </div>
+<app-shell [modules]="modules" activeModule="vendors" pageTitle="Vendor Directory" [userEmail]="userEmail" [userName]="userEmail" (logoutClick)="logout()">
 
   <div class="main-content">
     <div class="page-title">Vendor <span>Directory</span></div>
@@ -64,4 +48,4 @@
       </table>
     </div>
   </div>
-</div>
+</app-shell>

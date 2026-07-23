@@ -44,14 +44,14 @@
 .login-company {
   font-size: 22px;
   font-weight: 800;
-  color: #0C1F3D;
+  color: #18181B;
   letter-spacing: -0.5px;
 }
 
 /* Sub text */
 .login-sub {
   font-size: 12px;
-  color: #8A9BB0;
+  color: #6B7280;
   letter-spacing: 1px;
   margin-bottom: 18px;
 }
@@ -59,7 +59,7 @@
 /* Orange line */
 .orange-bar {
   height: 4px;
-  background: #F4721B;
+  background: #4F46E5;
   border-radius: 4px;
   margin: 20px 0 28px;
 }
@@ -68,13 +68,13 @@
 h2 {
   font-size: 32px;
   font-weight: 700;
-  color: #0C2D5E;
+  color: #111827;
   margin-bottom: 6px;
 }
 
 .sub {
   font-size: 16px;
-  color: #4A6080;
+  color: #6B7280;
   margin-bottom: 28px;
 }
 
@@ -86,7 +86,7 @@ h2 {
 .field label {
   display: block;
   font-size: 12px;
-  color: #8A9BB0;
+  color: #6B7280;
   text-transform: uppercase;
   letter-spacing: 0.6px;
   margin-bottom: 6px;
@@ -95,25 +95,25 @@ h2 {
 .field input {
   width: 100%;
   padding: 16px;
-  border: 1px solid #E8ECF3;
+  border: 1px solid #E5E7EB;
   border-radius: 12px;
   font-size: 15px;
-  color: #0C2D5E;
+  color: #111827;
   background: #E6E9EE;
   outline: none;
 }
 
 .field input:focus {
-  border-color: #F4721B;
-  box-shadow: 0 0 0 3px rgba(244,114,27,0.12);
+  border-color: #4F46E5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229,0.12);
 }
 
 /* Error */
 .error {
-  color: #A32D2D;
+  color: #DC2626;
   font-size: 12px;
   margin-bottom: 10px;
-  background: #FCEBEB;
+  background: #FEE2E2;
   padding: 10px 14px;
   border-radius: 8px;
 }
@@ -122,7 +122,7 @@ h2 {
 .btn-login {
   width: 100%;
   padding: 16px;
-  background: #F4721B;
+  background: #4F46E5;
   color: white;
   border: none;
   border-radius: 14px;
@@ -134,7 +134,7 @@ h2 {
 }
 
 .btn-login:hover {
-  background: #e05f08;
+  background: #4338CA;
 }
 
 .btn-login:disabled {
@@ -146,18 +146,18 @@ h2 {
   text-align: center;
   margin-top: 14px;
   font-size: 13px;
-  color: #4A6080;
+  color: #6B7280;
   cursor: pointer;
   text-decoration: underline;
 }
 
-.forgot-link:hover { color: #F4721B; }
+.forgot-link:hover { color: #4F46E5; }
 
 .success-msg {
-  color: #0F6E56;
+  color: #15803D;
   font-size: 12px;
   margin-bottom: 10px;
-  background: #E1F5EE;
+  background: #DCFCE7;
   padding: 10px 14px;
   border-radius: 8px;
 }

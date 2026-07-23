@@ -3,11 +3,13 @@ import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SupabaseService, Vendor } from '../supabase.service';
+import { AppShellComponent } from '../shared/app-shell/app-shell.component';
+import { getRailModules, RailModule } from '../shared/nav-config';
 
 @Component({
   selector: 'app-vendors',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule],
+  imports: [CommonModule, RouterLink, FormsModule, AppShellComponent],
   templateUrl: './vendors.component.html',
   styleUrls: ['./vendors.component.scss']
 })
@@ -16,6 +18,8 @@ export class VendorsComponent implements OnInit {
   loading = true;
   search = '';
   userEmail = '';
+  role: string | null = null;
+  modules: RailModule[] = [];
 
   constructor(private supabase: SupabaseService, public router: Router) {}
 
@@ -23,6 +27,8 @@ export class VendorsComponent implements OnInit {
     const { data: { session } } = await this.supabase.getClient().auth.getSession();
     if (!session) { this.router.navigate(['/login']); return; }
     this.userEmail = session.user.email || '';
+    this.role = await this.supabase.getUserRole(this.userEmail);
+    this.modules = getRailModules(this.role);
     await this.loadVendors();
   }
 
@@ -113,5 +119,10 @@ export class VendorsComponent implements OnInit {
     win.document.write(html);
     win.document.close();
     win.print();
+  }
+
+  async logout() {
+    await this.supabase.signOut();
+    this.router.navigate(['/login']);
   }
 }

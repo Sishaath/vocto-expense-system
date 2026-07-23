@@ -1,26 +1,7 @@
-<div class="app-wrap">
-  <div class="topbar">
-    <div class="topbar-accent"></div>
-    <div class="topbar-main">
-      <div class="logo">
-        <img src="/vocto-logo.png" alt="Vocto" class="logo-img" />
-        <div class="logo-divider"></div>
-        <div class="logo-text-block">
-          <div class="logo-company">Vocto Technologies Private Limited</div>
-        </div>
-      </div>
-      <div class="tb-section">{{ isEdit ? 'EDIT PURCHASE ORDER' : 'NEW PURCHASE ORDER' }}</div>
-      <div class="tb-right">
-        <button class="btn-back" (click)="back()">← Back</button>
-      </div>
-    </div>
-  </div>
+<app-shell [modules]="modules" activeModule="dashboard" [pageTitle]="isEdit ? 'Edit Purchase Order' : 'New Purchase Order'" [userEmail]="userEmail" [userName]="userEmail" [hasSubnav]="true" (logoutClick)="logout()">
+  <app-shared-sidebar subnav></app-shared-sidebar>
 
-  <div class="po-layout">
-    <div class="sidebar">
-      <app-shared-sidebar></app-shared-sidebar>
-    </div>
-    <div class="po-content">
+  <div class="po-content">
     <div class="po-form">
 
       <!-- SECTION: ORDER DETAILS -->
@@ -267,7 +248,7 @@
                 </td>
                 <td class="td-price">
                   <div style="display:flex;align-items:center;gap:3px;">
-                    <span style="font-size:12px;color:#4A6080;">{{ currencySymbol }}</span>
+                    <span style="font-size:12px;color:#6B7280;">{{ currencySymbol }}</span>
                     <input type="number" [(ngModel)]="item.unit_price" min="0" class="cell-input num" (ngModelChange)="calcItemAmount(i)" />
                   </div>
                 </td>
@@ -436,5 +417,4 @@
       </div>
     </div>
     </div>
-  </div>
-</div>
+</app-shell>

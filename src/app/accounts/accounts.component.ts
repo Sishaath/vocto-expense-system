@@ -8,11 +8,13 @@ import { ClaimDetailComponent } from '../claim-detail/claim-detail.component';
 import { ToastService } from '../shared/toast.service';
 import { NotifBellComponent } from '../notif-bell/notif-bell.component';
 import { AccountsSidebarComponent } from '../accounts-sidebar/accounts-sidebar.component';
+import { AppShellComponent } from '../shared/app-shell/app-shell.component';
+import { getRailModules, RailModule } from '../shared/nav-config';
 
 @Component({
   selector: 'app-accounts',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterModule, DatePipe, ClaimDetailComponent, FormsModule, NotifBellComponent, AccountsSidebarComponent],
+  imports: [CommonModule, RouterLink, RouterModule, DatePipe, ClaimDetailComponent, FormsModule, NotifBellComponent, AccountsSidebarComponent, AppShellComponent],
   templateUrl: './accounts.component.html',
   styleUrls: ['./accounts.component.scss']
 })
@@ -236,6 +238,7 @@ export class AccountsComponent implements OnInit {
 
   userEmail = '';
   fullName = '';
+  modules: RailModule[] = getRailModules('accounts');
   get userName() { return this.fullName || this.userEmail.split('@')[0].replace(/\./g, ' ').replace(/\b\w/g, c => c.toUpperCase()); }
   get userInitial() { return this.userName.charAt(0).toUpperCase() || 'A'; }
 

@@ -3,11 +3,13 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SupabaseService, Vendor, VendorPriceHistory, VendorRating } from '../supabase.service';
+import { AppShellComponent } from '../shared/app-shell/app-shell.component';
+import { getRailModules, RailModule } from '../shared/nav-config';
 
 @Component({
   selector: 'app-vendor-detail',
   standalone: true,
-  imports: [CommonModule, DatePipe, FormsModule],
+  imports: [CommonModule, DatePipe, FormsModule, AppShellComponent],
   templateUrl: './vendor-detail.component.html',
   styleUrls: ['./vendor-detail.component.scss']
 })
@@ -19,6 +21,8 @@ export class VendorDetailComponent implements OnInit {
   activeTab: 'price' | 'ratings' = 'price';
   searchItem = '';
   userEmail = '';
+  role: string | null = null;
+  modules: RailModule[] = [];
 
   constructor(private supabase: SupabaseService, public router: Router, private route: ActivatedRoute) {}
 
@@ -26,6 +30,8 @@ export class VendorDetailComponent implements OnInit {
     const { data: { session } } = await this.supabase.getClient().auth.getSession();
     if (!session) { this.router.navigate(['/login']); return; }
     this.userEmail = session.user.email || '';
+    this.role = await this.supabase.getUserRole(this.userEmail);
+    this.modules = getRailModules(this.role);
     const id = this.route.snapshot.paramMap.get('id')!;
     const [vendorRes, phRes, ratingsRes] = await Promise.all([
       this.supabase.getVendorById(id),
@@ -64,5 +70,10 @@ export class VendorDetailComponent implements OnInit {
       max: Math.max(...v.prices),
       avg: Math.round(v.prices.reduce((a, b) => a + b, 0) / v.prices.length * 100) / 100
     }));
+  }
+
+  async logout() {
+    await this.supabase.signOut();
+    this.router.navigate(['/login']);
   }
 }

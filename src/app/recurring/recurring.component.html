@@ -1,21 +1,5 @@
-<div class="app-wrap">
-  <div class="topbar">
-    <div class="topbar-accent"></div>
-    <div class="topbar-main">
-      <div class="logo">
-        <img src="/vocto-logo.png" alt="Vocto" class="logo-img" />
-        <div class="logo-divider"></div>
-        <div class="logo-text-block">
-          <div class="logo-company">Vocto Technologies Private Limited</div>
-        </div>
-      </div>
-      <div class="tb-section">RECURRING EXPENSES</div>
-      <div class="tb-right">
-        <button class="btn-add" (click)="showForm=true" *ngIf="!showForm">+ New Template</button>
-        <button class="btn-back" routerLink="/dashboard">← Dashboard</button>
-      </div>
-    </div>
-  </div>
+<app-shell [modules]="modules" activeModule="recurring" pageTitle="Recurring Templates" [userEmail]="userEmail" [userName]="userEmail" (logoutClick)="logout()">
+  <button header-actions class="btn-add" (click)="showForm=true" *ngIf="!showForm">+ New Template</button>
 
   <div class="main-content">
     <div class="page-title">Recurring <span>Expenses</span></div>
@@ -140,4 +124,4 @@
       </div>
     </ng-container>
   </div>
-</div>
+</app-shell>

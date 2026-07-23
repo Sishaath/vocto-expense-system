@@ -5,15 +5,18 @@ import { FormsModule } from '@angular/forms';
 import { SupabaseService } from '../supabase.service';
 import { ToastService } from '../shared/toast.service';
 import { environment } from '../../environments/environment';
+import { AppShellComponent } from '../shared/app-shell/app-shell.component';
+import { getRailModules, RailModule } from '../shared/nav-config';
 
 @Component({
   selector: 'app-admin',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AppShellComponent],
   templateUrl: './admin.component.html',
   styleUrls: ['./admin.component.scss']
 })
 export class AdminComponent implements OnInit {
+  modules: RailModule[] = getRailModules('admin');
   users: any[] = [];
   authMap: Record<string, { lastLogin: string | null; userId: string; confirmed: boolean }> = {};
   loading = true;

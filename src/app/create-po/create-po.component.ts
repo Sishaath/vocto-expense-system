@@ -6,6 +6,8 @@ import { SupabaseService, POItem, PurchaseOrder } from '../supabase.service';
 import { GstService } from '../gst.service';
 import { ToastService } from '../shared/toast.service';
 import { SharedSidebarComponent } from '../shared-sidebar/shared-sidebar.component';
+import { AppShellComponent } from '../shared/app-shell/app-shell.component';
+import { getRailModules, RailModule } from '../shared/nav-config';
 import { environment } from '../../environments/environment';
 
 const DEFAULT_TERMS = `1. All goods/services must be delivered as per the specifications mentioned in this PO.
@@ -17,11 +19,13 @@ const DEFAULT_TERMS = `1. All goods/services must be delivered as per the specif
 @Component({
   selector: 'app-create-po',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, SharedSidebarComponent],
+  imports: [CommonModule, FormsModule, RouterLink, SharedSidebarComponent, AppShellComponent],
   templateUrl: './create-po.component.html',
   styleUrl: './create-po.component.scss'
 })
 export class CreatePoComponent implements OnInit {
+  role: string | null = null;
+  modules: RailModule[] = [];
   isEdit = false;
   editId = '';
   saving = false;
@@ -99,6 +103,8 @@ export class CreatePoComponent implements OnInit {
     const { data } = await this.supabase.getClient().auth.getSession();
     if (!data.session) { this.router.navigate(['/login']); return; }
     this.userEmail = data.session.user?.email || '';
+    this.role = await this.supabase.getUserRole(this.userEmail);
+    this.modules = getRailModules(this.role);
 
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
@@ -337,4 +343,9 @@ export class CreatePoComponent implements OnInit {
   }
 
   back() { this.router.navigate(['/dashboard']); }
+
+  async logout() {
+    await this.supabase.signOut();
+    this.router.navigate(['/login']);
+  }
 }

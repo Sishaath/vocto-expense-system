@@ -9,17 +9,21 @@ import { ClaimDetailComponent } from '../claim-detail/claim-detail.component';
 import { ToastService } from '../shared/toast.service';
 import { NotifBellComponent } from '../notif-bell/notif-bell.component';
 import { SharedSidebarComponent } from '../shared-sidebar/shared-sidebar.component';
+import { AppShellComponent } from '../shared/app-shell/app-shell.component';
+import { getRailModules, RailModule } from '../shared/nav-config';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink, DatePipe, ClaimDetailComponent, FormsModule, NotifBellComponent, SharedSidebarComponent],
+  imports: [CommonModule, RouterLink, DatePipe, ClaimDetailComponent, FormsModule, NotifBellComponent, SharedSidebarComponent, AppShellComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss']
 })
 export class DashboardComponent implements OnInit {
   activeView: 'claims' | 'pos' = 'claims';
   userEmail = '';
+  role: string | null = null;
+  modules: RailModule[] = [];
   fullName = '';
   dueTemplates: any[] = [];
   budgetRows: { category: string; budget: number; actual: number; pct: number }[] = [];
@@ -269,6 +273,8 @@ export class DashboardComponent implements OnInit {
 
     const { data: { session } } = await this.supabase.getClient().auth.getSession();
     this.userEmail = session?.user?.email || '';
+    this.role = await this.supabase.getUserRole(this.userEmail);
+    this.modules = getRailModules(this.role);
     this.fullName = session?.user?.user_metadata?.['full_name'] || '';
     const cats = await this.supabase.getActiveCategories();
     if (cats.length) this.categories = cats;

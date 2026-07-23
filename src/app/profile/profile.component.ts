@@ -4,17 +4,21 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SupabaseService } from '../supabase.service';
 import { ToastService } from '../shared/toast.service';
+import { AppShellComponent } from '../shared/app-shell/app-shell.component';
+import { getRailModules, RailModule } from '../shared/nav-config';
 
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule],
+  imports: [CommonModule, RouterLink, FormsModule, AppShellComponent],
   templateUrl: './profile.component.html',
   styleUrls: ['./profile.component.scss']
 })
 export class ProfileComponent implements OnInit {
   userEmail = '';
   fullName = '';
+  role: string | null = null;
+  modules: RailModule[] = [];
   editName = '';
   editingName = false;
   savingName = false;
@@ -30,14 +34,16 @@ export class ProfileComponent implements OnInit {
   }
 
   get userRole() {
-    if (['yogeshwari@voctotechnologies.com', 'accounts@voctotechnologies.com'].includes(this.userEmail)) return 'Accounts Head';
-    if (['rrk@voctotechnologies.com', 'md@voctotechnologies.com'].includes(this.userEmail)) return 'Managing Director';
+    if (this.role === 'accounts') return 'Accounts Head';
+    if (this.role === 'md') return 'Managing Director';
+    if (this.role === 'admin') return 'Admin';
     return 'Employee';
   }
 
   get backRoute() {
-    if (['yogeshwari@voctotechnologies.com', 'accounts@voctotechnologies.com'].includes(this.userEmail)) return '/accounts';
-    if (['rrk@voctotechnologies.com', 'md@voctotechnologies.com'].includes(this.userEmail)) return '/md';
+    if (this.role === 'accounts') return '/accounts';
+    if (this.role === 'md') return '/md';
+    if (this.role === 'admin') return '/admin';
     return '/dashboard';
   }
 
@@ -49,6 +55,8 @@ export class ProfileComponent implements OnInit {
     this.userEmail = session.user.email || '';
     this.fullName = session.user.user_metadata?.['full_name'] || '';
     this.editName = this.fullName;
+    this.role = await this.supabase.getUserRole(this.userEmail);
+    this.modules = getRailModules(this.role);
   }
 
   startEditName() { this.editName = this.fullName; this.editingName = true; }

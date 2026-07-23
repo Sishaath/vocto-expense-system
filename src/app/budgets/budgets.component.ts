@@ -3,6 +3,8 @@ import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SupabaseService } from '../supabase.service';
+import { AppShellComponent } from '../shared/app-shell/app-shell.component';
+import { getRailModules, RailModule } from '../shared/nav-config';
 import { ToastService } from '../shared/toast.service';
 
 const CATEGORIES = [
@@ -13,7 +15,7 @@ const CATEGORIES = [
 @Component({
   selector: 'app-budgets',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, AppShellComponent],
   templateUrl: './budgets.component.html',
   styleUrls: ['./budgets.component.scss']
 })
@@ -22,6 +24,8 @@ export class BudgetsComponent implements OnInit {
   selectedYear = new Date().getFullYear();
   selectedMonth = new Date().getMonth() + 1;
   userEmail = '';
+  role: string | null = null;
+  modules: RailModule[] = [];
   loading = true;
   saving = false;
 
@@ -46,6 +50,8 @@ export class BudgetsComponent implements OnInit {
     const { data: { session } } = await this.supabase.getClient().auth.getSession();
     if (!session) { this.router.navigate(['/login']); return; }
     this.userEmail = session.user.email || '';
+    this.role = await this.supabase.getUserRole(this.userEmail);
+    this.modules = getRailModules(this.role);
     await this.load();
   }
 
@@ -118,4 +124,9 @@ export class BudgetsComponent implements OnInit {
   }
 
   async onMonthChange() { await this.load(); }
+
+  async logout() {
+    await this.supabase.signOut();
+    this.router.navigate(['/login']);
+  }
 }

@@ -4,11 +4,13 @@ import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SupabaseService, CatalogItem, ProductionOrder } from '../supabase.service';
 import { ToastService } from '../shared/toast.service';
+import { AppShellComponent } from '../shared/app-shell/app-shell.component';
+import { getRailModules, RailModule } from '../shared/nav-config';
 
 @Component({
   selector: 'app-inventory',
   standalone: true,
-  imports: [CommonModule, DatePipe, FormsModule],
+  imports: [CommonModule, DatePipe, FormsModule, AppShellComponent],
   templateUrl: './inventory.component.html',
   styleUrls: ['./inventory.component.scss']
 })
@@ -20,6 +22,8 @@ export class InventoryComponent implements OnInit {
   loading = true;
   userEmail = '';
   readOnly = false;  // md sees everything, edits nothing
+  role: string | null = null;
+  modules: RailModule[] = [];
   search = '';
 
   showItemForm = false;
@@ -50,7 +54,9 @@ export class InventoryComponent implements OnInit {
     const { data: { session } } = await this.supabase.getClient().auth.getSession();
     if (!session) { this.router.navigate(['/login']); return; }
     this.userEmail = session.user.email || '';
-    this.readOnly = (await this.supabase.getUserRole(this.userEmail)) === 'md';
+    this.role = await this.supabase.getUserRole(this.userEmail);
+    this.readOnly = this.role === 'md';
+    this.modules = getRailModules(this.role);
     await this.load();
   }
 
@@ -187,4 +193,9 @@ export class InventoryComponent implements OnInit {
   }
 
   goBack() { this.router.navigate([this.readOnly ? '/md' : '/accounts']); }
+
+  async logout() {
+    await this.supabase.signOut();
+    this.router.navigate(['/login']);
+  }
 }

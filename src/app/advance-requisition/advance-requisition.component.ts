@@ -5,12 +5,14 @@ import { CommonModule } from '@angular/common';
 import { SupabaseService } from '../supabase.service';
 import { ToastService } from '../shared/toast.service';
 import { SharedSidebarComponent } from '../shared-sidebar/shared-sidebar.component';
+import { AppShellComponent } from '../shared/app-shell/app-shell.component';
+import { getRailModules, RailModule } from '../shared/nav-config';
 import { environment } from '../../environments/environment';
 
 @Component({
   selector: 'app-advance-requisition',
   standalone: true,
-  imports: [FormsModule, CommonModule, RouterLink, SharedSidebarComponent],
+  imports: [FormsModule, CommonModule, RouterLink, SharedSidebarComponent, AppShellComponent],
   templateUrl: './advance-requisition.component.html',
   styleUrls: ['./advance-requisition.component.scss']
 })
@@ -36,6 +38,8 @@ export class AdvanceRequisitionComponent implements OnInit {
   saving = false;
   errorMsg = '';
   userEmail = '';
+  role: string | null = null;
+  modules: RailModule[] = [];
   userId = '';
 
   constructor(
@@ -48,6 +52,8 @@ export class AdvanceRequisitionComponent implements OnInit {
   async ngOnInit() {
     const { data: { session } } = await this.supabase.getClient().auth.getSession();
     this.userEmail = session?.user?.email || '';
+    this.role = await this.supabase.getUserRole(this.userEmail);
+    this.modules = getRailModules(this.role);
     this.userId = session?.user?.id || '';
 
     const id = this.route.snapshot.paramMap.get('id');
@@ -183,5 +189,10 @@ export class AdvanceRequisitionComponent implements OnInit {
       'REJECTED': 'Rejected'
     };
     return map[status] || status;
+  }
+
+  async logout() {
+    await this.supabase.signOut();
+    this.router.navigate(['/login']);
   }
 }
