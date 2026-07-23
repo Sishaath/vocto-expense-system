@@ -116,7 +116,7 @@
                 <td class="muted">{{ claim.category }}</td>
                 <td class="amount">₹{{ claim.amount.toLocaleString('en-IN') }}</td>
                 <td>
-                  <span class="badge" [ngClass]="claim.status.toLowerCase()">{{ claim.status }}</span>
+                  <span class="badge" [ngClass]="claim.status.toLowerCase()">{{ statusLabel(claim.status) }}</span>
                   <span class="badge-expiry" *ngIf="isExpiringSoon(claim)" title="Pending for more than 3 days">⚠ Overdue</span>
                 </td>
                 <td class="mono">{{ claim.created_at | date:'dd MMM yyyy' }}</td>
@@ -124,9 +124,11 @@
                   <button class="btn-view" *ngIf="claim.file_url" (click)="$event.stopPropagation(); openViewer(claim)">View</button>
                   <span class="muted" *ngIf="!claim.file_url">—</span>
                 </td>
-                <td>
+                <td class="action-cell">
                   <button class="btn-edit" *ngIf="claim.status==='PENDING'" (click)="$event.stopPropagation(); editClaim(claim)">Edit</button>
-                  <span class="locked-icon" *ngIf="claim.status!=='PENDING'" title="Locked after verification">Locked</span>
+                  <button class="btn-withdraw" *ngIf="claim.status==='PENDING'" (click)="withdrawClaim(claim, $event)">Withdraw</button>
+                  <button class="btn-resubmit" *ngIf="claim.status==='REJECTED'" (click)="resubmitClaim(claim, $event)">Resubmit</button>
+                  <span class="locked-icon" *ngIf="claim.status!=='PENDING' && claim.status!=='REJECTED'" title="Locked after verification">—</span>
                 </td>
               </tr>
               <tr *ngIf="filteredClaims.length === 0">

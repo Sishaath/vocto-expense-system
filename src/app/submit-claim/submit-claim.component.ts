@@ -285,6 +285,7 @@ export class SubmitClaimComponent implements OnInit, OnDestroy {
           .eq('expense_date', this.expenseDate)
           .eq('vendor', this.vendor.trim())
           .eq('employee_email', user.data.user?.email || '')
+          .not('status', 'in', '(REJECTED,WITHDRAWN)')
           .limit(1);
         if (dupeCheck && dupeCheck.length > 0) {
           const existing = dupeCheck[0];
