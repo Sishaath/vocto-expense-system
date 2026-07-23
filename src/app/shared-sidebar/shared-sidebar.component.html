@@ -12,8 +12,6 @@
 
   <div class="nav-label" style="margin-top:8px;">More</div>
   <a class="nav-item" [class.active]="is('/vendors')" routerLink="/vendors">Vendors</a>
-  <a class="nav-item" [class.active]="is('/invoice/export')" routerLink="/invoice/export/create">Export Sales Invoice</a>
-  <a class="nav-item" [class.active]="is('/invoice/dta')" routerLink="/invoice/dta/create">DTA Sales Invoice</a>
 
   <div class="nav-label" style="margin-top:8px;" *ngIf="isAdmin">Admin</div>
   <a class="nav-item admin-link" [class.active]="is('/admin')" routerLink="/admin" *ngIf="isAdmin">User Management</a>

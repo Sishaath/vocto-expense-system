@@ -1,0 +1,221 @@
+<div class="app-wrap">
+  <div class="topbar">
+    <div class="topbar-accent"></div>
+    <div class="topbar-main">
+      <div class="logo">
+        <img src="/vocto-logo.png" alt="Vocto" class="logo-img" />
+        <div class="logo-divider"></div>
+        <div class="logo-text-block"><div class="logo-company">Vocto Technologies Private Limited</div></div>
+      </div>
+      <div class="tb-section">BILLING</div>
+      <div class="tb-right"><button class="btn-back" (click)="goBack()">← Back</button></div>
+    </div>
+  </div>
+
+  <div class="main-content">
+    <div class="head-row">
+      <div>
+        <div class="page-title">Billing <span>&amp; Receivables</span></div>
+        <div class="page-sub">Invoices, estimates, credit notes and payments</div>
+      </div>
+      <div class="head-actions">
+        <button class="btn-outline" (click)="router.navigate(['/billing/estimate/create'])">+ Estimate</button>
+        <button class="btn-outline" (click)="router.navigate(['/billing/credit-note/create'])">+ Credit Note</button>
+        <button class="btn-primary" (click)="router.navigate(['/billing/invoice/create'])">+ New Invoice</button>
+      </div>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat-card"><div class="stat-label">Outstanding Receivables</div><div class="stat-value">₹{{ outstanding.toLocaleString('en-IN') }}</div></div>
+      <div class="stat-card"><div class="stat-label">Overdue</div><div class="stat-value" [class.warn]="overdueAmount > 0">₹{{ overdueAmount.toLocaleString('en-IN') }}</div><div class="stat-sub">{{ overdueInvoices.length }} invoice(s)</div></div>
+      <div class="stat-card"><div class="stat-label">Revenue This Month</div><div class="stat-value">₹{{ monthRevenue.toLocaleString('en-IN') }}</div></div>
+      <div class="stat-card chart-card">
+        <div class="stat-label">Revenue — Last 6 Months</div>
+        <div class="mini-chart">
+          <div class="bar-col" *ngFor="let m of revenueByMonth" [title]="m.label + ': ₹' + m.amount.toLocaleString('en-IN')">
+            <div class="bar" [style.height.%]="(m.amount / maxMonthRevenue) * 100"></div>
+            <div class="bar-label">{{ m.label }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-bar">
+      <button [class.active]="tab === 'invoices'" (click)="tab = 'invoices'">Invoices ({{ invoices.length }})</button>
+      <button [class.active]="tab === 'estimates'" (click)="tab = 'estimates'">Estimates ({{ estimates.length }})</button>
+      <button [class.active]="tab === 'credit_notes'" (click)="tab = 'credit_notes'">Credit Notes ({{ creditNotes.length }})</button>
+      <button [class.active]="tab === 'payments'" (click)="tab = 'payments'">Payments ({{ payments.length }})</button>
+      <button [class.active]="tab === 'recurring'" (click)="tab = 'recurring'">Recurring ({{ recurring.length }})</button>
+      <input class="search-input" [(ngModel)]="search" placeholder="Search..." />
+    </div>
+
+    <div class="loading-overlay" *ngIf="loading"><div class="spinner"></div></div>
+
+    <!-- INVOICES -->
+    <div class="table-wrap" *ngIf="!loading && tab === 'invoices'">
+      <table>
+        <thead><tr><th>Number</th><th>Customer</th><th>Date</th><th>Due</th><th>Total</th><th>Balance</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>
+          <tr *ngFor="let inv of filteredInvoices" class="clickable-row" (click)="router.navigate(['/billing/invoice', inv.id])">
+            <td class="mono">{{ inv.invoice_number || 'Draft' }}</td>
+            <td><strong>{{ inv.customer_name }}</strong></td>
+            <td class="mono">{{ inv.invoice_date | date:'dd MMM yy' }}</td>
+            <td class="mono">{{ inv.due_date ? (inv.due_date | date:'dd MMM yy') : '—' }}</td>
+            <td class="amount">₹{{ (inv.total || 0).toLocaleString('en-IN') }}</td>
+            <td class="amount">₹{{ ((inv.total || 0) - (inv.amount_paid || 0)).toLocaleString('en-IN') }}</td>
+            <td><span class="badge" [ngClass]="isOverdue(inv) ? 'overdue' : inv.status">{{ isOverdue(inv) ? 'Overdue' : statusLabel(inv.status) }}</span></td>
+            <td class="action-cell">
+              <button class="btn-mini" *ngIf="!['draft','cancelled','paid'].includes(inv.status)" (click)="openPayment(inv, $event)">+ Payment</button>
+              <button class="btn-mini warn" *ngIf="isOverdue(inv)" (click)="sendOverdueReminder(inv, $event)">Remind</button>
+              <button class="btn-mini danger" *ngIf="inv.status === 'draft'" (click)="cancelInvoice(inv, $event)">Cancel</button>
+            </td>
+          </tr>
+          <tr *ngIf="filteredInvoices.length === 0"><td colspan="8" class="empty">No invoices yet</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ESTIMATES -->
+    <div class="table-wrap" *ngIf="!loading && tab === 'estimates'">
+      <table>
+        <thead><tr><th>Number</th><th>Customer</th><th>Date</th><th>Valid Until</th><th>Total</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>
+          <tr *ngFor="let e of filteredEstimates" class="clickable-row" (click)="router.navigate(['/billing/estimate', e.id])">
+            <td class="mono">{{ e.estimate_number }}</td>
+            <td><strong>{{ e.customer_name }}</strong></td>
+            <td class="mono">{{ e.estimate_date | date:'dd MMM yy' }}</td>
+            <td class="mono">{{ e.valid_until ? (e.valid_until | date:'dd MMM yy') : '—' }}</td>
+            <td class="amount">₹{{ (e.total || 0).toLocaleString('en-IN') }}</td>
+            <td><span class="badge" [ngClass]="e.status">{{ statusLabel(e.status) }}</span></td>
+            <td class="action-cell">
+              <button class="btn-mini" *ngIf="e.status !== 'converted'" (click)="convertEstimate(e, $event)">→ Invoice</button>
+            </td>
+          </tr>
+          <tr *ngIf="filteredEstimates.length === 0"><td colspan="7" class="empty">No estimates yet</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- CREDIT NOTES -->
+    <div class="table-wrap" *ngIf="!loading && tab === 'credit_notes'">
+      <table>
+        <thead><tr><th>Number</th><th>Customer</th><th>Date</th><th>Reason</th><th>Total</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr *ngFor="let c of filteredCreditNotes" class="clickable-row" (click)="router.navigate(['/billing/credit-note', c.id])">
+            <td class="mono">{{ c.credit_note_number || 'Draft' }}</td>
+            <td><strong>{{ c.customer_name }}</strong></td>
+            <td class="mono">{{ c.credit_date | date:'dd MMM yy' }}</td>
+            <td class="muted">{{ c.reason || '—' }}</td>
+            <td class="amount">₹{{ (c.total || 0).toLocaleString('en-IN') }}</td>
+            <td><span class="badge" [ngClass]="c.status">{{ statusLabel(c.status) }}</span></td>
+          </tr>
+          <tr *ngIf="filteredCreditNotes.length === 0"><td colspan="6" class="empty">No credit notes yet</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- PAYMENTS -->
+    <div class="table-wrap" *ngIf="!loading && tab === 'payments'">
+      <table>
+        <thead><tr><th>Receipt No</th><th>Date</th><th>Amount</th><th>Method</th><th>Reference</th><th>Recorded By</th></tr></thead>
+        <tbody>
+          <tr *ngFor="let p of filteredPayments">
+            <td class="mono">{{ p.payment_number }}</td>
+            <td class="mono">{{ p.payment_date | date:'dd MMM yy' }}</td>
+            <td class="amount">₹{{ (p.amount || 0).toLocaleString('en-IN') }}</td>
+            <td>{{ p.method | titlecase }}</td>
+            <td class="mono">{{ p.reference_no || '—' }}</td>
+            <td class="muted">{{ p.recorded_by }}</td>
+          </tr>
+          <tr *ngIf="filteredPayments.length === 0"><td colspan="6" class="empty">No payments recorded yet</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- RECURRING -->
+    <div *ngIf="!loading && tab === 'recurring'">
+      <div class="filter-bar"><button class="btn-primary" (click)="openRecurringForm()">+ New Recurring Template</button></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Name</th><th>Customer</th><th>Frequency</th><th>Next Run</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody>
+            <tr *ngFor="let t of recurring">
+              <td><strong>{{ t.name }}</strong></td>
+              <td>{{ customerName(t.customer_id) }}</td>
+              <td>{{ t.frequency | titlecase }}</td>
+              <td class="mono">{{ t.next_run_date | date:'dd MMM yy' }} <span class="badge overdue" *ngIf="t.active && isRecurringDue(t)">Due</span></td>
+              <td><span class="badge" [ngClass]="t.active ? 'paid' : 'cancelled'">{{ t.active ? 'Active' : 'Paused' }}</span></td>
+              <td class="action-cell">
+                <button class="btn-mini" *ngIf="t.active" (click)="generateFromRecurring(t)">Generate Now</button>
+                <button class="btn-mini" (click)="toggleRecurring(t)">{{ t.active ? 'Pause' : 'Resume' }}</button>
+              </td>
+            </tr>
+            <tr *ngIf="recurring.length === 0"><td colspan="6" class="empty">No recurring templates yet</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Record payment modal -->
+  <div class="modal-backdrop" *ngIf="payingInvoice" (click)="payingInvoice = null">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-title">Record Payment — {{ payingInvoice.invoice_number }}</div>
+      <div class="pay-summary">
+        <span>{{ payingInvoice.customer_name }}</span>
+        <span>Balance: <b>₹{{ ((payingInvoice.total || 0) - (payingInvoice.amount_paid || 0)).toLocaleString('en-IN') }}</b></span>
+      </div>
+      <div class="form-grid">
+        <label>Amount *<input type="number" [(ngModel)]="payForm.amount" min="0" /></label>
+        <label>Date<input type="date" [(ngModel)]="payForm.payment_date" /></label>
+        <label>Method
+          <select [(ngModel)]="payForm.method">
+            <option value="bank_transfer">Bank Transfer</option>
+            <option value="upi">UPI</option>
+            <option value="cheque">Cheque</option>
+            <option value="cash">Cash</option>
+            <option value="card">Card</option>
+            <option value="other">Other</option>
+          </select>
+        </label>
+        <label>Reference No<input [(ngModel)]="payForm.reference_no" placeholder="UTR / cheque no" /></label>
+        <label class="span2">Notes<input [(ngModel)]="payForm.notes" /></label>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" (click)="payingInvoice = null">Cancel</button>
+        <button class="btn-save" (click)="savePayment()" [disabled]="savingPayment">{{ savingPayment ? 'Saving...' : 'Record Payment' }}</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recurring template modal -->
+  <div class="modal-backdrop" *ngIf="showRecurringForm" (click)="showRecurringForm = false">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-title">New Recurring Invoice Template</div>
+      <div class="form-grid">
+        <label class="span2">Copy line items from invoice *
+          <select [(ngModel)]="recurringForm.source_invoice_id" (ngModelChange)="onRecurringSource()">
+            <option [ngValue]="null">— Select an invoice —</option>
+            <option *ngFor="let inv of invoices" [ngValue]="inv.id">{{ inv.invoice_number || 'Draft' }} · {{ inv.customer_name }} · ₹{{ (inv.total || 0).toLocaleString('en-IN') }}</option>
+          </select>
+        </label>
+        <label class="span2">Template Name *<input [(ngModel)]="recurringForm.name" /></label>
+        <label>Frequency
+          <select [(ngModel)]="recurringForm.frequency">
+            <option value="monthly">Monthly</option>
+            <option value="quarterly">Quarterly</option>
+            <option value="yearly">Yearly</option>
+          </select>
+        </label>
+        <label>Next Run Date *<input type="date" [(ngModel)]="recurringForm.next_run_date" /></label>
+        <label>Due In (days)<input type="number" [(ngModel)]="recurringForm.due_in_days" /></label>
+        <label>Payment Terms<input [(ngModel)]="recurringForm.payment_terms" /></label>
+        <label class="span2">Notes<input [(ngModel)]="recurringForm.notes" /></label>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" (click)="showRecurringForm = false">Cancel</button>
+        <button class="btn-save" (click)="saveRecurring()" [disabled]="savingRecurring">Save Template</button>
+      </div>
+    </div>
+  </div>
+</div>

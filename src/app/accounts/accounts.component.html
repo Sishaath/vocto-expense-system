@@ -39,6 +39,27 @@
       <div class="page-title">Accounts <span>Dashboard</span></div>
       <div class="page-sub">Verify vouchers and manage the approval pipeline</div>
 
+      <div class="billing-strip" *ngIf="billingSnapshot.loaded">
+        <div class="bs-item" routerLink="/billing" style="cursor:pointer">
+          <span class="bs-label">Outstanding Receivables</span>
+          <span class="bs-value">₹{{ billingSnapshot.outstanding.toLocaleString('en-IN') }}</span>
+        </div>
+        <div class="bs-item" routerLink="/billing" style="cursor:pointer">
+          <span class="bs-label">Overdue Invoices</span>
+          <span class="bs-value" [style.color]="billingSnapshot.overdueCount > 0 ? '#C0392B' : ''">{{ billingSnapshot.overdueCount }}</span>
+        </div>
+        <div class="bs-item" routerLink="/inventory" style="cursor:pointer">
+          <span class="bs-label">Low Stock Items</span>
+          <span class="bs-value" [style.color]="billingSnapshot.lowStock > 0 ? '#A8770A' : ''">{{ billingSnapshot.lowStock }}</span>
+        </div>
+        <div class="bs-links">
+          <a routerLink="/billing">Billing</a>
+          <a routerLink="/customers">Customers</a>
+          <a routerLink="/crm">CRM</a>
+          <a routerLink="/inventory">Inventory</a>
+        </div>
+      </div>
+
       <div class="stats" *ngIf="activeSection!=='rejected' && activeSection!=='paid'">
         <div class="stat s1" [class.active-stat]="activeSection==='pending'" style="cursor:pointer" (click)="activeSection=activeSection==='pending'?'all':'pending'">
           <div class="stat-label">Vouchers — Needs Verification</div>

@@ -131,6 +131,106 @@ export interface PurchaseOrder {
   vendor_invoice_date?: string;
 }
 
+export interface Customer {
+  id?: string;
+  name: string;
+  gstin?: string;
+  pan?: string;
+  email?: string;
+  phone?: string;
+  contact_person?: string;
+  billing_address?: string;
+  shipping_address?: string;
+  city?: string;
+  state?: string;
+  state_code?: string;
+  country?: string;
+  customer_type?: 'domestic' | 'export' | 'sez';
+  payment_terms?: string;
+  notes?: string;
+  active?: boolean;
+  created_by?: string;
+  created_at?: string;
+}
+
+export interface CatalogItem {
+  id?: string;
+  name: string;
+  sku?: string;
+  description?: string;
+  item_type?: 'goods' | 'service';
+  hsn_sac_code?: string;
+  unit?: string;
+  unit_price?: number;
+  gst_rate?: number;
+  track_inventory?: boolean;
+  stock_qty?: number;
+  reorder_level?: number;
+  active?: boolean;
+  created_by?: string;
+}
+
+export interface InvoiceLineItem {
+  id?: string;
+  invoice_id?: string;
+  item_id?: string | null;
+  description: string;
+  hsn_sac_code?: string;
+  quantity: number;
+  unit?: string;
+  unit_price: number;
+  discount_pct?: number;
+  gst_rate: number;
+  taxable_value?: number;
+  cgst?: number;
+  sgst?: number;
+  igst?: number;
+  line_total?: number;
+  sort_order?: number;
+}
+
+export interface Payment {
+  id?: string;
+  payment_number?: string;
+  invoice_id: string;
+  customer_id?: string | null;
+  amount: number;
+  method?: string;
+  payment_date: string;
+  reference_no?: string;
+  notes?: string;
+  recorded_by?: string;
+  created_at?: string;
+}
+
+export interface CrmLead {
+  id?: string;
+  name: string;
+  company?: string;
+  email?: string;
+  phone?: string;
+  source?: string;
+  stage?: string;
+  value_estimate?: number | null;
+  customer_id?: string | null;
+  owner_email?: string;
+  notes?: string;
+  created_at?: string;
+}
+
+export interface ProductionOrder {
+  id?: string;
+  order_number?: string;
+  item_id: string;
+  quantity_planned: number;
+  quantity_produced?: number;
+  status?: string;
+  start_date?: string;
+  completed_date?: string;
+  notes?: string;
+  created_by?: string;
+}
+
 const SUPABASE_URL = environment.supabaseUrl;
 const SUPABASE_KEY = environment.supabaseKey;
 
@@ -391,5 +491,114 @@ export class SupabaseService {
     const { data } = await this.supabase.from('user_roles')
       .select('email').eq('role', role).eq('active', true);
     return data ? data.map((r: any) => r.email) : [];
+  }
+
+  // CUSTOMERS
+  async getCustomers() {
+    return this.supabase.from('customers').select('*').order('name');
+  }
+
+  async getCustomerById(id: string) {
+    return this.supabase.from('customers').select('*').eq('id', id).single();
+  }
+
+  async upsertCustomer(customer: Partial<Customer>) {
+    return this.supabase.from('customers').upsert([customer]).select().single();
+  }
+
+  async deleteCustomer(id: string) {
+    return this.supabase.from('customers').delete().eq('id', id);
+  }
+
+  // ITEM CATALOG
+  async getItems() {
+    return this.supabase.from('items').select('*').order('name');
+  }
+
+  async upsertItem(item: Partial<CatalogItem>) {
+    return this.supabase.from('items').upsert([item]).select().single();
+  }
+
+  // INVOICES (generalized sales_invoices)
+  async getInvoices() {
+    return this.supabase.from('sales_invoices').select('*').order('created_at', { ascending: false });
+  }
+
+  async getInvoicesForCustomer(customerId: string) {
+    return this.supabase.from('sales_invoices').select('*').eq('customer_id', customerId).order('created_at', { ascending: false });
+  }
+
+  async getInvoiceLineItems(invoiceId: string) {
+    return this.supabase.from('invoice_line_items').select('*').eq('invoice_id', invoiceId).order('sort_order');
+  }
+
+  async replaceInvoiceLineItems(invoiceId: string, lines: Partial<InvoiceLineItem>[]) {
+    await this.supabase.from('invoice_line_items').delete().eq('invoice_id', invoiceId);
+    if (!lines.length) return { error: null };
+    return this.supabase.from('invoice_line_items').insert(lines.map((l, i) => ({ ...l, invoice_id: invoiceId, sort_order: i })));
+  }
+
+  // PAYMENTS
+  async getPayments() {
+    return this.supabase.from('payments').select('*').order('payment_date', { ascending: false });
+  }
+
+  async getPaymentsForInvoice(invoiceId: string) {
+    return this.supabase.from('payments').select('*').eq('invoice_id', invoiceId).order('payment_date');
+  }
+
+  async recordPayment(payment: Partial<Payment>) {
+    return this.supabase.from('payments').insert([payment]).select().single();
+  }
+
+  // ESTIMATES
+  async getEstimates() {
+    return this.supabase.from('estimates').select('*').order('created_at', { ascending: false });
+  }
+
+  // CREDIT NOTES
+  async getCreditNotes() {
+    return this.supabase.from('credit_notes').select('*').order('created_at', { ascending: false });
+  }
+
+  // RECURRING INVOICE TEMPLATES
+  async getRecurringInvoiceTemplates() {
+    return this.supabase.from('recurring_invoice_templates').select('*').order('next_run_date');
+  }
+
+  // CRM
+  async getLeads() {
+    return this.supabase.from('crm_leads').select('*').order('created_at', { ascending: false });
+  }
+
+  async upsertLead(lead: Partial<CrmLead>) {
+    return this.supabase.from('crm_leads').upsert([lead]).select().single();
+  }
+
+  async getContacts() {
+    return this.supabase.from('crm_contacts').select('*').order('name');
+  }
+
+  async getContactsForCustomer(customerId: string) {
+    return this.supabase.from('crm_contacts').select('*').eq('customer_id', customerId).order('name');
+  }
+
+  // INVENTORY / PRODUCTION
+  async getProductionOrders() {
+    return this.supabase.from('production_orders').select('*').order('created_at', { ascending: false });
+  }
+
+  async upsertProductionOrder(po: Partial<ProductionOrder>) {
+    return this.supabase.from('production_orders').upsert([po]).select().single();
+  }
+
+  async getInventoryMovements(itemId?: string) {
+    let q = this.supabase.from('inventory_movements').select('*').order('created_at', { ascending: false }).limit(200);
+    if (itemId) q = q.eq('item_id', itemId);
+    return q;
+  }
+
+  async recordInventoryMovement(m: { item_id: string; movement_type: string; quantity: number; reference_type?: string; reference_id?: string; notes?: string; moved_by?: string }) {
+    return this.supabase.from('inventory_movements').insert([m]);
   }
 }

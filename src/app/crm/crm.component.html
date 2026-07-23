@@ -1,0 +1,99 @@
+<div class="app-wrap">
+  <div class="topbar">
+    <div class="topbar-accent"></div>
+    <div class="topbar-main">
+      <div class="logo">
+        <img src="/vocto-logo.png" alt="Vocto" class="logo-img" />
+        <div class="logo-divider"></div>
+        <div class="logo-text-block"><div class="logo-company">Vocto Technologies Private Limited</div></div>
+      </div>
+      <div class="tb-section">CRM</div>
+      <div class="tb-right"><button class="btn-back" (click)="goBack()">← Back</button></div>
+    </div>
+  </div>
+
+  <div class="main-content">
+    <div class="head-row">
+      <div>
+        <div class="page-title">Sales <span>Pipeline</span></div>
+        <div class="page-sub">Leads and contacts</div>
+      </div>
+      <button class="btn-primary" (click)="openNew()">+ New Lead</button>
+    </div>
+
+    <div class="tab-bar">
+      <button [class.active]="tab === 'pipeline'" (click)="tab = 'pipeline'">Pipeline ({{ leads.length }})</button>
+      <button [class.active]="tab === 'contacts'" (click)="tab = 'contacts'">Contacts ({{ contacts.length }})</button>
+      <input class="search-input" [(ngModel)]="search" placeholder="Search..." />
+    </div>
+
+    <div class="loading-overlay" *ngIf="loading"><div class="spinner"></div></div>
+
+    <!-- PIPELINE -->
+    <div class="pipeline" *ngIf="!loading && tab === 'pipeline'">
+      <div class="stage-col" *ngFor="let s of stages">
+        <div class="stage-head" [ngClass]="s">
+          <span>{{ stageLabel(s) }}</span>
+          <span class="stage-count">{{ leadsInStage(s).length }}</span>
+        </div>
+        <div class="stage-value" *ngIf="stageValue(s) > 0">₹{{ stageValue(s).toLocaleString('en-IN') }}</div>
+        <div class="lead-card" *ngFor="let l of leadsInStage(s)" (click)="editLead(l)">
+          <div class="l-name">{{ l.name }}</div>
+          <div class="l-company" *ngIf="l.company">{{ l.company }}</div>
+          <div class="l-value" *ngIf="l.value_estimate">₹{{ l.value_estimate.toLocaleString('en-IN') }}</div>
+          <div class="l-meta">{{ l.source || '' }}</div>
+          <select class="stage-select" [ngModel]="l.stage" (ngModelChange)="moveStage(l, $event)" (click)="$event.stopPropagation()">
+            <option *ngFor="let st of stages" [value]="st">{{ stageLabel(st) }}</option>
+          </select>
+          <div class="l-actions">
+            <span class="linked" *ngIf="l.customer_id">Customer ✓</span>
+            <button class="btn-mini danger" (click)="deleteLead(l, $event)">✕</button>
+          </div>
+        </div>
+        <div class="stage-empty" *ngIf="leadsInStage(s).length === 0">—</div>
+      </div>
+    </div>
+
+    <!-- CONTACTS -->
+    <div class="table-wrap" *ngIf="!loading && tab === 'contacts'">
+      <table>
+        <thead><tr><th>Name</th><th>Designation</th><th>Customer</th><th>Email</th><th>Phone</th></tr></thead>
+        <tbody>
+          <tr *ngFor="let c of filteredContacts">
+            <td><strong>{{ c.name }}</strong></td>
+            <td>{{ c.designation || '—' }}</td>
+            <td>{{ customerName(c.customer_id) }}</td>
+            <td class="muted">{{ c.email || '—' }}</td>
+            <td class="muted">{{ c.phone || '—' }}</td>
+          </tr>
+          <tr *ngIf="filteredContacts.length === 0"><td colspan="5" class="empty">No contacts yet — add them from a customer page</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Lead modal -->
+  <div class="modal-backdrop" *ngIf="showForm" (click)="showForm = false">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-title">{{ form.id ? 'Edit Lead' : 'New Lead' }}</div>
+      <div class="form-grid">
+        <label>Contact Name *<input [(ngModel)]="form.name" /></label>
+        <label>Company<input [(ngModel)]="form.company" /></label>
+        <label>Email<input [(ngModel)]="form.email" type="email" /></label>
+        <label>Phone<input [(ngModel)]="form.phone" /></label>
+        <label>Source<input [(ngModel)]="form.source" placeholder="Referral, website, expo..." /></label>
+        <label>Estimated Value (₹)<input type="number" [(ngModel)]="form.value_estimate" min="0" /></label>
+        <label>Stage
+          <select [(ngModel)]="form.stage">
+            <option *ngFor="let s of stages" [value]="s">{{ stageLabel(s) }}</option>
+          </select>
+        </label>
+        <label class="span2">Notes<textarea [(ngModel)]="form.notes" rows="2"></textarea></label>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" (click)="showForm = false">Cancel</button>
+        <button class="btn-save" (click)="save()" [disabled]="saving">Save Lead</button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -19,7 +19,9 @@
   <div class="nav-item nav-sub" [class.active]="activeSection==='recurring'" (click)="go('recurring')">Recurring</div>
   <a class="nav-item nav-sub" [class.active]="is('/vendors')" routerLink="/vendors">Vendor Directory</a>
 
-  <div class="nav-label" style="margin-top:8px;">Sales Invoices</div>
-  <a class="nav-item nav-sub" [class.active]="is('/invoice/export')" routerLink="/invoice/export/create">Export Invoice</a>
-  <a class="nav-item nav-sub" [class.active]="is('/invoice/dta')" routerLink="/invoice/dta/create">DTA Invoice</a>
+  <div class="nav-label" style="margin-top:8px;">Billing &amp; CRM</div>
+  <a class="nav-item nav-sub" [class.active]="is('/billing')" routerLink="/billing">Invoices &amp; Payments</a>
+  <a class="nav-item nav-sub" [class.active]="is('/customers')" routerLink="/customers">Customers</a>
+  <a class="nav-item nav-sub" [class.active]="is('/crm')" routerLink="/crm">Sales Pipeline</a>
+  <a class="nav-item nav-sub" [class.active]="is('/inventory')" routerLink="/inventory">Inventory &amp; Production</a>
 </div>

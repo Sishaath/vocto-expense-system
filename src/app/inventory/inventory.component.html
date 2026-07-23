@@ -1,0 +1,200 @@
+<div class="app-wrap">
+  <div class="topbar">
+    <div class="topbar-accent"></div>
+    <div class="topbar-main">
+      <div class="logo">
+        <img src="/vocto-logo.png" alt="Vocto" class="logo-img" />
+        <div class="logo-divider"></div>
+        <div class="logo-text-block"><div class="logo-company">Vocto Technologies Private Limited</div></div>
+      </div>
+      <div class="tb-section">INVENTORY &amp; PRODUCTION</div>
+      <div class="tb-right"><button class="btn-back" (click)="goBack()">← Back</button></div>
+    </div>
+  </div>
+
+  <div class="main-content">
+    <div class="head-row">
+      <div>
+        <div class="page-title">Inventory <span>&amp; Production</span></div>
+        <div class="page-sub">Item catalog, stock ledger and production runs</div>
+      </div>
+      <div class="head-actions">
+        <button class="btn-outline" (click)="openMovement()">± Stock Movement</button>
+        <button class="btn-outline" (click)="openNewProd()">+ Production Order</button>
+        <button class="btn-primary" (click)="openNewItem()">+ New Item</button>
+      </div>
+    </div>
+
+    <div class="alert-low" *ngIf="lowStockItems.length > 0">
+      ⚠ <b>{{ lowStockItems.length }} item(s) at or below reorder level:</b>
+      <span *ngFor="let i of lowStockItems; let last = last">{{ i.name }} ({{ i.stock_qty }}){{ last ? '' : ', ' }}</span>
+    </div>
+
+    <div class="tab-bar">
+      <button [class.active]="tab === 'items'" (click)="tab = 'items'">Items ({{ items.length }})</button>
+      <button [class.active]="tab === 'movements'" (click)="tab = 'movements'">Stock Ledger ({{ movements.length }})</button>
+      <button [class.active]="tab === 'production'" (click)="tab = 'production'">Production ({{ productionOrders.length }})</button>
+      <input class="search-input" [(ngModel)]="search" placeholder="Search items..." *ngIf="tab === 'items'" />
+    </div>
+
+    <div class="loading-overlay" *ngIf="loading"><div class="spinner"></div></div>
+
+    <!-- ITEMS -->
+    <div class="table-wrap" *ngIf="!loading && tab === 'items'">
+      <table>
+        <thead><tr><th>Item</th><th>SKU</th><th>Type</th><th>HSN/SAC</th><th>Price</th><th>GST %</th><th>Stock</th><th>Reorder At</th><th></th></tr></thead>
+        <tbody>
+          <tr *ngFor="let i of filteredItems">
+            <td><strong>{{ i.name }}</strong><span class="inactive-tag" *ngIf="i.active === false">Inactive</span></td>
+            <td class="mono">{{ i.sku || '—' }}</td>
+            <td>{{ i.item_type | titlecase }}</td>
+            <td class="mono">{{ i.hsn_sac_code || '—' }}</td>
+            <td class="amount">₹{{ (i.unit_price || 0).toLocaleString('en-IN') }}</td>
+            <td>{{ i.gst_rate }}%</td>
+            <td>
+              <span *ngIf="i.item_type === 'service' || !i.track_inventory" class="muted">n/a</span>
+              <span *ngIf="i.item_type === 'goods' && i.track_inventory" class="stock" [class.low]="isLow(i)">{{ i.stock_qty }} {{ i.unit }}</span>
+            </td>
+            <td class="muted">{{ i.track_inventory && i.item_type === 'goods' ? (i.reorder_level || 0) : '—' }}</td>
+            <td class="action-cell">
+              <button class="btn-mini" (click)="editItem(i)">Edit</button>
+              <button class="btn-mini" *ngIf="i.track_inventory && i.item_type === 'goods'" (click)="openMovement(i)">± Stock</button>
+            </td>
+          </tr>
+          <tr *ngIf="filteredItems.length === 0"><td colspan="9" class="empty">No items in the catalog yet</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- MOVEMENTS -->
+    <div class="table-wrap" *ngIf="!loading && tab === 'movements'">
+      <table>
+        <thead><tr><th>Date</th><th>Item</th><th>Type</th><th>Qty</th><th>Reference</th><th>By</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr *ngFor="let m of movements">
+            <td class="mono">{{ m.created_at | date:'dd MMM yy HH:mm' }}</td>
+            <td><strong>{{ itemName(m.item_id) }}</strong></td>
+            <td><span class="badge" [ngClass]="m.movement_type">{{ movementLabel(m) }}</span></td>
+            <td class="amount">{{ m.quantity }}</td>
+            <td class="mono">{{ m.reference_id || m.reference_type || '—' }}</td>
+            <td class="muted">{{ m.moved_by }}</td>
+            <td class="muted">{{ m.notes || '—' }}</td>
+          </tr>
+          <tr *ngIf="movements.length === 0"><td colspan="7" class="empty">No stock movements yet</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- PRODUCTION -->
+    <div class="table-wrap" *ngIf="!loading && tab === 'production'">
+      <table>
+        <thead><tr><th>Order No</th><th>Item</th><th>Planned</th><th>Produced</th><th>Status</th><th>Started</th><th>Completed</th><th>Actions</th></tr></thead>
+        <tbody>
+          <tr *ngFor="let po of productionOrders">
+            <td class="mono">{{ po.order_number }}</td>
+            <td><strong>{{ itemName(po.item_id) }}</strong></td>
+            <td class="amount">{{ po.quantity_planned }}</td>
+            <td class="amount">{{ po.quantity_produced || '—' }}</td>
+            <td><span class="badge" [ngClass]="po.status">{{ prodStatusLabel(po.status) }}</span></td>
+            <td class="mono">{{ po.start_date ? (po.start_date | date:'dd MMM yy') : '—' }}</td>
+            <td class="mono">{{ po.completed_date ? (po.completed_date | date:'dd MMM yy') : '—' }}</td>
+            <td class="action-cell">
+              <button class="btn-mini" *ngIf="po.status === 'planned'" (click)="startProd(po)">Start</button>
+              <button class="btn-mini go" *ngIf="po.status === 'in_progress'" (click)="completeProd(po)">Complete</button>
+              <button class="btn-mini danger" *ngIf="po.status === 'planned' || po.status === 'in_progress'" (click)="cancelProd(po)">Cancel</button>
+            </td>
+          </tr>
+          <tr *ngIf="productionOrders.length === 0"><td colspan="8" class="empty">No production orders yet</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Item modal -->
+  <div class="modal-backdrop" *ngIf="showItemForm" (click)="showItemForm = false">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-title">{{ itemForm.id ? 'Edit Item' : 'New Item' }}</div>
+      <div class="form-grid">
+        <label class="span2">Name *<input [(ngModel)]="itemForm.name" /></label>
+        <label>SKU<input [(ngModel)]="itemForm.sku" class="mono" /></label>
+        <label>Type
+          <select [(ngModel)]="itemForm.item_type">
+            <option value="goods">Goods</option>
+            <option value="service">Service</option>
+          </select>
+        </label>
+        <label>HSN / SAC Code<input [(ngModel)]="itemForm.hsn_sac_code" class="mono" /></label>
+        <label>Unit<input [(ngModel)]="itemForm.unit" /></label>
+        <label>Unit Price (₹)<input type="number" [(ngModel)]="itemForm.unit_price" min="0" /></label>
+        <label>GST Rate (%)
+          <select [(ngModel)]="itemForm.gst_rate">
+            <option [ngValue]="0">0%</option>
+            <option [ngValue]="5">5%</option>
+            <option [ngValue]="12">12%</option>
+            <option [ngValue]="18">18%</option>
+            <option [ngValue]="28">28%</option>
+          </select>
+        </label>
+        <label *ngIf="!itemForm.id && itemForm.item_type === 'goods'">Opening Stock<input type="number" [(ngModel)]="itemForm.stock_qty" min="0" /></label>
+        <label *ngIf="itemForm.item_type === 'goods'">Reorder Level<input type="number" [(ngModel)]="itemForm.reorder_level" min="0" /></label>
+        <label class="check-label" *ngIf="itemForm.item_type === 'goods'"><input type="checkbox" [(ngModel)]="itemForm.track_inventory" /> Track inventory</label>
+        <label class="check-label" *ngIf="itemForm.id"><input type="checkbox" [(ngModel)]="itemForm.active" /> Active</label>
+        <label class="span2">Description<textarea [(ngModel)]="itemForm.description" rows="2"></textarea></label>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" (click)="showItemForm = false">Cancel</button>
+        <button class="btn-save" (click)="saveItem()" [disabled]="savingItem">Save Item</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Movement modal -->
+  <div class="modal-backdrop" *ngIf="showMovementForm" (click)="showMovementForm = false">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-title">Record Stock Movement</div>
+      <div class="form-grid">
+        <label class="span2">Item *
+          <select [(ngModel)]="movementForm.item_id">
+            <option value="">— Select item —</option>
+            <option *ngFor="let i of items" [value]="i.id" [disabled]="!i.track_inventory || i.item_type === 'service'">{{ i.name }} (stock: {{ i.stock_qty }})</option>
+          </select>
+        </label>
+        <label>Type
+          <select [(ngModel)]="movementForm.movement_type">
+            <option value="in">Stock In</option>
+            <option value="out">Stock Out</option>
+            <option value="adjustment">Adjustment (+/−)</option>
+          </select>
+        </label>
+        <label>Quantity *<input type="number" [(ngModel)]="movementForm.quantity" /></label>
+        <label class="span2">Notes<input [(ngModel)]="movementForm.notes" placeholder="Reason / reference" /></label>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" (click)="showMovementForm = false">Cancel</button>
+        <button class="btn-save" (click)="saveMovement()" [disabled]="savingMovement">Record</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Production modal -->
+  <div class="modal-backdrop" *ngIf="showProdForm" (click)="showProdForm = false">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-title">New Production Order</div>
+      <div class="form-grid">
+        <label class="span2">Item to Produce *
+          <select [(ngModel)]="prodForm.item_id">
+            <option value="">— Select item —</option>
+            <option *ngFor="let i of items" [value]="i.id" [disabled]="i.item_type === 'service'">{{ i.name }}</option>
+          </select>
+        </label>
+        <label>Planned Quantity *<input type="number" [(ngModel)]="prodForm.quantity_planned" min="0" /></label>
+        <label>Start Date<input type="date" [(ngModel)]="prodForm.start_date" /></label>
+        <label class="span2">Notes<input [(ngModel)]="prodForm.notes" /></label>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" (click)="showProdForm = false">Cancel</button>
+        <button class="btn-save" (click)="saveProd()" [disabled]="savingProd">Create Order</button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,213 @@
+<div class="app-wrap screen-only">
+  <div class="topbar">
+    <div class="topbar-accent"></div>
+    <div class="topbar-main">
+      <div class="logo">
+        <img src="/vocto-logo.png" alt="Vocto" class="logo-img" />
+        <div class="logo-divider"></div>
+        <div class="logo-text-block"><div class="logo-company">Vocto Technologies Private Limited</div></div>
+      </div>
+      <div class="tb-section">{{ docLabel.toUpperCase() }}</div>
+      <div class="tb-right"><button class="btn-back" (click)="goBack()">← Back</button></div>
+    </div>
+  </div>
+
+  <div class="main-content">
+    <div class="head-row">
+      <div>
+        <div class="page-title">{{ docLabel }} <span class="mono doc-num">{{ docNumber }}</span></div>
+        <div class="page-sub" *ngIf="doc">Status: {{ doc.status | titlecase }}</div>
+      </div>
+      <div class="head-actions">
+        <button class="btn-secondary" (click)="printDoc()" *ngIf="!isNew">Print / PDF</button>
+        <button class="btn-outline" (click)="save(false)" [disabled]="saving || isFinalized">Save Draft</button>
+        <button class="btn-primary" (click)="save(true)" [disabled]="saving">
+          {{ isFinalized ? 'Update' : (docType === 'credit_note' ? 'Issue Credit Note' : docType === 'estimate' ? 'Mark Sent' : 'Finalize & Number') }}
+        </button>
+      </div>
+    </div>
+
+    <div class="error-box" *ngIf="errorMsg">{{ errorMsg }}</div>
+
+    <div class="card">
+      <div class="form-grid">
+        <label *ngIf="docType === 'credit_note'" class="span2">Original Invoice *
+          <select [(ngModel)]="source_invoice_id" (ngModelChange)="onSourceInvoiceChange()" [disabled]="isFinalized">
+            <option [ngValue]="null">— Select invoice —</option>
+            <option *ngFor="let inv of sourceInvoices" [ngValue]="inv.id">{{ inv.invoice_number }} · {{ inv.customer_name }} · ₹{{ (inv.total || 0).toLocaleString('en-IN') }}</option>
+          </select>
+        </label>
+        <label class="span2">Customer *
+          <select [(ngModel)]="customer_id" (ngModelChange)="onCustomerChange()" [disabled]="isFinalized">
+            <option [ngValue]="null">— Select customer —</option>
+            <option *ngFor="let c of customers" [ngValue]="c.id">{{ c.name }}{{ c.gstin ? ' · ' + c.gstin : '' }}</option>
+          </select>
+        </label>
+        <label *ngIf="docType === 'invoice'">Invoice Type
+          <select [(ngModel)]="invoice_type" (ngModelChange)="recalcAll()" [disabled]="isFinalized">
+            <option value="domestic">Domestic</option>
+            <option value="dta">DTA</option>
+            <option value="export">Export</option>
+          </select>
+        </label>
+        <label>{{ docType === 'credit_note' ? 'Credit Date' : docType === 'estimate' ? 'Estimate Date' : 'Invoice Date' }}
+          <input type="date" [(ngModel)]="doc_date" [disabled]="isFinalized" />
+        </label>
+        <label *ngIf="docType === 'invoice'">Due Date
+          <input type="date" [(ngModel)]="due_date" />
+        </label>
+        <label *ngIf="docType === 'estimate'">Valid Until
+          <input type="date" [(ngModel)]="valid_until" />
+        </label>
+        <label *ngIf="docType === 'invoice'">Payment Terms
+          <input [(ngModel)]="payment_terms" placeholder="e.g. Net 30" />
+        </label>
+        <label *ngIf="docType === 'credit_note'" class="span2">Reason
+          <input [(ngModel)]="reason" placeholder="e.g. Goods returned, rate difference" />
+        </label>
+      </div>
+      <div class="tax-mode" *ngIf="customer_id">
+        <span *ngIf="taxFree">Zero-rated supply ({{ invoice_type === 'export' ? 'Export' : 'SEZ' }}) — no GST applied</span>
+        <span *ngIf="!taxFree && isInterstate">Inter-state supply — IGST applies</span>
+        <span *ngIf="!taxFree && !isInterstate">Intra-state supply (Tamil Nadu) — CGST + SGST apply</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Line Items</div>
+      <div class="table-scroll">
+        <table class="lines-table">
+          <thead>
+            <tr><th style="min-width:150px">Item</th><th style="min-width:180px">Description</th><th>HSN/SAC</th><th>Qty</th><th>Unit</th><th>Rate</th><th>Disc %</th><th>GST %</th><th>Taxable</th><th>Total</th><th></th></tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let l of lines; let i = index">
+              <td>
+                <select [(ngModel)]="l.item_id" (ngModelChange)="onItemPicked(l)">
+                  <option [ngValue]="null">— Custom —</option>
+                  <option *ngFor="let it of catalog" [ngValue]="it.id">{{ it.name }}</option>
+                </select>
+              </td>
+              <td><input [(ngModel)]="l.description" placeholder="Description" /></td>
+              <td><input [(ngModel)]="l.hsn_sac_code" class="narrow mono" /></td>
+              <td><input type="number" [(ngModel)]="l.quantity" (ngModelChange)="recalcLine(l)" class="narrow" min="0" /></td>
+              <td><input [(ngModel)]="l.unit" class="narrow" /></td>
+              <td><input type="number" [(ngModel)]="l.unit_price" (ngModelChange)="recalcLine(l)" class="num" min="0" /></td>
+              <td><input type="number" [(ngModel)]="l.discount_pct" (ngModelChange)="recalcLine(l)" class="narrow" min="0" max="100" /></td>
+              <td><input type="number" [(ngModel)]="l.gst_rate" (ngModelChange)="recalcLine(l)" class="narrow" [disabled]="taxFree" /></td>
+              <td class="amount">₹{{ (l.taxable_value || 0).toLocaleString('en-IN') }}</td>
+              <td class="amount">₹{{ (l.line_total || 0).toLocaleString('en-IN') }}</td>
+              <td><button class="btn-remove" (click)="removeLine(i)" [disabled]="lines.length === 1">✕</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <button class="btn-add-line" (click)="addLine()">+ Add Line</button>
+
+      <div class="totals">
+        <div class="t-row"><span>Subtotal (Taxable)</span><span>₹{{ subtotal.toLocaleString('en-IN') }}</span></div>
+        <div class="t-row" *ngIf="cgst > 0"><span>CGST</span><span>₹{{ cgst.toLocaleString('en-IN') }}</span></div>
+        <div class="t-row" *ngIf="sgst > 0"><span>SGST</span><span>₹{{ sgst.toLocaleString('en-IN') }}</span></div>
+        <div class="t-row" *ngIf="igst > 0"><span>IGST</span><span>₹{{ igst.toLocaleString('en-IN') }}</span></div>
+        <div class="t-row grand"><span>Total</span><span>₹{{ total.toLocaleString('en-IN') }}</span></div>
+        <div class="words" *ngIf="total > 0">{{ amountInWords(total) }}</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <label class="notes-label">Notes
+        <textarea [(ngModel)]="notes" rows="2" placeholder="Visible on the printed document"></textarea>
+      </label>
+    </div>
+  </div>
+</div>
+
+<!-- ============ PRINT LAYOUT (GST format) ============ -->
+<div class="print-area">
+  <div class="p-head">
+    <div>
+      <div class="p-company">Vocto Technologies Private Limited</div>
+      <div class="p-addr">B4, Phase II, MEPZ SEZ, Tambaram, Chennai - 600 045, Tamil Nadu</div>
+      <div class="p-addr">GSTIN: 33AAACO0420H1ZH &nbsp;|&nbsp; CIN: U32509TN1994PTC029202</div>
+    </div>
+    <div class="p-doc-meta">
+      <div class="p-doc-title">{{ docLabel.toUpperCase() }}</div>
+      <div class="p-meta-line"><b>No:</b> <span class="mono">{{ docNumber }}</span></div>
+      <div class="p-meta-line"><b>Date:</b> {{ doc_date | date:'dd MMM yyyy' }}</div>
+      <div class="p-meta-line" *ngIf="docType === 'invoice' && due_date"><b>Due:</b> {{ due_date | date:'dd MMM yyyy' }}</div>
+      <div class="p-meta-line" *ngIf="docType === 'credit_note' && doc?.invoice_id"><b>Against Invoice:</b> {{ source_invoice_id ? (docNumber) : '' }}</div>
+    </div>
+  </div>
+
+  <div class="p-parties">
+    <div class="p-party">
+      <div class="p-party-label">Bill To</div>
+      <div class="p-party-name">{{ selectedCustomer?.name || doc?.customer_name }}</div>
+      <div class="p-addr">{{ selectedCustomer?.billing_address || doc?.customer_address }}</div>
+      <div class="p-addr" *ngIf="selectedCustomer?.gstin || doc?.customer_gstin">GSTIN: {{ selectedCustomer?.gstin || doc?.customer_gstin }}</div>
+      <div class="p-addr" *ngIf="selectedCustomer?.state">State: {{ selectedCustomer?.state }} ({{ selectedCustomer?.state_code }})</div>
+    </div>
+    <div class="p-party" *ngIf="docType === 'invoice'">
+      <div class="p-party-label">Place of Supply</div>
+      <div class="p-addr">{{ selectedCustomer?.state ? selectedCustomer?.state_code + ' — ' + selectedCustomer?.state : (invoice_type === 'export' ? 'Export (Outside India)' : '—') }}</div>
+      <div class="p-party-label" style="margin-top:8px">Supply Type</div>
+      <div class="p-addr">{{ taxFree ? 'Zero-rated (LUT — without payment of IGST)' : isInterstate ? 'Inter-state (IGST)' : 'Intra-state (CGST + SGST)' }}</div>
+    </div>
+  </div>
+
+  <table class="p-table">
+    <thead>
+      <tr><th>#</th><th style="text-align:left">Description</th><th>HSN/SAC</th><th>Qty</th><th>Unit</th><th>Rate</th><th *ngIf="!taxFree">GST %</th><th>Taxable ₹</th><th *ngIf="!isInterstate && !taxFree">CGST ₹</th><th *ngIf="!isInterstate && !taxFree">SGST ₹</th><th *ngIf="isInterstate">IGST ₹</th><th>Total ₹</th></tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let l of lines; let i = index">
+        <td>{{ i + 1 }}</td>
+        <td style="text-align:left">{{ l.description }}</td>
+        <td class="mono">{{ l.hsn_sac_code || '—' }}</td>
+        <td>{{ l.quantity }}</td>
+        <td>{{ l.unit }}</td>
+        <td>{{ (l.unit_price || 0).toLocaleString('en-IN') }}</td>
+        <td *ngIf="!taxFree">{{ l.gst_rate }}%</td>
+        <td>{{ (l.taxable_value || 0).toLocaleString('en-IN') }}</td>
+        <td *ngIf="!isInterstate && !taxFree">{{ (l.cgst || 0).toLocaleString('en-IN') }}</td>
+        <td *ngIf="!isInterstate && !taxFree">{{ (l.sgst || 0).toLocaleString('en-IN') }}</td>
+        <td *ngIf="isInterstate">{{ (l.igst || 0).toLocaleString('en-IN') }}</td>
+        <td>{{ (l.line_total || 0).toLocaleString('en-IN') }}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="p-bottom">
+    <div class="p-tax-summary" *ngIf="!taxFree">
+      <table class="p-table small">
+        <thead><tr><th>GST Rate</th><th>Taxable ₹</th><th *ngIf="!isInterstate">CGST ₹</th><th *ngIf="!isInterstate">SGST ₹</th><th *ngIf="isInterstate">IGST ₹</th></tr></thead>
+        <tbody>
+          <tr *ngFor="let t of taxSummary">
+            <td>{{ t.rate }}%</td>
+            <td>{{ t.taxable.toLocaleString('en-IN') }}</td>
+            <td *ngIf="!isInterstate">{{ t.cgst.toLocaleString('en-IN') }}</td>
+            <td *ngIf="!isInterstate">{{ t.sgst.toLocaleString('en-IN') }}</td>
+            <td *ngIf="isInterstate">{{ t.igst.toLocaleString('en-IN') }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="p-totals">
+      <div class="t-row"><span>Subtotal</span><span>₹{{ subtotal.toLocaleString('en-IN') }}</span></div>
+      <div class="t-row" *ngIf="cgst > 0"><span>CGST</span><span>₹{{ cgst.toLocaleString('en-IN') }}</span></div>
+      <div class="t-row" *ngIf="sgst > 0"><span>SGST</span><span>₹{{ sgst.toLocaleString('en-IN') }}</span></div>
+      <div class="t-row" *ngIf="igst > 0"><span>IGST</span><span>₹{{ igst.toLocaleString('en-IN') }}</span></div>
+      <div class="t-row grand"><span>Grand Total</span><span>₹{{ total.toLocaleString('en-IN') }}</span></div>
+    </div>
+  </div>
+
+  <div class="p-words" *ngIf="total > 0"><b>Amount in words:</b> {{ amountInWords(total) }}</div>
+  <div class="p-words" *ngIf="docType === 'credit_note' && reason"><b>Reason:</b> {{ reason }}</div>
+  <div class="p-words" *ngIf="notes"><b>Notes:</b> {{ notes }}</div>
+  <div class="p-words" *ngIf="docType === 'invoice' && payment_terms"><b>Payment terms:</b> {{ payment_terms }}</div>
+
+  <div class="p-sign">
+    <div>This is a computer-generated document.</div>
+    <div class="p-sign-box">For Vocto Technologies Private Limited<br /><br /><br />Authorised Signatory</div>
+  </div>
+</div>

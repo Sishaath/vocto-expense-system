@@ -219,6 +219,78 @@ export default async function handler(req, res) {
       </div>`;
       break;
 
+    case 'invoice_sent': {
+      const { invoiceNumber, customerName, dueDate } = req.body;
+      const invTotal = req.body.total ? `₹${Number(req.body.total).toLocaleString('en-IN')}` : '';
+      to = req.body.to || user.email;
+      subject = `Invoice Finalized — ${invoiceNumber}`;
+      html = `<div style="font-family:Inter,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#1a1a1a">
+        <div style="background:#0C1F3D;padding:16px 24px;border-radius:8px 8px 0 0">
+          <span style="color:#fff;font-weight:700;font-size:16px">Vocto Technologies</span>
+          <span style="color:#F4721B;margin-left:8px;font-size:12px">Billing</span>
+        </div>
+        <div style="background:#fff;border:1px solid #E8ECF3;border-top:none;padding:24px;border-radius:0 0 8px 8px">
+          <h2 style="margin:0 0 16px;font-size:18px;color:#0C1F3D">Invoice Finalized</h2>
+          <table style="width:100%;border-collapse:collapse;margin-bottom:20px">
+            <tr><td style="padding:8px 0;color:#8A9BB0;font-size:13px;width:140px">Invoice No</td><td style="padding:8px 0;font-weight:600;font-size:13px">${invoiceNumber}</td></tr>
+            <tr><td style="padding:8px 0;color:#8A9BB0;font-size:13px">Customer</td><td style="padding:8px 0;font-size:13px">${customerName || '—'}</td></tr>
+            <tr><td style="padding:8px 0;color:#8A9BB0;font-size:13px">Total</td><td style="padding:8px 0;font-weight:700;font-size:14px;color:#F4721B">${invTotal}</td></tr>
+            <tr><td style="padding:8px 0;color:#8A9BB0;font-size:13px">Due Date</td><td style="padding:8px 0;font-size:13px">${dueDate || '—'}</td></tr>
+          </table>
+          <a href="${portalUrl}/billing" style="display:inline-block;background:#0C1F3D;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:13px;font-weight:600">Open Billing →</a>
+        </div>
+      </div>`;
+      break;
+    }
+
+    case 'payment_received': {
+      const { invoiceNumber, customerName, paymentNumber } = req.body;
+      const payAmt = req.body.amount ? `₹${Number(req.body.amount).toLocaleString('en-IN')}` : '';
+      to = req.body.to || user.email;
+      subject = `Payment Received — ${payAmt} against ${invoiceNumber}`;
+      html = `<div style="font-family:Inter,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#1a1a1a">
+        <div style="background:#0C1F3D;padding:16px 24px;border-radius:8px 8px 0 0">
+          <span style="color:#fff;font-weight:700;font-size:16px">Vocto Technologies</span>
+          <span style="color:#F4721B;margin-left:8px;font-size:12px">Billing</span>
+        </div>
+        <div style="background:#fff;border:1px solid #E8ECF3;border-top:none;padding:24px;border-radius:0 0 8px 8px">
+          <h2 style="margin:0 0 16px;font-size:18px;color:#2E7D32">Payment Received</h2>
+          <table style="width:100%;border-collapse:collapse;margin-bottom:20px">
+            <tr><td style="padding:8px 0;color:#8A9BB0;font-size:13px;width:140px">Receipt No</td><td style="padding:8px 0;font-weight:600;font-size:13px">${paymentNumber || '—'}</td></tr>
+            <tr><td style="padding:8px 0;color:#8A9BB0;font-size:13px">Invoice</td><td style="padding:8px 0;font-size:13px">${invoiceNumber}</td></tr>
+            <tr><td style="padding:8px 0;color:#8A9BB0;font-size:13px">Customer</td><td style="padding:8px 0;font-size:13px">${customerName || '—'}</td></tr>
+            <tr><td style="padding:8px 0;color:#8A9BB0;font-size:13px">Amount</td><td style="padding:8px 0;font-weight:700;font-size:14px;color:#2E7D32">${payAmt}</td></tr>
+          </table>
+          <a href="${portalUrl}/billing" style="display:inline-block;background:#0C1F3D;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-size:13px;font-weight:600">Open Billing →</a>
+        </div>
+      </div>`;
+      break;
+    }
+
+    case 'overdue_reminder': {
+      const { invoiceNumber, customerName, dueDate, customerEmail } = req.body;
+      const balance = `₹${Number((req.body.total || 0) - (req.body.amountPaid || 0)).toLocaleString('en-IN')}`;
+      to = customerEmail || req.body.to || user.email;
+      subject = `Payment Reminder — Invoice ${invoiceNumber}`;
+      html = `<div style="font-family:Inter,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#1a1a1a">
+        <div style="background:#0C1F3D;padding:16px 24px;border-radius:8px 8px 0 0">
+          <span style="color:#fff;font-weight:700;font-size:16px">Vocto Technologies</span>
+          <span style="color:#F4721B;margin-left:8px;font-size:12px">Billing</span>
+        </div>
+        <div style="background:#fff;border:1px solid #E8ECF3;border-top:none;padding:24px;border-radius:0 0 8px 8px">
+          <h2 style="margin:0 0 16px;font-size:18px;color:#C0392B">Invoice Overdue</h2>
+          <p style="font-size:13px;color:#5A6B84;margin:0 0 16px">Dear ${customerName || 'Customer'}, this is a gentle reminder that the following invoice is past its due date.</p>
+          <table style="width:100%;border-collapse:collapse;margin-bottom:20px">
+            <tr><td style="padding:8px 0;color:#8A9BB0;font-size:13px;width:140px">Invoice No</td><td style="padding:8px 0;font-weight:600;font-size:13px">${invoiceNumber}</td></tr>
+            <tr><td style="padding:8px 0;color:#8A9BB0;font-size:13px">Due Date</td><td style="padding:8px 0;font-size:13px">${dueDate || '—'}</td></tr>
+            <tr><td style="padding:8px 0;color:#8A9BB0;font-size:13px">Balance Due</td><td style="padding:8px 0;font-weight:700;font-size:14px;color:#C0392B">${balance}</td></tr>
+          </table>
+          <p style="font-size:12px;color:#8A9BB0;margin:0">Please disregard this reminder if payment has already been made.</p>
+        </div>
+      </div>`;
+      break;
+    }
+
     default:
       return res.status(400).json({ error: 'Unknown event type' });
   }

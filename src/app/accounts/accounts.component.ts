@@ -259,6 +259,7 @@ export class AccountsComponent implements OnInit {
     await this.loadRequisitions();
     await this.loadRecurring();
     this.loading = false;
+    this.loadBillingSnapshot();
     // Auto-open claim from notification click
     const openRef = this.route.snapshot.queryParamMap.get('open');
     if (openRef) {
@@ -269,6 +270,26 @@ export class AccountsComponent implements OnInit {
 
   slaHours(claim: any): number {
     return Math.floor((Date.now() - new Date(claim.created_at).getTime()) / 36e5);
+  }
+
+  // Billing snapshot for the dashboard strip (tables exist after the
+  // Phase 2 migration; fails silently if it hasn't been applied yet)
+  billingSnapshot = { outstanding: 0, overdueCount: 0, lowStock: 0, loaded: false };
+
+  async loadBillingSnapshot() {
+    try {
+      const [inv, items] = await Promise.all([
+        this.supabase.getClient().from('sales_invoices').select('status, total, amount_paid, due_date'),
+        this.supabase.getClient().from('items').select('stock_qty, reorder_level, track_inventory, item_type, active')
+      ]);
+      if (inv.error || items.error) return;
+      const open = (inv.data || []).filter((i: any) => !['draft', 'cancelled', 'paid'].includes(i.status));
+      this.billingSnapshot.outstanding = open.reduce((s: number, i: any) => s + ((i.total || 0) - (i.amount_paid || 0)), 0);
+      this.billingSnapshot.overdueCount = open.filter((i: any) => i.due_date && new Date(i.due_date) < new Date()).length;
+      this.billingSnapshot.lowStock = (items.data || []).filter((i: any) =>
+        i.active !== false && i.track_inventory && i.item_type === 'goods' && Number(i.stock_qty) <= Number(i.reorder_level || 0)).length;
+      this.billingSnapshot.loaded = true;
+    } catch { /* billing module not yet migrated */ }
   }
 
   async verifyPO(id: string) {

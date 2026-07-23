@@ -1,0 +1,93 @@
+<div class="app-wrap">
+  <div class="topbar">
+    <div class="topbar-accent"></div>
+    <div class="topbar-main">
+      <div class="logo">
+        <img src="/vocto-logo.png" alt="Vocto" class="logo-img" />
+        <div class="logo-divider"></div>
+        <div class="logo-text-block"><div class="logo-company">Vocto Technologies Private Limited</div></div>
+      </div>
+      <div class="tb-section">CUSTOMER DETAIL</div>
+      <div class="tb-right"><button class="btn-back" (click)="goBack()">← Back</button></div>
+    </div>
+  </div>
+
+  <div class="main-content" *ngIf="!loading && customer">
+    <div class="head-row">
+      <div>
+        <div class="page-title">{{ customer.name }} <span class="inactive-tag" *ngIf="!customer.active">Inactive</span></div>
+        <div class="page-sub mono">{{ customer.gstin || 'No GSTIN' }} · {{ customer.city || '—' }}{{ customer.state ? ', ' + customer.state : '' }}</div>
+      </div>
+      <div class="head-actions">
+        <button class="btn-secondary" (click)="exportData()">Export Data</button>
+        <button class="btn-danger" (click)="deleteCustomer()">Delete</button>
+        <button class="btn-primary" (click)="newInvoice()">+ New Invoice</button>
+      </div>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat-card"><div class="stat-label">Total Billed</div><div class="stat-value">₹{{ totalBilled.toLocaleString('en-IN') }}</div></div>
+      <div class="stat-card"><div class="stat-label">Outstanding</div><div class="stat-value" [class.warn]="outstanding > 0">₹{{ outstanding.toLocaleString('en-IN') }}</div></div>
+      <div class="stat-card"><div class="stat-label">Invoices</div><div class="stat-value">{{ invoices.length }}</div></div>
+    </div>
+
+    <div class="two-col">
+      <div class="card">
+        <div class="card-title">Details</div>
+        <div class="detail-grid">
+          <div class="dt">Type</div><div class="dd">{{ customer.customer_type | titlecase }}</div>
+          <div class="dt">Email</div><div class="dd">{{ customer.email || '—' }}</div>
+          <div class="dt">Phone</div><div class="dd">{{ customer.phone || '—' }}</div>
+          <div class="dt">Contact</div><div class="dd">{{ customer.contact_person || '—' }}</div>
+          <div class="dt">PAN</div><div class="dd mono">{{ customer.pan || '—' }}</div>
+          <div class="dt">Payment Terms</div><div class="dd">{{ customer.payment_terms || '—' }}</div>
+          <div class="dt">Billing Address</div><div class="dd">{{ customer.billing_address || '—' }}</div>
+          <div class="dt">Shipping Address</div><div class="dd">{{ customer.shipping_address || 'Same as billing' }}</div>
+          <div class="dt">Notes</div><div class="dd">{{ customer.notes || '—' }}</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title-row">
+          <div class="card-title">Contacts</div>
+          <button class="btn-mini" (click)="showContactForm = !showContactForm">{{ showContactForm ? 'Cancel' : '+ Add' }}</button>
+        </div>
+        <div class="contact-form" *ngIf="showContactForm">
+          <input [(ngModel)]="contactForm.name" placeholder="Name *" />
+          <input [(ngModel)]="contactForm.designation" placeholder="Designation" />
+          <input [(ngModel)]="contactForm.email" placeholder="Email" />
+          <input [(ngModel)]="contactForm.phone" placeholder="Phone" />
+          <button class="btn-primary" (click)="saveContact()" [disabled]="savingContact">Save Contact</button>
+        </div>
+        <div class="contact" *ngFor="let c of contacts">
+          <div>
+            <div class="c-name">{{ c.name }} <span class="muted" *ngIf="c.designation">· {{ c.designation }}</span></div>
+            <div class="muted">{{ c.email || '' }} {{ c.phone ? '· ' + c.phone : '' }}</div>
+          </div>
+          <button class="btn-mini danger" (click)="deleteContact(c)">Remove</button>
+        </div>
+        <div class="empty" *ngIf="contacts.length === 0 && !showContactForm">No contacts recorded</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Invoices</div>
+      <table>
+        <thead><tr><th>Number</th><th>Date</th><th>Due</th><th>Total</th><th>Paid</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr *ngFor="let inv of invoices" class="clickable-row" (click)="router.navigate(['/billing/invoice', inv.id])">
+            <td class="mono">{{ inv.invoice_number || 'Draft' }}</td>
+            <td class="mono">{{ inv.invoice_date | date:'dd MMM yyyy' }}</td>
+            <td class="mono">{{ inv.due_date ? (inv.due_date | date:'dd MMM yyyy') : '—' }}</td>
+            <td class="amount">₹{{ (inv.total || 0).toLocaleString('en-IN') }}</td>
+            <td class="amount">₹{{ (inv.amount_paid || 0).toLocaleString('en-IN') }}</td>
+            <td><span class="badge" [ngClass]="isOverdue(inv) ? 'overdue' : inv.status">{{ isOverdue(inv) ? 'Overdue' : statusLabel(inv.status) }}</span></td>
+          </tr>
+          <tr *ngIf="invoices.length === 0"><td colspan="6" class="empty">No invoices for this customer yet</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="loading-overlay" *ngIf="loading"><div class="spinner"></div></div>
+</div>

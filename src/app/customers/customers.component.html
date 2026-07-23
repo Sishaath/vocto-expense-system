@@ -1,0 +1,133 @@
+<div class="app-wrap">
+  <div class="topbar">
+    <div class="topbar-accent"></div>
+    <div class="topbar-main">
+      <div class="logo">
+        <img src="/vocto-logo.png" alt="Vocto" class="logo-img" />
+        <div class="logo-divider"></div>
+        <div class="logo-text-block">
+          <div class="logo-company">Vocto Technologies Private Limited</div>
+        </div>
+      </div>
+      <div class="tb-section">CUSTOMERS</div>
+      <div class="tb-right">
+        <button class="btn-back" (click)="goBack()">← Back</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="main-content">
+    <div class="page-title">Customer <span>Directory</span></div>
+    <div class="page-sub">Billing profiles for invoicing and CRM</div>
+
+    <div class="filter-bar">
+      <input class="search-input" [(ngModel)]="search" placeholder="Search by name, GSTIN, city or email..." />
+      <button class="btn-export" (click)="openNew()">+ New Customer</button>
+    </div>
+
+    <div class="loading-overlay" *ngIf="loading">
+      <div class="spinner"></div>
+      <div class="loading-text">Loading...</div>
+    </div>
+
+    <div class="table-wrap" *ngIf="!loading">
+      <table>
+        <thead>
+          <tr>
+            <th>Customer</th>
+            <th>GSTIN</th>
+            <th>Type</th>
+            <th>City / State</th>
+            <th>Contact</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let c of filtered" class="clickable-row" (click)="router.navigate(['/customers', c.id])">
+            <td><strong>{{ c.name }}</strong><span class="inactive-tag" *ngIf="!c.active">Inactive</span></td>
+            <td class="mono">{{ c.gstin || '—' }}</td>
+            <td><span class="type-badge" [ngClass]="c.customer_type">{{ c.customer_type | titlecase }}</span></td>
+            <td>{{ c.city || '—' }}<span class="muted" *ngIf="c.state"> · {{ c.state }}</span></td>
+            <td class="muted">{{ c.email || c.phone || '—' }}</td>
+            <td>
+              <button class="btn-view" (click)="editCustomer(c, $event)">Edit</button>
+            </td>
+          </tr>
+          <tr *ngIf="filtered.length === 0">
+            <td colspan="6" class="empty">No customers yet. Add your first customer to start invoicing.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Create / edit modal -->
+  <div class="modal-backdrop" *ngIf="showForm" (click)="cancelForm()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-title">{{ form.id ? 'Edit Customer' : 'New Customer' }}</div>
+
+      <div class="form-grid">
+        <label class="span2">GSTIN
+          <div class="gstin-row">
+            <input [(ngModel)]="form.gstin" placeholder="33XXXXXXXXXXXZX" style="font-family:monospace" />
+            <button class="btn-lookup" (click)="lookupGstin()" [disabled]="gstLoading">{{ gstLoading ? '...' : 'Lookup' }}</button>
+          </div>
+        </label>
+        <label class="span2">Customer Name *
+          <input [(ngModel)]="form.name" placeholder="Company or person name" />
+        </label>
+        <label>Type
+          <select [(ngModel)]="form.customer_type">
+            <option value="domestic">Domestic</option>
+            <option value="export">Export</option>
+            <option value="sez">SEZ</option>
+          </select>
+        </label>
+        <label>PAN
+          <input [(ngModel)]="form.pan" style="font-family:monospace" />
+        </label>
+        <label>Email
+          <input [(ngModel)]="form.email" type="email" />
+        </label>
+        <label>Phone
+          <input [(ngModel)]="form.phone" />
+        </label>
+        <label>Contact Person
+          <input [(ngModel)]="form.contact_person" />
+        </label>
+        <label>Payment Terms
+          <input [(ngModel)]="form.payment_terms" placeholder="e.g. Net 30" />
+        </label>
+        <label class="span2">Billing Address
+          <textarea [(ngModel)]="form.billing_address" rows="2"></textarea>
+        </label>
+        <label class="span2">Shipping Address
+          <textarea [(ngModel)]="form.shipping_address" rows="2" placeholder="Leave blank if same as billing"></textarea>
+        </label>
+        <label>City
+          <input [(ngModel)]="form.city" />
+        </label>
+        <label>State
+          <input [(ngModel)]="form.state" />
+        </label>
+        <label>State Code
+          <input [(ngModel)]="form.state_code" placeholder="33" maxlength="2" style="font-family:monospace" />
+        </label>
+        <label>Country
+          <input [(ngModel)]="form.country" />
+        </label>
+        <label class="span2">Notes
+          <textarea [(ngModel)]="form.notes" rows="2"></textarea>
+        </label>
+        <label class="check-label span2" *ngIf="form.id">
+          <input type="checkbox" [(ngModel)]="form.active" /> Active
+        </label>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-cancel" (click)="cancelForm()">Cancel</button>
+        <button class="btn-save" (click)="save()" [disabled]="saving">{{ saving ? 'Saving...' : 'Save Customer' }}</button>
+      </div>
+    </div>
+  </div>
+</div>
