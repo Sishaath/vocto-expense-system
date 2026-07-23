@@ -1,4 +1,4 @@
-// Vercel Cron: runs every 5 days to prevent Supabase free tier from pausing
+// Vercel Cron: runs every 2 days to prevent Supabase free tier from pausing
 // Schedule configured in vercel.json
 import { createClient } from '@supabase/supabase-js';
 import { timingSafeEqual } from 'crypto';

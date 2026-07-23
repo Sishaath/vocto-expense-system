@@ -1,0 +1,17 @@
+name: Supabase Keep-Alive (Backup)
+
+on:
+  schedule:
+    - cron: '0 6 */2 * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    name: Ping keep-alive endpoint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Ping /api/keep-alive
+        run: |
+          curl -sf -X GET https://portal.voctotechnologies.com/api/keep-alive \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
