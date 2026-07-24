@@ -239,6 +239,7 @@ const SUPABASE_KEY = environment.supabaseKey;
 })
 export class SupabaseService {
   private supabase: SupabaseClient;
+  private roleCache: { email: string; role: string | null } | null = null;
 
   constructor() {
     this.supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
@@ -262,6 +263,7 @@ export class SupabaseService {
   }
 
   async signOut() {
+    this.roleCache = null;
     return this.supabase.auth.signOut();
   }
 
@@ -475,8 +477,11 @@ export class SupabaseService {
 
   // USER ROLES
   async getUserRole(email: string): Promise<string | null> {
+    if (this.roleCache?.email === email) return this.roleCache.role;
     const { data } = await this.supabase.from('user_roles').select('role').eq('email', email).single();
-    return data?.role || null;
+    const role = data?.role || null;
+    this.roleCache = { email, role };
+    return role;
   }
 
   async getAllUserRoles() {
